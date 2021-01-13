@@ -50,7 +50,7 @@ Look in the `examples` directory,  and try out one (or all) of the three sets of
    
 `*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. These are cropped in smaller patches in the notebook `01-data.ipynb`. The following would be a desired structure to how data should be prepared.
 
-
+```
 data
 └───data-name
     |───train
@@ -70,6 +70,6 @@ data
     |───test
 	└───images
 	└───masks
-
+```
 
 
