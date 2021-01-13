@@ -23,13 +23,13 @@ If you find our work useful in your research, please consider citing:
 ```
 
 ### Dependencies 
-We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0. 
+We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
 
 In order to replicate results mentioned in the publication, one could use the same virtual environment (`EmbedSeg_environment.yml`) as used by us. Create a new environment, for example,  by entering the python command in the terminal `conda env create -f path/to/EmbedSeg_environment.yml`.
 
 ### Getting Started
 
-Please open a new terminal window and run the following commands one after the other. (We have tested these commands on a linux machine.)
+Please open a new terminal window and run the following commands one after the other.
 
 ```shell
 git clone https://github.com/juglab/EmbedSeg_RC.git
