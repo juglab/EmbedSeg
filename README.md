@@ -1,7 +1,7 @@
 ## EmbedSeg 
 
 ### Introduction
-This repository hosts the version of the code used for the **[publication]()** **Embedding-based Instance Segmnetation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage]()**.
+This repository hosts the version of the code used for the **[publication]()** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage]()**.
 
 We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, and extends the formulation of **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
 
