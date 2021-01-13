@@ -32,8 +32,8 @@ In order to replicate results mentioned in the publication, one could use the sa
 Please open a new terminal window and run the following commands one after the other.
 
 ```shell
-git clone https://github.com/juglab/EmbedSeg_RC.git
-cd EmbedSeg_RC
+git clone https://github.com/juglab/EmbedSeg.git
+cd EmbedSeg
 git checkout v0.1
 conda env create -f EmbedSeg_environment.yml
 conda activate EmbedSegEnv
