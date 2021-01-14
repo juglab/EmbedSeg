@@ -15,7 +15,7 @@ If you find our work useful in your research, please consider citing:
 
 ```bibtex
 @article{2021:EmbedSeg,
-  title={Embedding-based Instance Segmnetation of Microscopy Images},
+  title={Embedding-based Instance Segmentation of Microscopy Images},
   author={Lalit, Manan and Tomancak, Pavel and Jug, Florian},
   journal={},
   year={2021}
