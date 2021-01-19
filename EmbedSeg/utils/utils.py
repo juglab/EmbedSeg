@@ -162,10 +162,11 @@ class Cluster:
 
         return instance_map
 
-    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=128,
+    def cluster(self, prediction, n_sigma=2, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=128,
                 min_object_size=36):
 
         height, width = prediction.size(1), prediction.size(2)
+
         xym_s = self.xym[:, 0:height, 0:width]
 
         spatial_emb = torch.tanh(prediction[0:2]) + xym_s  # 2 x h x w
@@ -207,8 +208,8 @@ class Cluster:
                         instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()  # TODO
                         center_image = torch.zeros(height, width).byte()  # TODO
 
-                        center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
-                        center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
+                        center[0] = int(np.clip(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x), 0, width -1))
+                        center[1] = int(np.clip(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y), 0, height-1))
                         center_image[int(center[1].item()), int(center[0].item())] = True
                         instances.append(
                             {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
