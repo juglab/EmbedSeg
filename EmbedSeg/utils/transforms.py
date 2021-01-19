@@ -15,7 +15,8 @@ class RandomRotationsAndFlips(T.RandomRotation):
     def __call__(self, sample):
 
         angle = self.get_params(self.degrees)
-        times = np.random.choice(4)
+        #times = np.random.choice(4)
+        times = 0 # TODO: currently just for basel dataset
         flip = np.random.choice(2)
 
         for idx, k in enumerate(self.keys):
