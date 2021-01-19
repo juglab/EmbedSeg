@@ -8,7 +8,7 @@ from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import Cluster, prepare_embedding_for_test_image
 from EmbedSeg.utils.utils2 import matching_dataset, obtain_AP_one_hot
-
+import torch.nn.functional as F
 torch.backends.cudnn.benchmark = True
 import numpy as np
 from tifffile import imsave
@@ -55,7 +55,7 @@ def begin_evaluating(test_configs, verbose=True):
 
 
 def to_cuda(im_numpy):
-    im_numpy = im_numpy[np.newaxis, np.newaxis, ...]
+    im_numpy = im_numpy[np.newaxis,  ...]
     return torch.from_numpy(im_numpy).float().cuda()
 
 
@@ -72,8 +72,7 @@ def process_flips(im_numpy):
 
 def applyTTAComplete(im):
     im_numpy = im.cpu().detach().numpy()
-    im0 = im_numpy[0, 0]  # remove batch and channel dimensions # TODO: this is not correct for multi channel images
-    im0 = im0[np.newaxis, ...]  # add z dimension --> helps in rotating!
+    im0 = im_numpy[0, :]  # remove batch and channel dimensions # TODO: this is not correct for multi channel images
 
     im1 = np.rot90(im0, 1, (1, 2))
     im2 = np.rot90(im0, 2, (1, 2))
@@ -83,14 +82,15 @@ def applyTTAComplete(im):
     im6 = np.flip(im2, 1)
     im7 = np.flip(im3, 1)
 
-    im0_cuda = to_cuda(im0[0, ...])
-    im1_cuda = to_cuda(np.ascontiguousarray(im1[0, ...]))
-    im2_cuda = to_cuda(np.ascontiguousarray(im2[0, ...]))
-    im3_cuda = to_cuda(np.ascontiguousarray(im3[0, ...]))
-    im4_cuda = to_cuda(np.ascontiguousarray(im4[0, ...]))
-    im5_cuda = to_cuda(np.ascontiguousarray(im5[0, ...]))
-    im6_cuda = to_cuda(np.ascontiguousarray(im6[0, ...]))
-    im7_cuda = to_cuda(np.ascontiguousarray(im7[0, ...]))
+
+    im0_cuda = to_cuda(im0)
+    im1_cuda = to_cuda(np.ascontiguousarray(im1))
+    im2_cuda = to_cuda(np.ascontiguousarray(im2))
+    im3_cuda = to_cuda(np.ascontiguousarray(im3))
+    im4_cuda = to_cuda(np.ascontiguousarray(im4))
+    im5_cuda = to_cuda(np.ascontiguousarray(im5))
+    im6_cuda = to_cuda(np.ascontiguousarray(im6))
+    im7_cuda = to_cuda(np.ascontiguousarray(im7))
 
     output0 = model(im0_cuda)
     output1 = model(im1_cuda)
@@ -201,46 +201,84 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
 
             im = sample['image']  # B 1 Y X
             instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
-            if im.shape[2]%4!=0:
-                multiple_y = im.shape[2]//4
-                diff_y = im.shape[2] - 4*multiple_y
-                m = torch.nn.ZeroPad2d((0, 0, diff_y//2, diff_y//2))
-                im = m(im)
-                instances = m(instances)
-            if im.shape[3]%4!=0:
-                multiple_x = im.shape[3] // 4
-                diff_x = im.shape[3] - 4 * multiple_x
-                m = torch.nn.ZeroPad2d((diff_x // 2, diff_x // 2, 0, 0))
-                im = m(im)
-                instances = m(instances)
 
 
-            if (tta):
-                output = applyTTAComplete(im)
+
+            if im.ndimension()==5:
+                instance_map = []
+                instance_temp = []
+                for z in range(im.shape[2]):
+                    im_z = im[:, :, z, ...]
+                    instances_z = instances[z, ...]
+                    multiple_y = im_z.shape[2] // 8
+                    multiple_x = im_z.shape[3] // 8
+
+                    if im_z.shape[2] % 8 != 0:
+                        diff_y = 8 * (multiple_y + 1) - im_z.shape[2]
+                    else:
+                        diff_y = 0
+                    if im_z.shape[3] % 8 != 0:
+                        diff_x = 8 * (multiple_x + 1) - im_z.shape[3]
+                    else:
+                        diff_x = 0
+                    p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)
+
+                    im_z = F.pad(im_z, p2d, "constant", 0)
+                    instances_z = F.pad(instances_z, p2d, "constant", 0)
+                    if (tta):
+                        output = applyTTAComplete(im_z)
+                    else:
+                        output = model(im_z)
+
+                    instance_map_z, predictions_z = cluster.cluster(output[0],
+                                                                n_sigma=n_sigma,
+                                                                seed_thresh=seed_thresh,
+                                                                min_mask_sum=min_mask_sum,
+                                                                min_unclustered_sum=min_unclustered_sum,
+                                                                min_object_size=min_object_size)
+
+                    instance_map.append(instance_map_z.unsqueeze(0))
+                    instance_temp.append(instances_z.unsqueeze(0))
+
+                    sc = matching_dataset([instance_map_z.cpu().detach().numpy()], [instances_z.cpu().detach().numpy()],
+                                          thresh=ap_val, show_progress=False)
+                    if (verbose):
+                        print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
+                    resultList.append(sc.accuracy)
+
+                instance_temp = torch.cat(instance_temp)
+                instance_map=torch.cat(instance_map)
             else:
-                output = model(im)
+
+                multiple_y = im.shape[2] // 8
+                multiple_x = im.shape[3] // 8
+
+                if im.shape[2] % 8 != 0:
+                    diff_y = 8 * (multiple_y + 1) - im.shape[3]
+                else:
+                    diff_y = 0
+                if im.shape[3] % 8 != 0:
+                    diff_x = 8 * (multiple_x + 1) - im.shape[4]
+                else:
+                    diff_x = 0
+                p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)
+                im = F.pad(im, p2d, "constant", 0)
+                instances = F.pad(instances, p2d, "constant", 0)
 
 
-            instance_map, predictions = cluster.cluster(output[0],
-                                                        n_sigma=n_sigma,
-                                                        seed_thresh=seed_thresh,
-                                                        min_mask_sum=min_mask_sum,
-                                                        min_unclustered_sum=min_unclustered_sum,
-                                                        min_object_size=min_object_size)
 
-            center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y, pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions)
+                if (tta):
+                    output = applyTTAComplete(im)
+                else:
+                    output = model(im)
 
-            base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
-            imageFileNames.append(base)
 
-            if (one_hot):
-                instances_integer = get_instance_map(instances)
-                input_max, b = torch.max(instances_integer, 0)
-                sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
-                if (verbose):
-                    print("Accuracy: {:.03f}".format(sc), flush=True)
-                resultList.append(sc)
-            else:
+                instance_map, predictions = cluster.cluster(output[0],
+                                                            n_sigma=n_sigma,
+                                                            seed_thresh=seed_thresh,
+                                                            min_mask_sum=min_mask_sum,
+                                                            min_unclustered_sum=min_unclustered_sum,
+                                                            min_object_size=min_object_size)
                 sc=matching_dataset([instance_map.cpu().detach().numpy()], [instances.cpu().detach().numpy()], thresh=ap_val, show_progress = False)
                 if (verbose):
                     print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
@@ -255,34 +293,15 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 if not os.path.exists(os.path.join(save_dir, 'ground-truth/')):
                     os.makedirs(os.path.join(save_dir, 'ground-truth/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'ground-truth/')))
-                if not os.path.exists(os.path.join(save_dir, 'embedding/')):
-                    os.makedirs(os.path.join(save_dir, 'embedding/'))
-                    print("Created new directory {}".format(os.path.join(save_dir, 'embedding/')))
 
 
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
+                instance_map = instance_map[:, diff_y // 2: -(diff_y - diff_y // 2), :]
                 imsave(instances_file, instance_map.cpu().detach().numpy())
                 gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
                 imsave(gt_file, instances.cpu().detach().numpy())
-                embedding_file = os.path.join(save_dir, 'embedding/', base + '.tif')
-                import matplotlib
-                matplotlib.use('Agg')
-                fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi =150)
-                ax.imshow(instance_map > 0, cmap='gray')
 
-                for i in range(len(color_sample_dic.items())):
-                    ax.plot(center_x[i + 1], center_y[i + 1], color=color_embedding_dic[i + 1], marker='x')
-                    ax.scatter(samples_x[i + 1], samples_y[i + 1], color=color_sample_dic[i + 1], marker='+')
-                    ax.scatter(sample_spatial_embedding_x[i + 1], sample_spatial_embedding_y[i + 1],
-                               color=color_embedding_dic[i + 1], marker='.')
-                    ellipse = Ellipse((center_x[i + 1], center_y[i + 1]), width=sigma_x[i + 1], height=sigma_y[i + 1],
-                                      angle=0, color=color_embedding_dic[i + 1], alpha=0.5)
-                    ax.add_artist(ellipse)
-                ax.axis('off')
-                plt.tight_layout()
-                plt.draw()
-                plt.savefig(embedding_file)
 
         if save_results:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
