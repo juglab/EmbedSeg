@@ -5,7 +5,11 @@ This repository hosts the version of the code used for the **[publication]()** *
 
 We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, and extends the formulation of **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
 
-<img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
+<p float="left">
+  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/X_9_image_painted.gif" width="100" />
+  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/X_9_GT_painted.gif" width="100" /> 
+  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/X_9_painted.gif" width="100" />
+</p>
 
 
 In `EmbedSeg`, we suggest two simple tricks: by embedding interior pixels to instance medoids instead of the instance centroids and by including test-time augmentation during inference, we obtain state-of-the-art results on several datasets. Additionally by accumulating gradients over multiple steps, we allow our overall pipeline to have a small enough memory footprint to allow network training on virtually all CUDA enabled laptop hardware.
@@ -43,7 +47,7 @@ cd examples/2d
 jupyter notebook
 ```
 
-Look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
+Look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`. 
 
 
 ### Training & Inference on your data
