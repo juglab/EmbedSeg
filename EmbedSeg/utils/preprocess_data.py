@@ -4,6 +4,7 @@ import zipfile
 import shutil
 from glob import glob
 import numpy as np
+import tifffile
 
 
 def extract_data(zip_url, project_name, data_dir='../../../data/'):
@@ -88,7 +89,7 @@ def make_dirs(data_dir, project_name):
         print("Created new directory : {}".format(instance_path_test))
 
 
-def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=1234):
+def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=1234, mode = 'YX'):
     """
         Splits the `train` directory into `val` directory using the partition percentage of `subset`.
         Parameters
@@ -117,14 +118,29 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=12
     valIndices = indices[:subsetLen]
     trainIndices = indices[subsetLen:]
     make_dirs(data_dir=data_dir, project_name=project_name)
+    if mode == 'YX':
+        for val_index in valIndices:
+            shutil.copy(image_names[val_index], os.path.join(data_dir, project_name, 'val', 'images'))
+            shutil.copy(instance_names[val_index], os.path.join(data_dir, project_name, 'val', 'masks'))
 
-    for val_index in valIndices:
-        shutil.copy(image_names[val_index], os.path.join(data_dir, project_name, 'val', 'images'))
-        shutil.copy(instance_names[val_index], os.path.join(data_dir, project_name, 'val', 'masks'))
+        for trainIndex in trainIndices:
+            shutil.copy(image_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'images'))
+            shutil.copy(instance_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'masks'))
 
-    for trainIndex in trainIndices:
-        shutil.copy(image_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'images'))
-        shutil.copy(instance_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'masks'))
+
+    elif mode =='TYX':
+        for val_index in valIndices:
+            im = tifffile.imread(image_names[val_index])
+            ma = tifffile.imread(instance_names[val_index])
+            for z in range(im.shape[0]):
+                tifffile.imsave(os.path.join(data_dir, project_name, 'val', 'images', os.path.basename(image_names[val_index])[:-4]+'_'+str(z)+'.tif'), im[z])
+                tifffile.imsave(os.path.join(data_dir, project_name, 'val', 'masks', os.path.basename(instance_names[val_index])[:-4] + '_' + str(z) + '.tif'), ma[z])
+        for train_index in trainIndices:
+            im = tifffile.imread(image_names[train_index])
+            ma = tifffile.imread(instance_names[train_index])
+            for z in range(im.shape[0]):
+                tifffile.imsave(os.path.join(data_dir, project_name, 'train', 'images', os.path.basename(image_names[train_index])[:-4] + '_' + str(z) + '.tif'), im[z])
+                tifffile.imsave(os.path.join(data_dir, project_name, 'train', 'masks', os.path.basename(instance_names[train_index])[:-4] + '_' + str(z) + '.tif'), ma[z])
 
     imageDir = os.path.join(data_dir, project_name, 'download', 'test', 'images')
     instanceDir = os.path.join(data_dir, project_name, 'download', 'test', 'masks')
@@ -135,7 +151,6 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=12
         shutil.copy(image_names[testIndex], os.path.join(data_dir, project_name, 'test', 'images'))
         shutil.copy(instance_names[testIndex], os.path.join(data_dir, project_name, 'test', 'masks'))
     print("Train-Val-Test Images/Masks saved at {}".format(os.path.join(data_dir, project_name)))
-
 
 def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1234):
     """
