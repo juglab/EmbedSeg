@@ -122,7 +122,7 @@ def sparsify(instance):
     return np.array(instance_sparse)
 
 
-def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False):
+def process(im, inst, crops_dir, data_subset, crop_size_y, crop_size_x, center, norm=False, one_hot=False):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -177,15 +177,15 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
         y, x = np.where(instance_np == id)
         ym, xm = np.mean(y), np.mean(x)
 
-        jj = int(np.clip(ym - crop_size / 2, 0, h - crop_size))
-        ii = int(np.clip(xm - crop_size / 2, 0, w - crop_size))
+        jj = int(np.clip(ym - crop_size_y / 2, 0, h - crop_size_x))
+        ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
 
-        if (image[jj:jj + crop_size, ii:ii + crop_size].shape == (crop_size, crop_size)):
-            im_crop = image[jj:jj + crop_size, ii:ii + crop_size]
-            instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
+        if (image[jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (crop_size_y, crop_size_x)):
+            im_crop = image[jj:jj + crop_size_y, ii:ii + crop_size_x]
+            instance_crop = instance[jj:jj + crop_size_y, ii:ii + crop_size_x]
             center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
             tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
-            tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
+            tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop.astype(np.uint16))
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
 
