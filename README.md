@@ -15,7 +15,7 @@ If you find our work useful in your research, please consider citing:
 
 ```bibtex
 @article{2021:EmbedSeg,
-  title={Embedding-based Instance Segmnetation of Microscopy Images},
+  title={Embedding-based Instance Segmentation of Microscopy Images},
   author={Lalit, Manan and Tomancak, Pavel and Jug, Florian},
   journal={},
   year={2021}
@@ -43,7 +43,7 @@ cd examples/2d
 jupyter notebook
 ```
 
-Look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
+(In case `conda activate EmbedSegEnv` generates an error, please try `source activate EmbedSegEnv` instead). Next, look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
 
 
 ### Training & Inference on your data
