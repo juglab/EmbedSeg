@@ -43,7 +43,7 @@ cd examples/2d
 jupyter notebook
 ```
 
-(If `conda activate EmbedSegEnv` gives an error, please try `source activate EmbedSegEnv` instead). Next, look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`. 
+(If `conda activate EmbedSegEnv` produces an error, please try `source activate EmbedSegEnv` instead). Next, look in the `examples` directory,  and try out one (or all) of the three sets of notebooks (`dsb-2018`, `usiigaci-2017` or `bbbc010-2012`). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`. 
 
 
 ### Training & Inference on your data
