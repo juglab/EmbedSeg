@@ -103,7 +103,7 @@ def generate_center_image(instance, center, ids, one_hot):
                 dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
                 imin = np.argmin(np.sum(dist_matrix, axis=0))
                 ym, xm = y[imin], x[imin]
-            center_image[int(ym), int(xm)] = True
+            center_image[int(np.round(ym)), int(np.round(xm))] = True
     return center_image
 
 
