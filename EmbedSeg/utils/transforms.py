@@ -55,7 +55,7 @@ class ToTensorFromNumpy(object):
                 t = t[idx]
             if t == torch.FloatTensor:  # image
                 sample[k] = torch.from_numpy(sample[k].astype("float32")).float().div(self.normalization_factor)  # TODO
-            elif t == torch.ByteTensor or t == torch.BoolTensor:  # instance, label, center_image
+            elif t == torch.ByteTensor or t == torch.BoolTensor or t ==torch.ShortTensor:  # instance, label, center_image
 
                 sample[k] = sample[k]
                 sample[k] = torch.from_numpy(sample[k]).byte()
