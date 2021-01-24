@@ -248,7 +248,8 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     optimizer = torch.optim.Adam(model.parameters(), lr=configs['train_lr'], weight_decay=1e-4)
 
     def lambda_(epoch):
-        return pow((1 - ((epoch) / configs['n_epochs'])), 0.9)
+        #return pow((1 - ((epoch) / configs['n_epochs'])), 0.9) 
+        return pow((1 - ((epoch) / 200)), 0.9)
 
     scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_, )
 
