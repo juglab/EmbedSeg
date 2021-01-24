@@ -229,8 +229,7 @@ def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=Fals
     if (norm):
         image = normalize(image, 1, 99.8, axis=(0, 1))
     instance = fill_label_holes(instance)
-    instance = fill_label_holes(instance)
-
+    
     h, w = image.shape
     instance_np = np.array(instance, copy=False)
     object_mask = instance_np > 0
