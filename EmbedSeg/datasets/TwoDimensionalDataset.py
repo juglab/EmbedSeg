@@ -88,7 +88,8 @@ class TwoDimensionalDataset(Dataset):
             instance_map = np.zeros((pic.shape[0], pic.shape[1], pic.shape[2]), dtype=np.uint8)
             class_map = np.zeros((pic.shape[1], pic.shape[2]), dtype=np.uint8)
         else:
-            instance_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.uint8) #TODO
+            #instance_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.uint8) #TODO
+            instance_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.int16)
             class_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.uint8)
 
         if bg_id is not None:
