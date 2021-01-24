@@ -1,0 +1,6 @@
+examples/2d/*/crops/
+data/
+EmbedSeg/*/__pycache__/
+examples/2d/*/experiment/
+examples/2d/*/*checkpoints/
+examples/2d/*/static/*
