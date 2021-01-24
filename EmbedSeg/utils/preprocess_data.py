@@ -87,6 +87,45 @@ def make_dirs(data_dir, project_name):
         os.makedirs(os.path.dirname(instance_path_test))
         print("Created new directory : {}".format(instance_path_test))
 
+        
+        
+def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, train_name = 'train', seed=1234):
+    imageDir = os.path.join(crops_dir, project_name, train_name, 'images')
+    instanceDir = os.path.join(crops_dir, project_name, train_name, 'masks')
+    centerDir = os.path.join(crops_dir, project_name, train_name, 'center-'+center)
+    
+    image_names = sorted(glob(os.path.join(imageDir, '*.tif')))
+    instance_names = sorted(glob(os.path.join(instanceDir, '*.tif')))
+    center_names = sorted(glob(os.path.join(centerDir, '*.tif')))
+    
+    indices = np.arange(len(image_names))
+    np.random.seed(seed)
+    np.random.shuffle(indices)
+    subsetLen = int(subset * len(image_names))
+    valIndices = indices[:subsetLen]
+    
+    image_path_val = os.path.join(crops_dir, project_name, 'val', 'images/')
+    instance_path_val = os.path.join(crops_dir, project_name, 'val', 'masks/')
+    center_path_val = os.path.join(crops_dir, project_name, 'val', 'center-'+center+'/')
+    
+    if not os.path.exists(image_path_val):
+        os.makedirs(os.path.dirname(image_path_val))
+        print("Created new directory : {}".format(image_path_val))
+
+    if not os.path.exists(instance_path_val):
+        os.makedirs(os.path.dirname(instance_path_val))
+        print("Created new directory : {}".format(instance_path_val))
+    
+    if not os.path.exists(center_path_val):
+        os.makedirs(os.path.dirname(center_path_val))
+        print("Created new directory : {}".format(center_path_val))
+    
+    for val_index in valIndices:
+        shutil.move(image_names[val_index], os.path.join(crops_dir, project_name, 'val', 'images'))
+        shutil.move(instance_names[val_index], os.path.join(crops_dir, project_name, 'val', 'masks'))
+        shutil.move(center_names[val_index], os.path.join(crops_dir, project_name, 'val', 'center-'+center))
+        
+    print("Val Images/Masks/Center-{}-image crops saved at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
 
 def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=1234):
     """
@@ -180,3 +219,5 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1
         shutil.move(instance_names[test_index], os.path.join(data_dir, project_name, 'download', 'test', 'masks'))
 
     print("Train-Test Images/Masks saved at {}".format(os.path.join(data_dir, project_name)))
+    
+
