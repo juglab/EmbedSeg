@@ -1,11 +1,10 @@
 import os
-
 import numpy as np
 import tifffile
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
 from scipy.spatial import distance_matrix
-
+import hdmedians as hd
 
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
@@ -100,9 +99,10 @@ def generate_center_image(instance, center, ids, one_hot):
                 imin = np.argmin((x - xm_temp) ** 2 + (y - ym_temp) ** 2)
                 ym, xm = y[imin], x[imin]
             elif (center == 'medoid'):
-                dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
-                imin = np.argmin(np.sum(dist_matrix, axis=0))
-                ym, xm = y[imin], x[imin]
+                #dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
+                #imin = np.argmin(np.sum(dist_matrix, axis=0))
+                #ym, xm = y[imin], x[imin]
+                ym, xm = hd.medoid(np.vstack((y,x)))
             center_image[int(np.round(ym)), int(np.round(xm))] = True
     return center_image
 
