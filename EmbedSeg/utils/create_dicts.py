@@ -63,7 +63,7 @@ def create_dataset_dict(data_dir,
                     'name': 'ToTensorFromNumpy',
                     'opts': {
                         'keys': ('image', 'instance', 'label', 'center_image'),
-                        'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor, torch.BoolTensor),
+                        'type': (torch.FloatTensor, torch.ShortTensor, torch.ByteTensor, torch.BoolTensor),
                         'normalization_factor': normalization_factor
                     }
                 },
@@ -172,7 +172,7 @@ def create_test_configs_dict(data_dir,
                         'name': 'ToTensorFromNumpy',
                         'opts': {
                             'keys': ('image', 'instance', 'label'),
-                            'type': (torch.FloatTensor, torch.ByteTensor, torch.ByteTensor),
+                            'type': (torch.FloatTensor, torch.ShortTensor, torch.ByteTensor),
                             'normalization_factor': normalization_factor
                         }
                     },
