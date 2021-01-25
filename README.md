@@ -1,14 +1,14 @@
 ## EmbedSeg 
 
 ### Introduction
-This repository hosts the version of the code used for the **[publication]()** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage]()**.
+This repository hosts the version of the code used for the **[preprint]()** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage]()**.
 
-We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, and extends the formulation of **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
+We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, based on the ideas by **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
 
 <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
 
 
-In `EmbedSeg`, we suggest two simple tricks: by embedding interior pixels to instance medoids instead of the instance centroids and by including test-time augmentation during inference, we obtain state-of-the-art results on several datasets. Additionally by accumulating gradients over multiple steps, we allow our overall pipeline to have a small enough memory footprint to allow network training on virtually all CUDA enabled laptop hardware.
+With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world microscopy datasets. `EmbedSeg` has a small enough memory footprint (between 0.7 to about 3 GB) to allow network training on virtually all CUDA enabled hardware, including laptops.
 
 ### Citation
 If you find our work useful in your research, please consider citing:
