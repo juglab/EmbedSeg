@@ -8,7 +8,7 @@ We refer to the techniques elaborated in the publication, here as **EmbedSeg**. 
 <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
 
 
-In `EmbedSeg`, we suggest two simple tricks: by embedding interior pixels to instance medoids instead of the instance centroids and by including test-time augmentation during inference, we obtain state-of-the-art results on several datasets. Additionally by accumulating gradients over multiple steps, we allow our overall pipeline to have a small enough memory footprint to allow network training on virtually all CUDA enabled laptop hardware.
+With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world microscopy datasets. `EmbedSeg` has a small enough memory footprint (between 0.7 to about 3 GB) to allow network training on virtually all CUDA enabled hardware, including laptops.
 
 ### Citation
 If you find our work useful in your research, please consider citing:
