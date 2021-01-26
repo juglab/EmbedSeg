@@ -188,9 +188,9 @@
         <td width=800px>
             <center>
                 <div style="text-align: justify">
-  	                	<span style="font-size:14px"><i>Example  input  raw images (top-left), ground-truth instance masks (top-right) and predictions by the network (bottom-right).
-                            The Bottom-Left Image shows 5 interior pixels (indicated with +) selected randomly from each object, their embeddings are indicated with .
-                            and the predicted margin for that object is visualized as an axis-aligned ellipse centred on the ground-truth - center (indicated with x) for that object.
+  	                	<span style="font-size:14px"><i>Example input  raw images (top-left), ground-truth instance masks (top-right) and predictions by the network (bottom-right).
+                            The Bottom-Left Image shows randomly-selected interior pixels (+), their learnt embeddings (.)
+                            and the predicted margin visualized as an axis-aligned ellipse centred on the ground-truth - center(x)).
                             </i></span>
                 </div>
             </center>
@@ -210,8 +210,7 @@
     <emph>Neven et al</emph>
     .
     While their approach embeds each pixel to the centroid of any given instance, in
-    <emph>EmbedSeg</emph>
-    , motivated by the complex shapes of biological objects, we propose to use the medoid instead.
+    <emph>EmbedSeg</emph>, motivated by the complex shapes of biological objects, we propose to use the medoid instead.
     Additionally, we make use of a test-time augmentation scheme, and show that both suggested modifications improve the
     instance segmentation performance on biological microscopy datasets notably.
     We demonstrate that embedding-based instance segmentation achieves competitive results in comparison to
