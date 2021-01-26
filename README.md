@@ -38,7 +38,6 @@ Please open a new terminal window and run the following commands one after the o
 ```shell
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
-git checkout v0.1
 conda env create -f EmbedSeg_environment.yml
 conda activate EmbedSegEnv
 python3 -m pip install -e .
