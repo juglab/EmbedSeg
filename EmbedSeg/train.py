@@ -258,7 +258,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
 
     # Visualizer
 
-    new_cmap = np.load('../../../cmaps/cmap_60.npy')
+    new_cmap = np.load('../../cmaps/cmap_60.npy')
     new_cmap = ListedColormap(new_cmap)
     visualizer = Visualizer(('image', 'groundtruth', 'prediction', 'center'), new_cmap)  # 5 keys
 
