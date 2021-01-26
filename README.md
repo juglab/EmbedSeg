@@ -1,7 +1,7 @@
 ## EmbedSeg 
 
 ### Introduction
-This repository hosts the version of the code used for the **[preprint]()** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage](https://juglab.github.io/EmbedSeg/)**.
+This repository hosts the version of the code used for the **[preprint](https://arxiv.org/abs/2101.10033)** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage](https://juglab.github.io/EmbedSeg/)**.
 
 We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, based on the ideas by **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
 
@@ -16,11 +16,13 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 If you find our work useful in your research, please consider citing:
 
 ```bibtex
-@article{2021:EmbedSeg,
-  title={Embedding-based Instance Segmentation of Microscopy Images},
-  author={Lalit, Manan and Tomancak, Pavel and Jug, Florian},
-  journal={},
-  year={2021}
+@misc{lalit2021embeddingbased,
+      title={Embedding-based Instance Segmentation of Microscopy Images}, 
+      author={Manan Lalit and Pavel Tomancak and Florian Jug},
+      year={2021},
+      eprint={2101.10033},
+      archivePrefix={arXiv},
+      primaryClass={eess.IV}
 }
 ```
 
