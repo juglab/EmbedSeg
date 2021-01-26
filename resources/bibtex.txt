@@ -1,0 +1,6 @@
+@article{lalit2021_EmbedSeg,
+  title={Embedding-based Instance Segmentation of Microscopy Images},
+  author={Lalit, Manan and Tomancak, Pavel and Jug, Florian},
+  year={2021},
+  booktitle={}
+}

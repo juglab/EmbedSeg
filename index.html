@@ -1,0 +1,407 @@
+<script src="http://www.google.com/jsapi" type="text/javascript"></script>
+<script type="text/javascript">google.load("jquery", "1.3.2");</script>
+
+
+<style type="text/css">
+    body {
+        font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        font-weight: 300;
+        font-size: 18px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 1100px;
+    }
+
+    h1 {
+        font-weight: 300;
+    }
+
+
+    .disclaimerbox {
+        background-color: #eee;
+        border: 1px solid #eeeeee;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        padding: 20px;
+    }
+
+    video.header-vid {
+        height: 140px;
+        border: 1px solid black;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+    }
+
+    img.header-img {
+        height: 140px;
+        border: 1px solid black;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+    }
+
+    img.rounded {
+        border: 1px solid #eeeeee;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+    }
+
+    a:link, a:visited {
+        color: #1367a7;
+        text-decoration: none;
+    }
+
+    a:hover {
+        color: #208799;
+    }
+
+    td.dl-link {
+        height: 160px;
+        text-align: center;
+        font-size: 22px;
+    }
+
+    .layered-paper-big { /* modified from: http://css-tricks.com/snippets/css/layered-paper/ */
+        box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.35), /* The top layer shadow */ 5px 5px 0 0px #fff, /* The second layer */ 5px 5px 1px 1px rgba(0, 0, 0, 0.35), /* The second layer shadow */ 10px 10px 0 0px #fff, /* The third layer */ 10px 10px 1px 1px rgba(0, 0, 0, 0.35), /* The third layer shadow */ 15px 15px 0 0px #fff, /* The fourth layer */ 15px 15px 1px 1px rgba(0, 0, 0, 0.35), /* The fourth layer shadow */ 20px 20px 0 0px #fff, /* The fifth layer */ 20px 20px 1px 1px rgba(0, 0, 0, 0.35), /* The fifth layer shadow */ 25px 25px 0 0px #fff, /* The fifth layer */ 25px 25px 1px 1px rgba(0, 0, 0, 0.35); /* The fifth layer shadow */
+        margin-left: 10px;
+        margin-right: 45px;
+    }
+
+    .paper-big { /* modified from: http://css-tricks.com/snippets/css/layered-paper/ */
+        box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.35); /* The top layer shadow */
+
+        margin-left: 10px;
+        margin-right: 45px;
+    }
+
+
+    .layered-paper { /* modified from: http://css-tricks.com/snippets/css/layered-paper/ */
+        box-shadow: 0px 0px 1px 1px rgba(0, 0, 0, 0.35), /* The top layer shadow */ 5px 5px 0 0px #fff, /* The second layer */ 5px 5px 1px 1px rgba(0, 0, 0, 0.35), /* The second layer shadow */ 10px 10px 0 0px #fff, /* The third layer */ 10px 10px 1px 1px rgba(0, 0, 0, 0.35); /* The third layer shadow */
+        margin-top: 5px;
+        margin-left: 10px;
+        margin-right: 30px;
+        margin-bottom: 5px;
+    }
+
+    .vert-cent {
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    hr {
+        border: 0;
+        height: 1px;
+        background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    }
+
+    #inner {
+        margin-left: 100px;
+    }
+
+    a.button4 {
+        padding: 15px 32px;
+        color: white;
+    }
+
+
+</style>
+
+<html>
+
+
+<head>
+    <title>Embedding-based Instance Segmentation of Microscopy Images</title>
+    <meta property="og:image" content="resources/images/teaser.gif"/>
+    <meta property="og:title" content="Embedding-based Instance Segmentation of Microscopy Images "/>
+    <link rel="stylesheet" href="css/zerogrid.css">
+
+    <!--    <script type="text/javascript" src="js/materialize.min.js"></script>-->
+
+</head>
+
+<body>
+<br>
+<center>
+    <span style="font-size:38px">Embedding-based Instance Segmentation of Microscopy Images</span>
+    <br>
+    <br>
+    <table align=center width=600px>
+
+        <tr>
+            <td align=center width=100px>
+                <center>
+                    <span style="font-size:24px">Manan Lalit</span>
+                </center>
+            </td>
+            <td align=center width=100px>
+                <center>
+
+                    <!--<span style="font-size:24px"><a href="https://twitter.com/paveltomancak">Pavel Tomancak</a></span>-->
+                    <span style="font-size:24px">Pavel Tomancak</span>
+                </center>
+            </td>
+            <td align=center width=100px>
+                <center>
+                    <!--<span style="font-size:24px"><a href="https://twitter.com/florianjug">Florian Jug</a></span>-->
+                    <span style="font-size:24px">Florian Jug</span>
+                </center>
+            </td>
+        </tr>
+    </table>
+
+
+    <br>
+    <table align=center width=400x>
+        <tr>
+            <td align=center width=150px>
+                <center>
+                    <span style="font-size:24px"><a href='https://github.com/juglab/EmbedSeg'> [pdf]</a></span>
+                </center>
+            </td>
+            <td align=center width=150px>
+                <center>
+                    <span style="font-size:24px"><a href='https://github.com/juglab/EmbedSeg'> [code]</a></span>
+                </center>
+            </td>
+
+        </tr>
+
+    </table>
+
+</center>
+
+<!--<br><br> <hr> -->
+
+<br>
+<table align=center width=1000px>
+    <tr>
+        <td width=800px>
+            <center>
+                <a href="./resources/images/teaser.gif"><img class="rounded" src="./resources/images/teaser.gif"
+                                                             height="75%"></img></href></a><br>
+            </center>
+        </td>
+    </tr>
+    <tr>
+        <td width=800px>
+            <center>
+                <div style="text-align: justify">
+  	                	<span style="font-size:14px"><i>Example  input  raw images (top-left), ground-truth instance masks (top-right) and predictions by the network (bottom-right).
+                            The Bottom-Left Image shows 5 interior pixels (indicated with +) selected randomly from each object, their embeddings are indicated with .
+                            and the predicted margin for that object is visualized as an axis-aligned ellipse centred on the ground-truth - center (indicated with x) for that object.
+                            </i></span>
+                </div>
+            </center>
+        </td>
+    </tr>
+</table>
+
+<br>
+
+
+<p align="justify">
+    Automatic detection and segmentation of objects in microscopy images is important for many biological applications.
+    In the domain of natural images, and in particular in the context of city street scenes, embedding-based instance
+    segmentation leads to high-quality results.
+    Inspired by this line of work, we introduce <strong>EmbedSeg</strong>, an end-to-end trainable deep learning method
+    based on the work by
+    <emph>Neven et al</emph>
+    .
+    While their approach embeds each pixel to the centroid of any given instance, in
+    <emph>EmbedSeg</emph>
+    , motivated by the complex shapes of biological objects, we propose to use the medoid instead.
+    Additionally, we make use of a test-time augmentation scheme, and show that both suggested modifications improve the
+    instance segmentation performance on biological microscopy datasets notably.
+    We demonstrate that embedding-based instance segmentation achieves competitive results in comparison to
+    state-of-the-art methods on diverse and biologically relevant microscopy datasets.
+    Finally, we show that the overall pipeline has a small enough memory footprint to be used on virtually all
+    CUDA-enabled laptop hardware.
+</p>
+<br><br>
+<hr>
+
+
+<center><h1>Overview</h1></center>
+
+<br>
+
+<table align=center width=1000px>
+    <tr>
+        <td align=center width=800px>
+            <center>
+                <img class="round" src="./resources/images/overview.png" width="90%"/>
+            </center>
+            <!-- </br> -->
+    </tr>
+    <tr>
+        <td align=center width=800px>
+            <div style="text-align: justify">
+            <span style="font-size:14px"><i>
+                Qualitative results of
+            <emph>EmbedSeg</emph>
+            and two baselines on one representative image of the
+            <emph>BBBC010</emph>
+            and
+            <emph>Usiigaci</emph>
+            dataset.
+            Columns show one input image, zoomed insets, ground truth labels (GT), and instance segmentation results by
+            the 3-class
+            <emph>U-Net</emph>
+            baseline, the best performing competing baseline, and our results using
+            <emph>EmbedSeg</emph>
+            . Note that each segmented instance is shown in a random but unique color.
+            </i></span>
+            </div>
+
+        </td>
+
+    </tr>
+</table>
+
+
+<br>
+<hr>
+
+
+<center><h1>Results</h1></center>
+
+<br>
+
+<table align=center width=1000px>
+    <tr>
+        <td align=center width=800px>
+            <center>
+                <img class="round" src="./resources/images/results.png" width="90%"/>
+            </center>
+            <!-- </br> -->
+    </tr>
+    <tr>
+        <td align=center width=800px>
+            <div style="text-align: justify">
+            <span style="font-size:14px"><i>
+             Quantitative Evaluation on three datasets. For each dataset, we compare results of multiple baselines (rows) to results obtained with our proposed pipeline (<emph>EmbedSeg</emph>) highlighted in gray.
+            First results column shows the GPU-memory (training) footprint of the respective method, remaining columns the Mean Average Precision for selected IoU thresholds.
+            Best and second best performing methods per column are indicated in bold and underlined, respectively. Note that the Cellpose results are either trained by us on exclusively the given dataset, or obtained by using the publicly available model.
+                <emph>EmbedSeg</emph> is either the best performing method or is a very close runner-up, despite being by far the most GPU-memory efficient method.
+            </i></span>
+            </div>
+
+        </td>
+
+    </tr>
+</table>
+
+
+<br>
+<hr>
+
+
+<table class="center" align=center width=1000px>
+
+    <center><h1>Paper</h1></center>
+    <tr>
+        <td align=center width=800px>
+            <center>
+                <div id="inner">
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_01.png"/></div>
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_02.png"/></div>
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_03.png"/></div>
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_04.png"/></div>
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_05.png"/></div>
+                    <div class="paper-col"><img class="paper-col-im" src="./resources/paper/paper_06.png"/></div>
+                </div>
+            </center>
+
+        </td>
+    </tr>
+</table>
+<br>
+
+
+<table align=center width=180px>
+    <tr>
+        <td><span style="font-size:14pt"><center>
+                      <a href="https://arxiv.org/todo.pdf">[pdf]</a>
+                    </center></td>
+
+        <td><span style="font-size:14pt"><center>
+                      <a href="./resources/bibtex.txt">[bibtex]</a>
+                    </center></td>
+    </tr>
+</table>
+<br>
+
+<hr>
+
+
+<table class="center" align="center" width=1000px>
+    <center><h1>Pre-trained Models</h1></center>
+    <tr>
+
+        <td align=center width=300px>
+            <a href="https://github.com/juglab/EmbedSeg/raw/v0.1/pretrained_models/bbbc010-2012/best_iou_model.pth" class="button4" style="background-color:#4e9af1">BBBC010 (mAP @ IOU<sub>50</sub> = 97.0%)</a>
+        </td>
+
+        <td align=center width=300px>
+            <a href="https://github.com/juglab/EmbedSeg/raw/v0.1/pretrained_models/dsb-2018/best_iou_model.pth" class="button4" style="background-color:#4e9af1">DSB (mAP @ IOU<sub>50</sub> = 87.7%)</a>
+        </td>
+
+        <td align=center width=300px>
+            <a href="https://github.com/juglab/EmbedSeg/raw/v0.1/pretrained_models/usiigaci-2017/best_iou_model.pth" class="button4" style="background-color:#4e9af1">Usiigaci (mAP @ IOU<sub>50</sub> = 72.5%)</a>
+        </td>
+
+    </tr>
+
+
+</table>
+
+
+<br>
+<hr>
+
+<table align=center width=1000px>
+    <tr>
+        <td>
+            <left>
+                <center><h1>Acknowledgements</h1></center>
+                The authors would like to thank Matthias Arzt from CSBD/MPI-CBG for helpful discussions on the presented
+                method and the Scientific Computing Facility at MPI-CBG.
+                This work was supported by the German Federal Ministry of Research and Education (BMBF) under the codes
+                031L0102 (de.NBI) and 01IS18026C (ScaDS2), and the German Research Foundation (DFG) under the code
+                JU3110/1-1(FiSS) and TO563/8-1 (FiSS).
+                P.T. was supported by the European Regional Development Fund in the IT4Innovations national
+                supercomputing center - path to exascale project, project number CZ.02.1.01/0.0/0.0/16_013/0001791
+                within the Operational Programme Research, Development and Education.
+
+            </left>
+        </td>
+    </tr>
+</table>
+
+<br><br>
+
+<script>
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r;
+        i[r] = i[r] || function () {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date();
+        a = s.createElement(o),
+            m = s.getElementsByTagName(o)[0];
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-75863369-1', 'auto');
+    ga('send', 'pageview');
+
+</script>
+
+</body>
+</html>
+ 
