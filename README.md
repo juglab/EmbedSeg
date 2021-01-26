@@ -51,25 +51,27 @@ jupyter notebook
 `*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. These are cropped in smaller patches in the notebook `01-data.ipynb`. The following would be a desired structure as to how data should be prepared.
 
 ```
-data
-└───data-name
+$data_dir
+└───$project-name
     |───train
-	└───images
-		└───X0.tif
-		└───X1.tif
-		└───...
-		└───Xn.tif
-	└───masks
-		└───Y0.tif
-		└───Y1.tif
-		└───...
-		└───Yn.tif
+        └───images
+            └───X0.tif
+            └───...
+            └───Xn.tif
+        └───masks
+            └───Y0.tif
+            └───...
+            └───Yn.tif
     |───val
-	└───images
-	└───masks
+        └───images
+            └───...
+        └───masks
+            └───...
     |───test
-	└───images
-	└───masks
+        └───images
+            └───...
+        └───masks
+            └───...
 ```
 
 
