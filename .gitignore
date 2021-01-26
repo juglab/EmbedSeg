@@ -1,0 +1,6 @@
+examples/*/crops/
+data/
+EmbedSeg/*/__pycache__/
+examples/*/experiment/
+examples/*/*checkpoints/
+examples/*/static/*
