@@ -108,25 +108,37 @@ def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, tr
     instance_path_val = os.path.join(crops_dir, project_name, 'val', 'masks/')
     center_path_val = os.path.join(crops_dir, project_name, 'val', 'center-'+center+'/')
     
+    val_images_exist = False
+    val_masks_exist = False
+    val_center_images_exist = False
+    
     if not os.path.exists(image_path_val):
         os.makedirs(os.path.dirname(image_path_val))
         print("Created new directory : {}".format(image_path_val))
+    else:
+        val_images_exist=True
 
     if not os.path.exists(instance_path_val):
         os.makedirs(os.path.dirname(instance_path_val))
         print("Created new directory : {}".format(instance_path_val))
+    else:
+        val_masks_exist=True
     
     if not os.path.exists(center_path_val):
         os.makedirs(os.path.dirname(center_path_val))
         print("Created new directory : {}".format(center_path_val))
-    
-    for val_index in valIndices:
-        shutil.move(image_names[val_index], os.path.join(crops_dir, project_name, 'val', 'images'))
-        shutil.move(instance_names[val_index], os.path.join(crops_dir, project_name, 'val', 'masks'))
-        shutil.move(center_names[val_index], os.path.join(crops_dir, project_name, 'val', 'center-'+center))
+    else:
+        val_center_images_exist=True
         
-    print("Val Images/Masks/Center-{}-image crops saved at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
-
+    if not val_images_exist and not val_masks_exist and not val_center_images_exist:
+        for val_index in valIndices:
+            shutil.move(image_names[val_index], os.path.join(crops_dir, project_name, 'val', 'images'))
+            shutil.move(instance_names[val_index], os.path.join(crops_dir, project_name, 'val', 'masks'))
+            shutil.move(center_names[val_index], os.path.join(crops_dir, project_name, 'val', 'center-'+center))
+        
+        print("Val Images/Masks/Center-{}-image crops saved at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
+    else:
+        print("Val Images/Masks/Center-{}-image crops already available at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
 def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=1234):
     """
         Splits the `train` directory into `val` directory using the partition percentage of `subset`.
@@ -173,7 +185,7 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=12
     for testIndex in testIndices:
         shutil.copy(image_names[testIndex], os.path.join(data_dir, project_name, 'test', 'images'))
         shutil.copy(instance_names[testIndex], os.path.join(data_dir, project_name, 'test', 'masks'))
-    print("Train-Val-Test Images/Masks saved at {}".format(os.path.join(data_dir, project_name)))
+    print("Train-Val-Test Images/Masks copied to {}".format(os.path.join(data_dir, project_name)))
 
 
 def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1234):
@@ -204,20 +216,24 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1
     subsetLen = int(subset * len(image_names))
     test_indices = indices[:subsetLen]
     make_dirs(data_dir=data_dir, project_name=project_name)
-
+    test_images_exist = False
+    test_masks_exist = False
     if not os.path.exists(os.path.join(data_dir, project_name, 'download', 'test', 'images')):
         os.makedirs(os.path.join(data_dir, project_name, 'download', 'test', 'images'))
         print("Created new directory : {}".format(os.path.join(data_dir, project_name, 'download', 'test', 'images')))
-
+    else:
+        test_images_exist= True
     if not os.path.exists(os.path.join(data_dir, project_name, 'download', 'test', 'masks')):
         os.makedirs(os.path.join(data_dir, project_name, 'download', 'test', 'masks'))
         print("Created new directory : {}".format(os.path.join(data_dir, project_name, 'download', 'test', 'masks')))
-
-
-    for test_index in test_indices:
-        shutil.move(image_names[test_index], os.path.join(data_dir, project_name, 'download', 'test', 'images'))
-        shutil.move(instance_names[test_index], os.path.join(data_dir, project_name, 'download', 'test', 'masks'))
-
-    print("Train-Test Images/Masks saved at {}".format(os.path.join(data_dir, project_name)))
+    else:
+        test_masks_exist= True
+    if not test_images_exist and not test_masks_exist:
+        for test_index in test_indices:
+            shutil.move(image_names[test_index], os.path.join(data_dir, project_name, 'download', 'test', 'images'))
+            shutil.move(instance_names[test_index], os.path.join(data_dir, project_name, 'download', 'test', 'masks'))
+        print("Train-Test Images/Masks saved at {}".format(os.path.join(data_dir, project_name, 'download')))
+    else:
+        print("Train-Test Images/Masks already available at {}".format(os.path.join(data_dir, project_name, 'download')))
     
 
