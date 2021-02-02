@@ -51,7 +51,7 @@ jupyter notebook
 
 ### Training & Inference on your data
    
-`*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. These are cropped in smaller patches in the notebook `01-data.ipynb`. The following would be a desired structure as to how data should be prepared.
+`*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. (In order to prepare such instance masks, one could use the Fiji plugin <b>Labkit</b> as detailed <b>[here](https://github.com/juglab/EmbedSeg/wiki/Use-Labkit-to-prepare-instance-masks)</b>). These are cropped in smaller patches in the notebook `01-data.ipynb`. The following would be a desired structure as to how data should be prepared.
 
 ```
 $data_dir
