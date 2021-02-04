@@ -120,10 +120,10 @@ def generate_center_image(instance, center, ids, one_hot):
                 #imin = np.argmin(np.sum(dist_matrix, axis=0))
                 #ym, xm = y[imin], x[imin]
                 
-                ### option - 2 (`hdmedoid`)
-                #ym, xm = hd.medoid(np.vstack((y,x))) (slightly faster than scipy `distance_matrix`)
+                ### option - 2 (`hdmedoid`) (slightly faster than scipy `distance_matrix`)
+                #ym, xm = hd.medoid(np.vstack((y,x))) 
                 
-                ### option -3 (`numba`) 
+                ### option - 3 (`numba`) 
                 dist_matrix = pairwise_python(np.vstack((x, y)).transpose())
                 imin = np.argmin(np.sum(dist_matrix, axis=0))
                 ym, xm = y[imin], x[imin]		
