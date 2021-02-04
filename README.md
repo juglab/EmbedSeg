@@ -42,7 +42,7 @@ conda env create -f EmbedSeg_environment.yml
 conda activate EmbedSegEnv
 python3 -m pip install -e .
 python3 -m ipykernel install --user --name EmbedSegEnv --display-name "EmbedSegEnv"
-cd examples/2d
+cd examples
 jupyter notebook
 ```
 
