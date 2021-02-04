@@ -5,6 +5,7 @@ from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
 from scipy.spatial import distance_matrix
 import hdmedians as hd
+from numba import jit
 
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
@@ -66,6 +67,21 @@ def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
     return x
 
 
+@jit(nopython=True)
+def pairwise_python(X):
+    M = X.shape[0]
+    N = X.shape[1]
+    D = np.empty((M, M), dtype=np.float32) 
+    for i in range(M):
+        for j in range(M):
+            d = 0.0
+            for k in range(N):
+                tmp = X[i, k] - X[j, k]
+                d += tmp * tmp
+            D[i, j] = np.sqrt(d)
+    return D
+
+
 def generate_center_image(instance, center, ids, one_hot):
     """
         Generates a `center_image` which is one (True) for all center locations and zero (False) otherwise.
@@ -99,13 +115,20 @@ def generate_center_image(instance, center, ids, one_hot):
                 imin = np.argmin((x - xm_temp) ** 2 + (y - ym_temp) ** 2)
                 ym, xm = y[imin], x[imin]
             elif (center == 'medoid'):
+                ### option - 1 (scipy `distance_matrix`) (slow-ish)
                 #dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
                 #imin = np.argmin(np.sum(dist_matrix, axis=0))
                 #ym, xm = y[imin], x[imin]
-                ym, xm = hd.medoid(np.vstack((y,x)))
+                
+                ### option - 2 (`hdmedoid`) (slightly faster than scipy `distance_matrix`)
+                #ym, xm = hd.medoid(np.vstack((y,x))) 
+                
+                ### option - 3 (`numba`) 
+                dist_matrix = pairwise_python(np.vstack((x, y)).transpose())
+                imin = np.argmin(np.sum(dist_matrix, axis=0))
+                ym, xm = y[imin], x[imin]		
             center_image[int(np.round(ym)), int(np.round(xm))] = True
     return center_image
-
 
 def sparsify(instance):
     """
