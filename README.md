@@ -77,4 +77,7 @@ $data_dir
             └───...
 ```
 
+### Training & Inference on your 3D data
 
+🚧 🚧 🚧  <br>
+One could access the 3D example notebooks [here](https://github.com/juglab/EmbedSeg/tree/v1.0.1/examples/3d/Mouse-Organoid-Cells-CBG). These are currently under testing.
