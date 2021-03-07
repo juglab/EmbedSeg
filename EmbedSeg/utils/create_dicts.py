@@ -9,7 +9,7 @@ def create_dataset_dict(data_dir,
                         center,
                         type,
                         normalization_factor,
-                        one_hot,
+                        one_hot= False,
                         name='2d',
                         batch_size=16,
                         virtual_batch_multiplier=1,
@@ -43,6 +43,44 @@ def create_dataset_dict(data_dir,
         workers: int
             Number of data-loader workers
     """
+    if name =='2d':
+        set_transforms =my_transforms.get_transform([
+            {
+                'name': 'RandomRotationsAndFlips',
+                'opts': {
+                    'keys': ('image', 'instance', 'label', 'center_image'),
+                    'degrees': 90,
+                    'one_hot': one_hot,
+                }
+            },
+            {
+                'name': 'ToTensorFromNumpy',
+                'opts': {
+                    'keys': ('image', 'instance', 'label', 'center_image'),
+                    'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
+                    'normalization_factor': normalization_factor
+                }
+            },
+        ])
+    elif name =='3d':
+        set_transforms = my_transforms.get_transform([
+            {
+                'name': 'RandomRotationsAndFlips_3d',
+                'opts': {
+                    'keys': ('image', 'instance', 'label', 'center_image'),
+                    'degrees': 90,
+                    'one_hot': one_hot,
+                }
+            },
+            {
+                'name': 'ToTensorFromNumpy',
+                'opts': {
+                    'keys': ('image', 'instance', 'label', 'center_image'),
+                    'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
+                    'normalization_factor': normalization_factor
+                }
+            },
+        ])
     dataset_dict = {
         'name': name,
         'kwargs': {
@@ -50,24 +88,7 @@ def create_dataset_dict(data_dir,
             'data_dir': os.path.join(data_dir,project_name),
             'type': type,
             'size': size,
-            'transform': my_transforms.get_transform([
-                {
-                    'name': 'RandomRotationsAndFlips',
-                    'opts': {
-                        'keys': ('image', 'instance', 'label', 'center_image'),
-                        'degrees': 90,
-                        'one_hot': one_hot,
-                    }
-                },
-                {
-                    'name': 'ToTensorFromNumpy',
-                    'opts': {
-                        'keys': ('image', 'instance', 'label', 'center_image'),
-                        'type': (torch.FloatTensor, torch.ShortTensor, torch.ByteTensor, torch.BoolTensor),
-                        'normalization_factor': normalization_factor
-                    }
-                },
-            ]),
+            'transform': set_transforms,
             'one_hot': one_hot,
         },
         'batch_size': batch_size,
@@ -99,13 +120,14 @@ def create_test_configs_dict(data_dir,
                              save_results=True,
                              min_mask_sum=128,
                              min_unclustered_sum=128,
-                             n_sigma=2,
-                             num_classes=[4, 1],
                              cuda=True,
-                             grid_x = 1024,
-                             grid_y = 1024,
-                             pixel_x = 1,
-                             pixel_y = 1,
+                             n_z = None,
+                             n_y = 1024,
+                             n_x = 1024,
+                             anisotropy_factor = None,
+                             l_y = 1,
+                             l_x = 1,
+                             name = '2d'
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -143,7 +165,19 @@ def create_test_configs_dict(data_dir,
         cuda: boolean
             True, indicates GPU usage
     """
+    if (n_z is None):
+        l_z = None
+    else:
+        l_z = (n_z - 1)/(n_x - 1) * anisotropy_factor
 
+    if name =='2d':
+        n_sigma = 2
+        num_classes = [4, 1]
+        model_name = 'branched_erfnet'
+    elif name=='3d':
+        n_sigma = 3
+        num_classes= [6, 1]
+        model_name = 'branched_erfnet_3d'
 
     test_configs = dict(
         ap_val=ap_val,
@@ -158,12 +192,15 @@ def create_test_configs_dict(data_dir,
         save_images=save_images,
         save_dir=save_dir,
         checkpoint_path=checkpoint_path,
-        grid_x = grid_x,
-        grid_y = grid_y,
-        pixel_x = pixel_x,
-        pixel_y = pixel_y,
+        grid_x = n_x,
+        grid_y = n_y,
+        grid_z = n_z,
+        pixel_x = l_x,
+        pixel_y = l_y,
+        pixel_z = l_z,
+        name = name,
         dataset={
-            'name': '2d',
+            'name': name,
             'kwargs': {
                 'data_dir': data_dir,
                 'type': 'test',
@@ -172,7 +209,7 @@ def create_test_configs_dict(data_dir,
                         'name': 'ToTensorFromNumpy',
                         'opts': {
                             'keys': ('image', 'instance', 'label'),
-                            'type': (torch.FloatTensor, torch.ShortTensor, torch.ByteTensor),
+                            'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor),
                             'normalization_factor': normalization_factor
                         }
                     },
@@ -182,7 +219,7 @@ def create_test_configs_dict(data_dir,
         },
 
         model={
-            'name': 'branched_erfnet',
+            'name': model_name,
             'kwargs': {
                 'num_classes': num_classes,
             }
@@ -223,7 +260,7 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='branched_erfnet'
     return model_dict
 
 
-def create_loss_dict(foreground_weight=10, w_inst=1, w_var=10, w_seed=1):
+def create_loss_dict(foreground_weight = 10, n_sigma = 2, w_inst = 1, w_var = 10, w_seed = 1):
     """
         Creates `loss_dict` dictionary from parameters.
         Parameters
@@ -236,7 +273,7 @@ def create_loss_dict(foreground_weight=10, w_inst=1, w_var=10, w_seed=1):
         w_seed: int/float
             weight on seediness loss
     """
-    loss_dict = {'lossOpts': {'n_sigma': 2,
+    loss_dict = {'lossOpts': {'n_sigma': n_sigma,
                               'foreground_weight': foreground_weight,
                               },
                  'lossW': {'w_inst': w_inst,
@@ -245,14 +282,14 @@ def create_loss_dict(foreground_weight=10, w_inst=1, w_var=10, w_seed=1):
                            },
                  }
     print(
-        "`loss_dict` dictionary successfully created with: \n -- foreground weight equal to {}, \n -- w_inst equal to {}, \n -- w_var equal to {}, \n -- w_seed equal to {}".format(
+        "`loss_dict` dictionary successfully created with: \n -- foreground weight equal to {:.3f}, \n -- w_inst equal to {}, \n -- w_var equal to {}, \n -- w_seed equal to {}".format(
             foreground_weight, w_inst, w_var, w_seed))
     return loss_dict
 
 
 def create_configs(save_dir,
                    resume_path,
-                   one_hot,
+                   one_hot = False,
                    display=False,
                    display_embedding = False,
                    display_it=5,
@@ -260,10 +297,13 @@ def create_configs(save_dir,
                    train_lr=5e-4,
                    cuda=True,
                    save=True,
-                   grid_y=1024,
-                   grid_x=1024,
-                   pixel_y=1,
-                   pixel_x=1,
+                   n_z = None,
+                   n_y = 1024,
+                   n_x = 1024,
+                   anisotropy_factor = None,
+                   l_y = 1,
+                   l_x = 1,
+
                    ):
     """
         Creates `configs` dictionary from parameters.
@@ -299,27 +339,35 @@ def create_configs(save_dir,
         pixel_x: int
             Pixel size in x
     """
-    configs = dict(train_lr=train_lr,
-                   n_epochs=n_epochs,
-                   cuda=cuda,
-                   display=display,
+    if (n_z is None):
+        l_z = None
+    else:
+        l_z = (n_z - 1)/(n_x - 1) * anisotropy_factor
+
+    configs = dict(train_lr = train_lr,
+                   n_epochs = n_epochs,
+                   cuda = cuda,
+                   display = display,
                    display_embedding = display_embedding,
-                   display_it=display_it,
-                   save=save,
-                   save_dir=save_dir,
-                   resume_path=resume_path,
-                   grid_y=grid_y,
-                   grid_x=grid_x,
-                   pixel_y=pixel_y,
-                   pixel_x=pixel_x,
+                   display_it = display_it,
+                   save = save,
+                   save_dir = save_dir,
+                   resume_path = resume_path,
+                   grid_z = n_z,
+                   grid_y = n_y,
+                   grid_x = n_x,
+                   pixel_z = l_z,
+                   pixel_y = l_y,
+                   pixel_x = l_x,
                    one_hot=one_hot)
     print(
         "`configs` dictionary successfully created with: "
         "\n -- n_epochs equal to {}, "
         "\n -- display equal to {}, "
         "\n -- save_dir equal to {}, "
-        "\n -- grid_y equal to {}, "
-        "\n -- grid_x equal to {}, "
+        "\n -- n_z equal to {}, "
+        "\n -- n_y equal to {}, "
+        "\n -- n_x equal to {}, "
         "\n -- one_hot equal to {}, "
-        .format(n_epochs, display, save_dir, grid_y, grid_x, one_hot))
+        .format(n_epochs, display, save_dir, n_z, n_y, n_x, one_hot))
     return configs
