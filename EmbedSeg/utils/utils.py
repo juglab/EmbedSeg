@@ -110,6 +110,109 @@ class Visualizer:
 
 
 
+class Cluster_3d:
+    def __init__(self, grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x, one_hot=False):
+
+        xm = torch.linspace(0, pixel_x, grid_x).view(1, 1, 1, -1).expand(1, grid_z, grid_y, grid_x)
+        ym = torch.linspace(0, pixel_y, grid_y).view(1, 1, -1, 1).expand(1, grid_z, grid_y, grid_x)
+        zm = torch.linspace(0, pixel_z, grid_z).view(1, -1, 1, 1).expand(1, grid_z, grid_y, grid_x)
+        xyzm = torch.cat((xm, ym, zm), 0)
+
+        self.xyzm = xyzm.cuda()
+        self.one_hot = one_hot
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+        self.grid_z = grid_z
+        self.pixel_x = pixel_x
+        self.pixel_y = pixel_y
+        self.pixel_z = pixel_z
+
+    def cluster_with_gt(self, prediction, instance, n_sigma=1, ):
+
+        depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
+        xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]  # 3 x d x h x w
+        spatial_emb = torch.tanh(prediction[0:3]) + xyzm_s  # 3 x d x h x w
+        sigma = prediction[3:3 + n_sigma]  # n_sigma x h x w
+
+        instance_map = torch.zeros(depth, height, width).short().cuda()
+        unique_instances = instance.unique()
+        unique_instances = unique_instances[unique_instances != 0]
+
+        for id in unique_instances:
+            mask = instance.eq(id).view(1, depth, height, width)
+            center = spatial_emb[mask.expand_as(spatial_emb)].view(
+                3, -1).mean(1).view(3, 1, 1, 1)  # 3 x 1 x 1 x 1
+            s = sigma[mask.expand_as(sigma)].view(n_sigma, -1).mean(1).view(n_sigma, 1, 1, 1)
+
+            s = torch.exp(s * 10)  # n_sigma x 1 x 1
+            dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
+            proposal = (dist > 0.5)
+            instance_map[proposal] = id
+
+        return instance_map
+
+    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=128,
+                min_object_size=36):
+
+        depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
+        xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]
+
+        spatial_emb = torch.tanh(prediction[0:3]) + xyzm_s  # 3 x d x h x w
+
+        sigma = prediction[3:3 + n_sigma]  # n_sigma x d x h x w
+        seed_map = torch.sigmoid(prediction[3 + n_sigma:3 + n_sigma + 1])  # 1 x d x h x w # TODO
+        instance_map = torch.zeros(depth, height, width).short()
+        instances = []  # list
+
+        count = 1
+        mask = seed_map > 0.5  # TODO
+        if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast 128 pixels in foreground!
+
+            spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(3, -1)
+            sigma_masked = sigma[mask.expand_as(sigma)].view(n_sigma, -1)
+            seed_map_masked = seed_map[mask].view(1, -1)
+
+            unclustered = torch.ones(mask.sum()).short().cuda()
+            instance_map_masked = torch.zeros(mask.sum()).short().cuda()
+
+            while (unclustered.sum() > min_unclustered_sum):  # stop when the seed candidates are less than 128
+                seed = (seed_map_masked * unclustered.float()).argmax().item()
+                seed_score = (seed_map_masked * unclustered.float()).max().item()
+                if seed_score < seed_thresh:
+                    break
+                center = spatial_emb_masked[:, seed:seed + 1]
+                unclustered[seed] = 0
+
+                s = torch.exp(sigma_masked[:, seed:seed + 1] * 10)
+                dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb_masked - center, 2) * s, 0))
+
+                proposal = (dist > 0.5).squeeze()
+                if proposal.sum() > min_object_size:
+                    if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:  # TODO
+                        instance_map_masked[proposal.squeeze()] = count
+                        instance_mask = torch.zeros(depth, height, width).short()  # TODO
+                        instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()  # TODO
+                        center_image = torch.zeros(depth, height, width).byte()  # TODO
+
+                        # TODO - uncomment please!
+                        # center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x)) # TODO - 3d
+                        # center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y)) # TODO - 3d
+                        # center_image[int(center[1].item()), int(center[0].item())] = True
+                        # instances.append(
+                        #     {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
+                        #      'center-image': center_image})  # TODO
+
+                        # TODO instances was being returned before but lead to OOM issue
+                        # instances.append({'mask': instance_mask.squeeze() * 255, 'score': seed_score,})
+                        count += 1
+
+                unclustered[proposal] = 0
+
+            instance_map[mask.squeeze().cpu()] = instance_map_masked.cpu()
+
+        return instance_map, instances
+
+
 class Cluster:
 
     def __init__(self, grid_y, grid_x, pixel_y, pixel_x, one_hot=False):
