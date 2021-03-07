@@ -1,66 +1,117 @@
 name: EmbedSegEnv
 channels:
   - pytorch
+  - conda-forge
   - http://conda.anaconda.org/gurobi
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
+  - argon2-cffi=20.1.0=py37h4abf009_2
+  - async_generator=1.10=py_0
+  - attrs=20.3.0=pyhd3deb0d_0
+  - backcall=0.2.0=pyh9f0ad1d_0
+  - backports=1.0=py_2
+  - backports.functools_lru_cache=1.6.1=py_0
   - blas=1.0=mkl
-  - ca-certificates=2020.10.14=0
-  - certifi=2020.11.8=py37h06a4308_0
+  - ca-certificates=2020.12.5=ha878542_0
+  - certifi=2020.12.5=py37h89c1867_1
+  - colorcet=1.0.0=py37_0
   - cudatoolkit=10.0.130=0
+  - cycler=0.10.0=py_2
+  - decorator=4.4.2=py_0
+  - entrypoints=0.3=pyhd8ed1ab_1003
   - freetype=2.10.4=h5ab3b9f_0
+  - icu=67.1=he1b5a44_0
+  - importlib-metadata=3.7.0=py37h89c1867_0
   - intel-openmp=2020.2=254
+  - ipydatawidgets=4.2.0=pyhd3deb0d_0
+  - ipympl=0.6.3=pyhd8ed1ab_0
+  - ipython_genutils=0.2.0=py_1
+  - ipywidgets=7.6.3=pyhd3deb0d_0
+  - itk=5.1.2=py37h89c1867_0
+  - itkwidgets=0.32.0=py37hc8dfbb8_0
+  - jinja2=2.11.3=pyh44b312d_0
   - jpeg=9b=h024ee3a_2
+  - jsonschema=3.2.0=pyhd8ed1ab_3
+  - jupyter_client=6.1.11=pyhd8ed1ab_1
+  - jupyter_core=4.7.1=py37h89c1867_0
+  - jupyterlab_pygments=0.1.2=pyh9f0ad1d_0
+  - jupyterlab_widgets=1.0.0=pyhd8ed1ab_1
+  - kiwisolver=1.3.1=py37hc928c03_0
   - lcms2=2.11=h396b838_0
   - libedit=3.1.20191231=h14c3975_1
   - libffi=3.2.1=hf484d3e_1007
   - libgcc-ng=9.1.0=hdf63c60_0
   - libpng=1.6.37=hbc83047_0
+  - libsodium=1.0.18=h36c2ea0_1
   - libstdcxx-ng=9.1.0=hdf63c60_0
   - libtiff=4.1.0=h2733197_1
   - lz4-c=1.9.2=heb0550a_3
+  - markupsafe=1.1.1=py37hb5d75c8_2
+  - matplotlib-base=3.2.2=py37h1d35a4c_1
+  - mistune=0.8.4=py37h4abf009_1002
   - mkl=2020.2=256
   - mkl-service=2.3.0=py37he904b0f_0
   - mkl_fft=1.2.0=py37h23d657b_0
   - mkl_random=1.1.1=py37h0573a6f_0
+  - nbconvert=6.0.7=py37h89c1867_3
   - ncurses=6.2=he6710b0_1
+  - nest-asyncio=1.4.3=pyhd8ed1ab_0
   - ninja=1.10.1=py37hfd86e86_0
-  - numpy-base=1.19.2=py37hfa32c7d_0
   - olefile=0.46=py37_0
-  - openssl=1.0.2u=h7b6447c_0
+  - openssl=1.0.2u=h516909a_0
+  - packaging=20.9=pyh44b312d_0
+  - pandoc=2.11.4=h7f98852_0
+  - pexpect=4.8.0=pyh9f0ad1d_2
+  - pickleshare=0.7.5=py_1003
   - pillow=8.0.1=py37he98fc37_0
   - pip=20.2.4=py37h06a4308_0
+  - prometheus_client=0.9.0=pyhd3deb0d_0
   - pycparser=2.20=py_2
+  - pygments=2.8.0=pyhd8ed1ab_0
+  - pyparsing=2.4.7=pyh9f0ad1d_0
+  - pyrsistent=0.17.3=py37h4abf009_1
   - python=3.7.0=h6e4f718_3
+  - python-dateutil=2.8.1=py_0
+  - python_abi=3.7=1_cp37m
   - pytorch=1.1.0=py3.7_cuda10.0.130_cudnn7.5.1_0
   - readline=7.0=h7b6447c_5
+  - send2trash=1.5.0=py_0
   - setuptools=50.3.1=py37h06a4308_1
   - six=1.15.0=py37h06a4308_0
   - sqlite=3.33.0=h62c20be_0
+  - testpath=0.4.4=py_0
   - tk=8.6.10=hbc83047_0
   - torchvision=0.3.0=py37_cu10.0.130_1
+  - tornado=6.1=py37h4abf009_0
+  - traitlets=5.0.5=py_0
+  - traittypes=0.2.1=pyh9f0ad1d_2
+  - typing_extensions=3.7.4.3=py_0
+  - wcwidth=0.2.5=pyh9f0ad1d_2
   - wheel=0.35.1=pyhd3eb1b0_0
+  - widgetsnbextension=3.5.1=py37h89c1867_4
   - xz=5.2.5=h7b6447c_0
+  - zeromq=4.3.3=he6710b0_3
+  - zipp=3.4.1=pyhd8ed1ab_0
   - zlib=1.2.11=h7b6447c_3
+  - zstandard=0.15.2=py37h27cfd23_0
   - zstd=1.4.5=h9ceee32_0
   - pip:
-    - argon2-cffi==20.1.0
-    - async-generator==1.10
-    - attrs==20.3.0
-    - backcall==0.2.0
     - bleach==3.2.1
     - cffi==1.14.3
     - colorspacious==1.1.2
     - cython==0.29.21
     - defusedxml==0.6.0
-    - entrypoints==0.3
     - hdmedians==0.14.1
     - ipykernel==4.10.1
     - ipython==7.19.0
     - ipython-genutils==0.2.0
+    - itk-core==5.1.2
+    - itk-filtering==5.1.2
+    - itk-numerics==5.1.2
+    - itk-registration==5.1.2
+    - itk-segmentation==5.1.2
     - jedi==0.17.2
-    - jsonschema==3.2.0
     - jupyter-client==6.1.7
     - jupyter-contrib-core==0.3.3
     - jupyter-contrib-nbextensions==0.5.1
@@ -68,44 +119,31 @@ dependencies:
     - jupyter-highlight-selected-word==0.2.0
     - jupyter-latex-envs==1.4.6
     - jupyter-nbextensions-configurator==0.4.1
-    - jupyterlab-pygments==0.1.2
     - jupyterthemes==0.20.0
     - lesscpy==0.14.0
     - llvmlite==0.35.0
     - lxml==4.6.1
-    - mistune==0.8.4
     - nbclient==0.5.1
-    - nbconvert==6.0.7
     - nbformat==5.0.8
-    - nest-asyncio==1.4.3
     - notebook==6.1.5
     - numba==0.52.0
     - numpy==1.19.4
     - pandas==1.1.4
     - pandocfilters==1.4.3
     - parso==0.7.1
-    - pexpect==4.8.0
-    - pickleshare==0.7.5
     - ply==3.11
-    - prometheus-client==0.9.0
     - prompt-toolkit==3.0.8
     - ptyprocess==0.6.0
     - pyinquirer==1.0.3
-    - pyrsistent==0.17.3
     - pyyaml==5.3.1
     - pyzmq==20.0.0
     - regex==2020.11.13
     - scikit-image==0.18.1
     - scipy==1.5.4
     - seaborn==0.11.0
-    - send2trash==1.5.0
     - terminado==0.9.1
-    - testpath==0.4.4
     - tifffile==2020.10.1
-    - tornado==6.1
     - tqdm==4.52.0
-    - traitlets==5.0.5
-    - wcwidth==0.2.5
     - webencodings==0.5.1
 prefix: /home/manan/Softwares/anaconda3/envs/EmbedSegEnv
 
