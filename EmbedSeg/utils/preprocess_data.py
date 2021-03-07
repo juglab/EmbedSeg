@@ -4,7 +4,9 @@ import zipfile
 import shutil
 from glob import glob
 import numpy as np
-
+import tifffile
+from tqdm import tqdm
+import json
 
 def extract_data(zip_url, project_name, data_dir='../../../data/'):
     """
@@ -39,6 +41,9 @@ def extract_data(zip_url, project_name, data_dir='../../../data/'):
                 zip_ref.extractall(data_dir)
             if os.path.exists(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'train')):
                 shutil.move(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'train'),
+                        os.path.join(data_dir, project_name, 'download/'))
+            if os.path.exists(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'val')):
+                shutil.move(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'val'),
                         os.path.join(data_dir, project_name, 'download/'))
             if os.path.exists(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'test')):
                 shutil.move(os.path.join(data_dir, os.path.basename(zip_url)[:-4], 'test'),
@@ -89,7 +94,7 @@ def make_dirs(data_dir, project_name):
 
         
         
-def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, train_name = 'train', seed=1234):
+def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, by_fraction = True, train_name = 'train', seed=1234):
     imageDir = os.path.join(crops_dir, project_name, train_name, 'images')
     instanceDir = os.path.join(crops_dir, project_name, train_name, 'masks')
     centerDir = os.path.join(crops_dir, project_name, train_name, 'center-'+center)
@@ -101,6 +106,12 @@ def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, tr
     indices = np.arange(len(image_names))
     np.random.seed(seed)
     np.random.shuffle(indices)
+
+    if (by_fraction):
+        subsetLen = int(subset * len(image_names))
+    else:
+        subsetLen = int(subset)
+
     subsetLen = int(subset * len(image_names))
     valIndices = indices[:subsetLen]
     
@@ -139,7 +150,8 @@ def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, tr
         print("Val Images/Masks/Center-{}-image crops saved at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
     else:
         print("Val Images/Masks/Center-{}-image crops already available at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
-def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=1234):
+
+def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_fraction = True, seed=1234):
     """
         Splits the `train` directory into `val` directory using the partition percentage of `subset`.
         Parameters
@@ -164,7 +176,10 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=12
     indices = np.arange(len(image_names))
     np.random.seed(seed)
     np.random.shuffle(indices)
-    subsetLen = int(subset * len(image_names))
+    if (by_fraction):
+        subsetLen = int(subset * len(image_names))
+    else:
+        subsetLen = int(subset)
     valIndices = indices[:subsetLen]
     trainIndices = indices[subsetLen:]
     make_dirs(data_dir=data_dir, project_name=project_name)
@@ -188,7 +203,7 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, seed=12
     print("Train-Val-Test Images/Masks copied to {}".format(os.path.join(data_dir, project_name)))
 
 
-def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1234):
+def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fraction = True, seed=1234):
     """
         Splits the `train` directory into `test` directory using the partition percentage of `subset`.
         Parameters
@@ -213,9 +228,12 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1
     indices = np.arange(len(image_names))
     np.random.seed(seed)
     np.random.shuffle(indices)
-    subsetLen = int(subset * len(image_names))
+    if (by_fraction):
+        subsetLen = int(subset * len(image_names))
+    else:
+        subsetLen = int(subset)
     test_indices = indices[:subsetLen]
-    make_dirs(data_dir=data_dir, project_name=project_name)
+    #make_dirs(data_dir=data_dir, project_name=project_name)
     test_images_exist = False
     test_masks_exist = False
     if not os.path.exists(os.path.join(data_dir, project_name, 'download', 'test', 'images')):
@@ -236,4 +254,30 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, seed=1
     else:
         print("Train-Test Images/Masks already available at {}".format(os.path.join(data_dir, project_name, 'download')))
     
+
+def calculate_foreground_weight(data_dir, project_name, train_val_name):
+    instance_names = []
+    for name in train_val_name:
+        instance_dir = os.path.join(data_dir, project_name, name, 'masks')
+        instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
+
+    statistics = []
+    for i in tqdm(range(len(instance_names))):
+        ma = tifffile.imread(instance_names[i])
+        z, y, x = np.where(ma == 0)
+        len_bg = len(z)
+        z, y, x = np.where(ma > 0)
+        len_fg = len(z)
+        statistics.append(len_bg / len_fg)
+    print("Foreground weight of the `{}` dataset is set to {:.3f}".format(project_name, np.mean(statistics)))
+    data = {}
+    data['foreground_weight'] = np.mean(statistics)
+    with open('data_properties.json', 'w') as outfile:
+        json.dump(data, outfile)
+    print("Foreground weight of the `{}` dataset is saved to `data_properties.json`".format(project_name))
+
+
+
+
+
 
