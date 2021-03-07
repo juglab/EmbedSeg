@@ -6,9 +6,9 @@ from tqdm import tqdm
 
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
-from EmbedSeg.utils.utils import Cluster, prepare_embedding_for_test_image
+from EmbedSeg.utils.utils import Cluster, Cluster_3d, prepare_embedding_for_test_image
 from EmbedSeg.utils.utils2 import matching_dataset, obtain_AP_one_hot
-
+import torch.nn.functional as F
 torch.backends.cudnn.benchmark = True
 import numpy as np
 from tifffile import imsave
@@ -16,7 +16,7 @@ from tifffile import imsave
 from matplotlib.patches import Ellipse
 
 
-def begin_evaluating(test_configs, verbose=True):
+def begin_evaluating(test_configs, verbose=True, mask = False, mask_region = None, mask_intensity = None):
     global n_sigma, ap_val, min_mask_sum, min_unclustered_sum, min_object_size
     global tta, seed_thresh, model, dataset_it, save_images, save_results, save_dir
 
@@ -51,8 +51,15 @@ def begin_evaluating(test_configs, verbose=True):
         assert (False, 'checkpoint_path {} does not exist!'.format(test_configs['checkpoint_path']))
 
     # test on evaluation images:
-    test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'], pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'], one_hot = test_configs['dataset']['kwargs']['one_hot'])
-
+    if(test_configs['name']=='2d'):
+        test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'],
+             pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'],
+             one_hot = test_configs['dataset']['kwargs']['one_hot'])
+    elif(test_configs['name']=='3d'):
+        test_3d(verbose=verbose,
+                grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
+                pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],pixel_z=test_configs['pixel_z'],
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity)
 
 def to_cuda(im_numpy):
     im_numpy = im_numpy[np.newaxis, np.newaxis, ...]
@@ -68,6 +75,10 @@ def process_flips(im_numpy):
     im_numpy_correct[0, 1, ...] = -1 * im_numpy[
         0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
     return im_numpy_correct
+
+def to_cuda_3d(im_numpy):
+    im_numpy = im_numpy[np.newaxis, ...]
+    return torch.from_numpy(im_numpy).float().cuda()
 
 
 def applyTTAComplete(im):
@@ -182,6 +193,96 @@ def applyTTAComplete(im):
     return torch.from_numpy(output).float().cuda()
 
 
+def applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot):
+    im_numpy = im.cpu().detach().numpy() # BCZYX
+    im_transformed = im_numpy[0, :] # remove batch dimension, now CZYX
+
+    if dir_rot == 0:  # rotate about ZY
+        temp = np.ascontiguousarray(np.rot90(im_transformed, 2 * times, (
+        1, 2)))  # CZYX
+    elif dir_rot == 1:  # rotate about YX
+        temp = np.ascontiguousarray(np.rot90(im_transformed, times, (2, 3)))
+    elif dir_rot == 2:  # rotate about XZ
+        temp = np.ascontiguousarray(np.rot90(im_transformed, 2 * times, (3, 1)))
+
+    if flip == 0: # no flip
+        pass
+    else: # flip
+        if dir_flip == 0:
+            temp = np.ascontiguousarray(np.flip(temp, axis = 1))  # Z
+        elif dir_flip == 1:
+            temp = np.ascontiguousarray(np.flip(temp, axis = 2))  # Y
+        elif dir_flip == 2:
+            temp = np.ascontiguousarray(np.flip(temp, axis = 3))  # X
+
+    output_transformed = model(to_cuda_3d(temp)) #BCZYX = 1 7 Z Y X
+    output_transformed_numpy = to_numpy(output_transformed) # BCZYX
+
+    # detransform output
+    if flip ==0:
+        temp_detransformed_numpy = output_transformed_numpy
+    else:
+        if dir_flip == 0:
+            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=2))  # Z
+        elif dir_flip == 1:
+            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=3))  # Y
+        elif dir_flip == 2:
+            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=4))  # X
+
+    if dir_rot == 0:  # rotate about ZY
+        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, 2 * times, (
+        3, 2)))  # BCZYX
+    elif dir_rot == 1:  # rotate about YX
+        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, times, (4, 3)))
+    elif dir_rot == 2:  # rotate about XZ
+        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, 2 * times, (2, 4)))
+
+    #  have to also process the offsets and covariance sensibly
+    # for flipping, just the direction of the offset should reverse
+    temp_detransformed_numpy_flipped = temp_detransformed_numpy.copy()
+    if flip ==0:
+        temp_detransformed_numpy_flipped = temp_detransformed_numpy
+    else:
+        if dir_flip == 0:
+            temp_detransformed_numpy_flipped[:, 2, ...] = - temp_detransformed_numpy[:, 2, ...]
+        elif dir_flip == 1:
+            temp_detransformed_numpy_flipped[:, 1, ...] = - temp_detransformed_numpy[:, 1, ...]
+        elif dir_flip == 2:
+            temp_detransformed_numpy_flipped[:, 0, ...] = - temp_detransformed_numpy[:, 0, ...]
+
+    temp_detransformed_numpy_correct = temp_detransformed_numpy_flipped.copy()
+    if dir_rot == 0 and times%2==1:  # rotate about ZY
+
+        temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
+        temp_detransformed_numpy_correct[:, 2, ...] = -temp_detransformed_numpy_flipped[:, 2, ...]
+
+
+    elif dir_rot == 1:  # rotate about YX
+        if times ==0:
+            pass
+        elif times ==1:
+            temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
+            temp_detransformed_numpy_correct[:, 1, ...] = temp_detransformed_numpy_flipped[:, 0, ...]
+
+            temp_detransformed_numpy_correct[:, 3, ...] = temp_detransformed_numpy_flipped[:, 4, ...]
+            temp_detransformed_numpy_correct[:, 4, ...] = temp_detransformed_numpy_flipped[:, 3, ...]
+        elif times ==2:
+            temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
+            temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
+        elif times ==3:
+            temp_detransformed_numpy_correct[:, 0, ...] = temp_detransformed_numpy_flipped[:, 1, ...]
+            temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
+
+            temp_detransformed_numpy_correct[:, 3, ...] = temp_detransformed_numpy_flipped[:, 4, ...]
+            temp_detransformed_numpy_correct[:, 4, ...] = temp_detransformed_numpy_flipped[:, 3, ...]
+
+    elif dir_rot == 2 and times%2==1:  # rotate about XZ
+        temp_detransformed_numpy_correct[:, 2, ...] = -temp_detransformed_numpy_flipped[:, 2, ...]
+        temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
+    return temp_detransformed_numpy_correct
+
+
+
 def get_instance_map(image):
     for z in range(image.shape[0]):
         image[z, image[z, ...] == 1] = z + 1
@@ -283,6 +384,146 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 plt.tight_layout()
                 plt.draw()
                 plt.savefig(embedding_file)
+
+        if save_results:
+            if not os.path.exists(os.path.join(save_dir, 'results/')):
+                os.makedirs(os.path.join(save_dir, 'results/'))
+                print("Created new directory {}".format(os.path.join(save_dir, 'results/')))
+            txt_file = os.path.join(save_dir, 'results/combined_AP-' + '{:.02f}'.format(ap_val) + '_tta-' + str(tta) + '.txt')
+            with open(txt_file, 'w') as f:
+                f.writelines(
+                    "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
+                f.writelines("+++++++++++++++++++++++++++++++++\n")
+                for ind, im_name in enumerate(imageFileNames):
+                    im_name_png = im_name + '.png'
+                    score = resultList[ind]
+                    f.writelines(
+                        "{} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.05f} \n".format(im_name_png, min_mask_sum,
+                                                                                       min_unclustered_sum,
+                                                                                       min_object_size, seed_thresh,
+                                                                                       ap_val, score))
+                f.writelines("+++++++++++++++++++++++++++++++++\n")
+                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
+
+        print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+
+
+def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None):
+    model.eval()
+    # cluster module
+    cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
+
+    with torch.no_grad():
+        resultList = []
+        imageFileNames = []
+        for sample in tqdm(dataset_it):
+            im = sample['image']
+            instances = sample['instance'].squeeze()
+
+            if(mask_region is not None and mask_intensity is not None):
+                im[:, :, int(mask_region[0][0]):, : int(mask_region[1][1]), int(mask_region[0][2]):] = mask_intensity # B 1 Z Y X
+            else:
+                im = sample['image']
+
+            multiple_z =im.shape[2]//8
+            multiple_y =im.shape[3]//8
+            multiple_x =im.shape[4]//8
+
+            if im.shape[2]%8!=0:
+                diff_z= 8 * (multiple_z + 1) - im.shape[2]
+            else:
+                diff_z = 0
+            if im.shape[3]%8!=0:
+                diff_y= 8 * (multiple_y + 1) - im.shape[3]
+            else:
+                diff_y = 0
+            if im.shape[4]%8!=0:
+                diff_x= 8 * (multiple_x + 1) - im.shape[4]
+            else:
+                diff_x = 0
+            p3d = (diff_x//2, diff_x - diff_x//2, diff_y//2, diff_y -diff_y//2, diff_z//2, diff_z - diff_z//2) # last dim, second last dim, third last dim!
+
+            im = F.pad(im, p3d, "constant", 0)
+            instances = F.pad(instances, p3d, "constant", 0)
+
+            times_list =   [0, 1, 2, 3,    0, 1, 2, 3,    0, 1, 2, 3,    1, 1, 1, 1,    0, 1, 2, 3,    1, 1, 1, 1] # 0 --> 0 deg, 1 --> 90 deg, 2 --> 180 deg, 3 --> 270 deg
+            flip_list =    [0, 0, 0, 0,    1, 1, 1, 1,    1, 1, 1, 1,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> no, 1 --> yes
+            dir_rot_list = [1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    2, 2, 2, 2,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> ZY plane, 1 --> YX plane, 2--> XZ plane
+            dir_flip_list= [0, 0, 0, 0,    0, 0, 0, 0,    2, 2, 2, 2,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> Z axis, 1 --> Y axis, 2 --> X axis
+            if (tta):
+                for iter in range(24): # TODO
+                    times = times_list[iter]
+                    flip = flip_list[iter]  # no or yes
+                    dir_rot = dir_rot_list[iter]  # 0 --> ZY, 1 --> YX, 2 --> XZ
+                    dir_flip = dir_flip_list[iter]  # 0 --> Z , 1--> Y, 2--> X
+                    #print("times : {} flip : {} dir_rot: {} dir_flip : {}".format(times, flip, dir_rot, dir_flip))
+                    if iter == 0:
+                        output_average = applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot) # BCZYX
+                    else:
+                        output_average = 1/(iter+1)*(output_average*iter+applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot))
+
+                output = torch.from_numpy(output_average).float().cuda()
+            else:
+                output = model(im)
+
+            instance_map, predictions = cluster.cluster(output[0],
+                                                        n_sigma=n_sigma,
+                                                        seed_thresh=seed_thresh,
+                                                        min_mask_sum=min_mask_sum,
+                                                        min_unclustered_sum=min_unclustered_sum,
+                                                        min_object_size=min_object_size,
+                                                        )
+
+
+
+            if (one_hot):
+                instances_integer = get_instance_map(instances)
+                input_max, b = torch.max(instances_integer, 0)
+                sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                if (verbose):
+                    print("Accuracy: {:.03f}".format(sc), flush=True)
+                resultList.append(sc)
+            else:
+                sc=matching_dataset( [instances.cpu().detach().numpy()], [instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) # TODO 1 jan
+                if (verbose):
+                    print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
+                resultList.append(sc.accuracy)
+
+
+
+
+
+
+            if save_images and ap_val == 0.5:
+                if not os.path.exists(os.path.join(save_dir, 'predictions/')):
+                    os.makedirs(os.path.join(save_dir, 'predictions/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'predictions/')))
+                if not os.path.exists(os.path.join(save_dir, 'ground-truth/')):
+                    os.makedirs(os.path.join(save_dir, 'ground-truth/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'ground-truth/')))
+                if not os.path.exists(os.path.join(save_dir, 'seeds/')):
+                    os.makedirs(os.path.join(save_dir, 'seeds/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'seeds/')))
+                if not os.path.exists(os.path.join(save_dir, 'images/')):
+                    os.makedirs(os.path.join(save_dir, 'images/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'images/')))
+
+
+                base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
+                imageFileNames.append(base)
+
+                instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
+                imsave(instances_file, instance_map.cpu().detach().numpy())
+
+                gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
+                imsave(gt_file, instances.cpu().detach().numpy())
+
+                seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
+                imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
+
+                im_file = os.path.join(save_dir, 'images/', base + '.tif')
+                imsave(im_file, im[0,0].cpu().detach().numpy())
+
 
         if save_results:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
