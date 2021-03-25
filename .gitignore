@@ -4,3 +4,6 @@ EmbedSeg/*/__pycache__/
 examples/*/experiment/
 examples/*/*checkpoints/
 examples/*/static/*
+build/*
+dist/*
+*egg-info
