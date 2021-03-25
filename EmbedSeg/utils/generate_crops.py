@@ -4,7 +4,6 @@ import tifffile
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
 from scipy.spatial import distance_matrix
-#import hdmedians as hd
 from numba import jit
 
 def _fill_label_holes(lbl_img, **kwargs):
