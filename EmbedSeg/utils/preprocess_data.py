@@ -1,5 +1,5 @@
 import os
-import urllib
+import urllib.request
 import zipfile
 import shutil
 from glob import glob
