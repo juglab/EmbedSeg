@@ -21,7 +21,6 @@ def extract_data(zip_url, project_name, data_dir='../../../data/'):
             Indicates the path to the directory where the data should be saved.
 
     """
-
     zip_path = os.path.join(data_dir, project_name + '.zip')
 
     if not os.path.exists(data_dir):
@@ -94,7 +93,7 @@ def make_dirs(data_dir, project_name):
 
         
         
-def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, by_fraction = True, train_name = 'train', seed=1234):
+def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, by_fraction = True, train_name = 'train', seed=1000):
     imageDir = os.path.join(crops_dir, project_name, train_name, 'images')
     instanceDir = os.path.join(crops_dir, project_name, train_name, 'masks')
     centerDir = os.path.join(crops_dir, project_name, train_name, 'center-'+center)
@@ -112,7 +111,6 @@ def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, by
     else:
         subsetLen = int(subset)
 
-    subsetLen = int(subset * len(image_names))
     valIndices = indices[:subsetLen]
     
     image_path_val = os.path.join(crops_dir, project_name, 'val', 'images/')
@@ -151,7 +149,7 @@ def split_train_crops(project_name, center, crops_dir = 'crops', subset=0.15, by
     else:
         print("Val Images/Masks/Center-{}-image crops already available at {}".format(center, os.path.join(crops_dir, project_name, 'val')))
 
-def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_fraction = True, seed=1234):
+def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_fraction = True, seed=1000):
     """
         Splits the `train` directory into `val` directory using the partition percentage of `subset`.
         Parameters
@@ -203,7 +201,7 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
     print("Train-Val-Test Images/Masks copied to {}".format(os.path.join(data_dir, project_name)))
 
 
-def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fraction = True, seed=1234):
+def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fraction = True, seed=1000):
     """
         Splits the `train` directory into `test` directory using the partition percentage of `subset`.
         Parameters
@@ -255,7 +253,7 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
         print("Train-Test Images/Masks already available at {}".format(os.path.join(data_dir, project_name, 'download')))
     
 
-def calculate_foreground_weight(data_dir, project_name, train_val_name):
+def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, one_hot):
     instance_names = []
     for name in train_val_name:
         instance_dir = os.path.join(data_dir, project_name, name, 'masks')
@@ -264,20 +262,119 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name):
     statistics = []
     for i in tqdm(range(len(instance_names))):
         ma = tifffile.imread(instance_names[i])
-        z, y, x = np.where(ma == 0)
-        len_bg = len(z)
-        z, y, x = np.where(ma > 0)
-        len_fg = len(z)
-        statistics.append(len_bg / len_fg)
-    print("Foreground weight of the `{}` dataset is set to {:.3f}".format(project_name, np.mean(statistics)))
-    data = {}
-    data['foreground_weight'] = np.mean(statistics)
-    with open('data_properties.json', 'w') as outfile:
-        json.dump(data, outfile)
-    print("Foreground weight of the `{}` dataset is saved to `data_properties.json`".format(project_name))
+        if (mode == '2d'):
+            statistics.append(10.0)
+        elif (mode =='3d'):
+            z, y, x = np.where(ma == 0)
+            len_bg = len(z)
+            z, y, x = np.where(ma > 0)
+            len_fg = len(z)
+            statistics.append(len_bg / len_fg)
+    print("Foreground weight of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics)))
+    return np.mean(statistics)
 
+def calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_hot):
+    instance_names = []
+    size_list=[]
+    for name in train_val_name:
+        instance_dir = os.path.join(data_dir, project_name, name, 'masks')
+        instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
+    
+    for i in tqdm(range(len(instance_names))):
+        ma = tifffile.imread(instance_names[i])
+        if (one_hot and mode=='2d'):
+            for z in range(ma.shape[0]):
+                y,x=np.where(ma[z]==1)
+                size_list.append(len(y))
+        elif(not one_hot and mode=='2d'):
+            ids = np.unique(ma)
+            ids = ids[ids!=0]
+            for id in ids:
+                y,x = np.where(ma == id)
+                size_list.append(len(y))
+        elif(not one_hot and mode=='3d'):
+            ids = np.unique(ma)
+            ids = ids[ids!=0]
+            for id in ids:
+                z,y,x = np.where(ma == id)
+                size_list.append(len(z))
+    print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
+    return np.min(size_list).astype(np.float)
 
+def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot):
+    instance_names = []
+    size_z_list= []
+    size_y_list = []
+    size_x_list = []
+    for name in test_name:
+        instance_dir = os.path.join(data_dir, project_name, name, 'masks')
+        instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
+    for i in tqdm(range(len(instance_names))):
+        ma = tifffile.imread(instance_names[i])
+        if (one_hot and mode == '2d'):
+            size_y_list.append(ma.shape[1])
+            size_x_list.append(ma.shape[2])
+        elif (not one_hot and mode == '2d'):
+            size_y_list.append(ma.shape[0])
+            size_x_list.append(ma.shape[1])
+        elif (not one_hot and mode == '3d'):
+            size_z_list.append(ma.shape[0])
+            size_y_list.append(ma.shape[1])
+            size_x_list.append(ma.shape[2])
+    if mode == '2d':
+        max_y = np.max(size_y_list)
+        max_x = np.max(size_x_list)
+        if(max_y % 8 !=0):
+            n = max_y //8
+            max_y = np.clip((n+1)*8, a_min=1024, a_max=None)
+        else:
+            max_y = np.clip(max_y, a_min=1024, a_max=None)
+        if (max_x % 8 != 0):
+            n = max_x // 8
+            max_x = np.clip((n + 1) * 8, a_min=1024, a_max=None)
+        else:
+            max_x = np.clip(max_x, a_min=1024, a_max = None)
+        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
+        return None, max_y.astype(np.float), max_x.astype(np.float)
+    elif mode == '3d':
+        max_z = np.max(size_z_list)
+        max_y = np.max(size_y_list)
+        max_x = np.max(size_x_list)
+        if(max_z % 8 !=0):
+            n = max_z //8
+            max_z = (n+1)*8
+        if(max_y % 8 !=0):
+            n = max_y //8
+            max_y = (n+1)*8
+        if (max_x % 8 != 0):
+            n = max_x // 8
+            max_x = (n + 1)*8
+        print("Maximum evaluation image size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(project_name, max_z, max_y, max_x))
+        return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
+def calculate_avg_background_intensity(data_dir, project_name, train_val_name):
+    instance_names = []
+    image_names = []
+    for name in train_val_name:
+        instance_dir = os.path.join(data_dir, project_name, name, 'masks')
+        image_dir = os.path.join(data_dir, project_name, name, 'images')
+        instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
+        image_names +=sorted(glob(os.path.join(image_dir, '*.tif')))
+    statistics = []
+    for i in tqdm(range(len(instance_names))):
+        ma = tifffile.imread(instance_names[i])
+        bg_mask = ma == 0
+        im = tifffile.imread(image_names[i])
+        statistics.append(np.average(im[bg_mask]))
+    print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics)))
+    return np.mean(statistics)
 
-
+def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot):
+    data_properties_dir = {}
+    data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode, one_hot)
+    data_properties_dir['min_object_size'] = calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_hot).astype(np.float)
+    data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] =  calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot)
+    data_properties_dir['one_hot']=one_hot
+    data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name, train_val_name)
+    return data_properties_dir
