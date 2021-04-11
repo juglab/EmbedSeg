@@ -87,17 +87,16 @@ class ToTensorFromNumpy(object):
     def __call__(self, sample):
 
         for idx, k in enumerate(self.keys):
-            assert (k in sample)
+            #assert (k in sample)
 
             t = self.type
             if isinstance(t, collections.Iterable):
                 t = t[idx]
-            if t == torch.FloatTensor:  # image
-                sample[k] = torch.from_numpy(sample[k].astype("float32")).float().div(self.normalization_factor)
-            elif  t == torch.BoolTensor or t ==torch.ShortTensor: # instance, center-image
-
-                sample[k] = sample[k]
-                sample[k] = torch.from_numpy(sample[k]).short()
+            if (k in sample):
+                if k == 'image':  # image
+                    sample[k] = torch.from_numpy(sample[k].astype("float32")).float().div(self.normalization_factor)
+                elif k =='instance' or k=='label' or k=='center-image':
+                    sample[k] = torch.from_numpy(sample[k]).short()
         return sample
 
 
