@@ -81,7 +81,7 @@ def to_cuda_3d(im_numpy):
     return torch.from_numpy(im_numpy).float().cuda()
 
 
-def applyTTAComplete(im):
+def apply_tta_2d(im):
     im_numpy = im.cpu().detach().numpy()
     im0 = im_numpy[0, 0]  # remove batch and channel dimensions # TODO: this is not correct for multi channel images
     im0 = im0[np.newaxis, ...]  # add z dimension --> helps in rotating!
@@ -193,7 +193,7 @@ def applyTTAComplete(im):
     return torch.from_numpy(output).float().cuda()
 
 
-def applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot):
+def apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot):
     im_numpy = im.cpu().detach().numpy() # BCZYX
     im_transformed = im_numpy[0, :] # remove batch dimension, now CZYX
 
@@ -289,6 +289,11 @@ def get_instance_map(image):
     return image
 
 
+
+
+
+
+
 def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False):
     model.eval()
 
@@ -301,23 +306,26 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
         for sample in tqdm(dataset_it):
 
             im = sample['image']  # B 1 Y X
-            instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
-            if im.shape[2]%4!=0:
-                multiple_y = im.shape[2]//4
-                diff_y = im.shape[2] - 4*multiple_y
-                m = torch.nn.ZeroPad2d((0, 0, diff_y//2, diff_y//2))
-                im = m(im)
-                instances = m(instances)
-            if im.shape[3]%4!=0:
-                multiple_x = im.shape[3] // 4
-                diff_x = im.shape[3] - 4 * multiple_x
-                m = torch.nn.ZeroPad2d((diff_x // 2, diff_x // 2, 0, 0))
-                im = m(im)
-                instances = m(instances)
+            multiple_y = im.shape[2] // 8
+            multiple_x = im.shape[3] // 8
 
+            if im.shape[2] % 8 != 0:
+                diff_y = 8 * (multiple_y + 1) - im.shape[2]
+            else:
+                diff_y = 0
+            if im.shape[3] % 8 != 0:
+                diff_x = 8 * (multiple_x + 1) - im.shape[3]
+            else:
+                diff_x = 0
+            p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)  # last dim, second last dim
+
+            im = F.pad(im, p2d, "constant", 0)
+            if('instance' in sample):
+                instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
+                instances = F.pad(instances, p2d, "constant", 0)
 
             if (tta):
-                output = applyTTAComplete(im)
+                output = apply_tta_2d(im)
             else:
                 output = model(im)
 
@@ -329,23 +337,26 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size)
 
-            center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y, pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions)
+
+            center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, \
+            color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y,
+                                                                                     pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions)
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
             imageFileNames.append(base)
 
             if (one_hot):
-                instances_integer = get_instance_map(instances)
-                input_max, b = torch.max(instances_integer, 0)
-                sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
-                if (verbose):
-                    print("Accuracy: {:.03f}".format(sc), flush=True)
-                resultList.append(sc)
+                if ('instance' in sample):
+                    results = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    if (verbose):
+                        print("Accuracy: {:.03f}".format(results), flush=True)
+                    resultList.append(results)
             else:
-                sc=matching_dataset([instance_map.cpu().detach().numpy()], [instances.cpu().detach().numpy()], thresh=ap_val, show_progress = False)
-                if (verbose):
-                    print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
-                resultList.append(sc.accuracy)
+                if ('instance' in sample):
+                    results=matching_dataset(y_true=[instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False)
+                    if (verbose):
+                        print("Accuracy: {:.03f}".format(results.accuracy), flush=True)
+                    resultList.append(results.accuracy)
 
 
 
@@ -364,8 +375,9 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
                 imsave(instances_file, instance_map.cpu().detach().numpy())
-                gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                imsave(gt_file, instances.cpu().detach().numpy())
+                if ('instance' in sample):
+                    gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
+                    imsave(gt_file, instances.cpu().detach().numpy())
                 embedding_file = os.path.join(save_dir, 'embedding/', base + '.tif')
                 import matplotlib
                 matplotlib.use('Agg')
@@ -385,7 +397,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 plt.draw()
                 plt.savefig(embedding_file)
 
-        if save_results:
+        if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
                 os.makedirs(os.path.join(save_dir, 'results/'))
                 print("Created new directory {}".format(os.path.join(save_dir, 'results/')))
@@ -405,7 +417,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
 
-        print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+            print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
 
 
 def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None):
@@ -418,7 +430,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
         imageFileNames = []
         for sample in tqdm(dataset_it):
             im = sample['image']
-            instances = sample['instance'].squeeze()
+
 
             if(mask_region is not None and mask_intensity is not None):
                 im[:, :, int(mask_region[0][0]):, : int(mask_region[1][1]), int(mask_region[0][2]):] = mask_intensity # B 1 Z Y X
@@ -444,7 +456,9 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
             p3d = (diff_x//2, diff_x - diff_x//2, diff_y//2, diff_y -diff_y//2, diff_z//2, diff_z - diff_z//2) # last dim, second last dim, third last dim!
 
             im = F.pad(im, p3d, "constant", 0)
-            instances = F.pad(instances, p3d, "constant", 0)
+            if ('instance' in sample):
+                instances = sample['instance'].squeeze()
+                instances = F.pad(instances, p3d, "constant", 0)
 
             times_list =   [0, 1, 2, 3,    0, 1, 2, 3,    0, 1, 2, 3,    1, 1, 1, 1,    0, 1, 2, 3,    1, 1, 1, 1] # 0 --> 0 deg, 1 --> 90 deg, 2 --> 180 deg, 3 --> 270 deg
             flip_list =    [0, 0, 0, 0,    1, 1, 1, 1,    1, 1, 1, 1,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> no, 1 --> yes
@@ -456,11 +470,10 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                     flip = flip_list[iter]  # no or yes
                     dir_rot = dir_rot_list[iter]  # 0 --> ZY, 1 --> YX, 2 --> XZ
                     dir_flip = dir_flip_list[iter]  # 0 --> Z , 1--> Y, 2--> X
-                    #print("times : {} flip : {} dir_rot: {} dir_flip : {}".format(times, flip, dir_rot, dir_flip))
                     if iter == 0:
-                        output_average = applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot) # BCZYX
+                        output_average = apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot) # BCZYX
                     else:
-                        output_average = 1/(iter+1)*(output_average*iter+applyTTA_3d_probabilistic(im, flip, times, dir_flip, dir_rot))
+                        output_average = 1/(iter+1)*(output_average * iter + apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot))
 
                 output = torch.from_numpy(output_average).float().cuda()
             else:
@@ -477,17 +490,17 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
 
 
             if (one_hot):
-                instances_integer = get_instance_map(instances)
-                input_max, b = torch.max(instances_integer, 0)
-                sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
-                if (verbose):
-                    print("Accuracy: {:.03f}".format(sc), flush=True)
-                resultList.append(sc)
+                if ('instance' in sample):
+                    sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    if (verbose):
+                        print("Accuracy: {:.03f}".format(sc), flush=True)
+                    resultList.append(sc)
             else:
-                sc=matching_dataset( [instances.cpu().detach().numpy()], [instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) # TODO 1 jan
-                if (verbose):
-                    print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
-                resultList.append(sc.accuracy)
+                if ('instance' in sample):
+                    sc=matching_dataset(y_true= [instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) # TODO 1 jan
+                    if (verbose):
+                        print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
+                    resultList.append(sc.accuracy)
 
 
 
@@ -514,9 +527,9 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
 
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
                 imsave(instances_file, instance_map.cpu().detach().numpy())
-
-                gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                imsave(gt_file, instances.cpu().detach().numpy())
+                if ('instance' in sample):
+                    gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
+                    imsave(gt_file, instances.cpu().detach().numpy())
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
                 imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
@@ -525,7 +538,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 imsave(im_file, im[0,0].cpu().detach().numpy())
 
 
-        if save_results:
+        if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
                 os.makedirs(os.path.join(save_dir, 'results/'))
                 print("Created new directory {}".format(os.path.join(save_dir, 'results/')))
@@ -545,4 +558,4 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
 
-        print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+            print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
