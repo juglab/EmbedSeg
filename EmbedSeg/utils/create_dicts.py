@@ -235,7 +235,7 @@ def create_test_configs_dict(data_dir,
     return test_configs
 
 
-def create_model_dict(input_channels, num_classes=[4, 1], name='branched_erfnet'):
+def create_model_dict(input_channels, num_classes=[4, 1], name='2d'):
     """
         Creates `model_dict` dictionary from parameters.
         Parameters
@@ -246,9 +246,8 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='branched_erfnet'
             [4, 1] -> 4 indicates offset in x, offset in y, margin in x, margin in y; 1 indicates seediness score
         name: string
     """
-
     model_dict = {
-        'name': name,
+        'name': 'branched_erfnet' if name=='2d' else 'branched_erfnet_3d',
         'kwargs': {
             'num_classes': num_classes,
             'input_channels': input_channels,
