@@ -387,7 +387,7 @@ def save_checkpoint(state, is_best, epoch, save_dir, name='checkpoint.pth'):
             save_dir, 'best_iou_model.pth'))
 
 
-def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, configs):
+def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, configs, color_map='magma'):
 
 
     if configs['save']:
@@ -460,9 +460,8 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
 
     # Visualizer
 
-    new_cmap = np.load('../../../cmaps/cmap_60.npy')
-    new_cmap = ListedColormap(new_cmap)
-    visualizer = Visualizer(('image', 'groundtruth', 'prediction', 'center'), new_cmap)  # 5 keys
+    
+    visualizer = Visualizer(('image', 'groundtruth', 'prediction', 'center'), color_map)  # 5 keys
 
     # Logger
     logger = Logger(('train', 'val', 'iou'), 'loss')
