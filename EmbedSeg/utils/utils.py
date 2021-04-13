@@ -160,12 +160,12 @@ class Cluster_3d:
         spatial_emb = torch.tanh(prediction[0:3]) + xyzm_s  # 3 x d x h x w
 
         sigma = prediction[3:3 + n_sigma]  # n_sigma x d x h x w
-        seed_map = torch.sigmoid(prediction[3 + n_sigma:3 + n_sigma + 1])  # 1 x d x h x w # TODO
+        seed_map = torch.sigmoid(prediction[3 + n_sigma:3 + n_sigma + 1])  # 1 x d x h x w
         instance_map = torch.zeros(depth, height, width).short()
         instances = []  # list
 
         count = 1
-        mask = seed_map > 0.5  # TODO
+        mask = seed_map > 0.5
         if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast 128 pixels in foreground!
 
             spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(3, -1)
@@ -188,25 +188,12 @@ class Cluster_3d:
 
                 proposal = (dist > 0.5).squeeze()
                 if proposal.sum() > min_object_size:
-                    if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:  # TODO
+                    if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:
                         instance_map_masked[proposal.squeeze()] = count
-                        instance_mask = torch.zeros(depth, height, width).short()  # TODO
-                        instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()  # TODO
-                        center_image = torch.zeros(depth, height, width).byte()  # TODO
-
-                        # TODO - uncomment please!
-                        # center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x)) # TODO - 3d
-                        # center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y)) # TODO - 3d
-                        # center_image[int(center[1].item()), int(center[0].item())] = True
-                        # instances.append(
-                        #     {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
-                        #      'center-image': center_image})  # TODO
-
-                        # TODO instances was being returned before but lead to OOM issue
-                        # instances.append({'mask': instance_mask.squeeze() * 255, 'score': seed_score,})
+                        instance_mask = torch.zeros(depth, height, width).short()
+                        instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()
                         count += 1
-
-                unclustered[proposal] = 0
+                        unclustered[proposal] = 0
 
             instance_map[mask.squeeze().cpu()] = instance_map_masked.cpu()
 
@@ -255,7 +242,7 @@ class Cluster:
 
             s = sigma[mask.expand_as(sigma)].view(n_sigma, -1).mean(1).view(n_sigma, 1, 1)
 
-            s = torch.exp(s * 10)  # n_sigma x 1 x 1 #TODO
+            s = torch.exp(s * 10)  # n_sigma x 1 x 1 #
             dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
             proposal = (dist > 0.5)
             if (self.one_hot):
@@ -306,16 +293,16 @@ class Cluster:
                 if proposal.sum() > min_object_size:
                     if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:
                         instance_map_masked[proposal.squeeze()] = count
-                        instance_mask = torch.zeros(height, width).short()  # TODO
+                        instance_mask = torch.zeros(height, width).short()
                         instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()  # TODO
-                        center_image = torch.zeros(height, width).byte()  # TODO
+                        center_image = torch.zeros(height, width).byte()
 
                         center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
                         center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
                         center_image[int(center[1].item()), int(center[0].item())] = True
                         instances.append(
                             {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
-                             'center-image': center_image})  # TODO
+                             'center-image': center_image})
                         count += 1
 
                 unclustered[proposal] = 0
@@ -510,7 +497,7 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
 
         # sigma
         s = sigma[in_mask.expand_as(sigma)].view(2, -1).mean(1)  # TODO view(2, -1) should become nsigma, -1
-        s = torch.exp(s * 10)  # TODO
+        s = torch.exp(s * 10)
         sigma_x_tmp = 0.5 / s[0]
         sigma_y_tmp = 0.5 / s[1]
         sigma_x[id.item()] = degrid(torch.sqrt(sigma_x_tmp), grid_x - 1, pixel_x)
