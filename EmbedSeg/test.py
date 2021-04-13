@@ -16,7 +16,7 @@ from tifffile import imsave
 from matplotlib.patches import Ellipse
 
 
-def begin_evaluating(test_configs, verbose=True, mask = False, mask_region = None, mask_intensity = None):
+def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None):
     global n_sigma, ap_val, min_mask_sum, min_unclustered_sum, min_object_size
     global tta, seed_thresh, model, dataset_it, save_images, save_results, save_dir
 
@@ -291,9 +291,6 @@ def get_instance_map(image):
 
 
 
-
-
-
 def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False):
     model.eval()
 
@@ -374,10 +371,10 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
 
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(instances_file, instance_map.cpu().detach().numpy())
+                imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                    imsave(gt_file, instances.cpu().detach().numpy())
+                    imsave(gt_file, instances.cpu().detach().numpy().astype(np.uint16))
                 embedding_file = os.path.join(save_dir, 'embedding/', base + '.tif')
                 import matplotlib
                 matplotlib.use('Agg')
@@ -430,12 +427,11 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
         imageFileNames = []
         for sample in tqdm(dataset_it):
             im = sample['image']
-
-
             if(mask_region is not None and mask_intensity is not None):
                 im[:, :, int(mask_region[0][0]):, : int(mask_region[1][1]), int(mask_region[0][2]):] = mask_intensity # B 1 Z Y X
             else:
-                im = sample['image']
+                pass
+
 
             multiple_z =im.shape[2]//8
             multiple_y =im.shape[3]//8
@@ -464,8 +460,9 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
             flip_list =    [0, 0, 0, 0,    1, 1, 1, 1,    1, 1, 1, 1,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> no, 1 --> yes
             dir_rot_list = [1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    2, 2, 2, 2,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> ZY plane, 1 --> YX plane, 2--> XZ plane
             dir_flip_list= [0, 0, 0, 0,    0, 0, 0, 0,    2, 2, 2, 2,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> Z axis, 1 --> Y axis, 2 --> X axis
+
             if (tta):
-                for iter in range(24): # TODO
+                for iter in range(24):
                     times = times_list[iter]
                     flip = flip_list[iter]  # no or yes
                     dir_rot = dir_rot_list[iter]  # 0 --> ZY, 1 --> YX, 2 --> XZ
@@ -526,10 +523,10 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 imageFileNames.append(base)
 
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(instances_file, instance_map.cpu().detach().numpy())
+                imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                    imsave(gt_file, instances.cpu().detach().numpy())
+                    imsave(gt_file, instances.cpu().detach().numpy().astype(np.uint16))
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
                 imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
