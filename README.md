@@ -29,7 +29,21 @@ If you find our work useful in your research, please consider citing:
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
 
-In order to replicate results mentioned in the publication, one could use the same virtual environment (`EmbedSeg_environment.yml`) as used by us. Create a new environment, for example,  by entering the python command in the terminal `conda env create -f path/to/EmbedSeg_environment.yml`.
+In order to replicate results mentioned in the publication, one could use the same virtual environment (`environment.yml`) as used by us. Create a new environment using (this would also install `pytorch`):
+
+```conda env create -f path/to/environment.yml```.
+
+Alternately, one could install `EmbedSeg` with `pip`:
+
+```
+conda create -n EmbedSegEnv python==3.7
+python3 -m pip install EmbedSeg
+```
+
+and then install `[pytorch](https://pytorch.org/get-started/previous-versions/)`:
+```
+conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
+```
 
 ### Getting Started
 

@@ -6,8 +6,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="EmbedSeg39", 
-    version="1.0.1",
+    name="EmbedSeg", 
+    version="0.2.0",
     author="Manan Lalit, Pavel Tomancak, Florian Jug",
     author_email="lalit@mpi-cbg.de",
     description="EmbedSeg provides automatic detection and segmentation of objects in microscopy images",
