@@ -353,7 +353,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         print("Maximum evaluation image size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(project_name, max_z, max_y, max_x))
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
-def calculate_avg_background_intensity(data_dir, project_name, train_val_name):
+def calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot):
     instance_names = []
     image_names = []
     for name in train_val_name:
@@ -362,11 +362,18 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name):
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
         image_names +=sorted(glob(os.path.join(image_dir, '*.tif')))
     statistics = []
-    for i in tqdm(range(len(instance_names))):
-        ma = tifffile.imread(instance_names[i])
-        bg_mask = ma == 0
-        im = tifffile.imread(image_names[i])
-        statistics.append(np.average(im[bg_mask]))
+    if one_hot:
+        for i in tqdm(range(len(instance_names))):
+            ma = tifffile.imread(instance_names[i])
+            bg_mask = ma == 0
+            im = tifffile.imread(image_names[i])
+            statistics.append(np.average(im[np.min(bg_mask, 0)]))
+    else:
+        for i in tqdm(range(len(instance_names))):
+            ma = tifffile.imread(instance_names[i])
+            bg_mask = ma == 0
+            im = tifffile.imread(image_names[i])
+            statistics.append(np.average(im[bg_mask]))
     print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics)))
     return np.mean(statistics)
 
@@ -376,5 +383,5 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir['min_object_size'] = calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_hot).astype(np.float)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] =  calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot)
     data_properties_dir['one_hot']=one_hot
-    data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name, train_val_name)
+    data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot)
     return data_properties_dir
