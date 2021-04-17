@@ -40,7 +40,7 @@ conda create -n EmbedSegEnv python==3.7
 python3 -m pip install EmbedSeg
 ```
 
-and then install `[pytorch](https://pytorch.org/get-started/previous-versions/)`:
+and then install <b>[pytorch](https://pytorch.org/get-started/previous-versions/)</b>:
 ```
 conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
 ```
