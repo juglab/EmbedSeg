@@ -29,14 +29,10 @@ If you find our work useful in your research, please consider citing:
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
 
-In order to replicate results mentioned in the publication, one could use the same virtual environment (`environment.yml`) as used by us. Create a new environment using (this would also install `pytorch`):
-
-```conda env create -f path/to/environment.yml```.
-
-Alternately, one could install `EmbedSeg` with `pip`:
-
+- One could install `EmbedSeg` with `pip`:
 ```
 conda create -n EmbedSegEnv python==3.7
+conda activate EmbedSegEnv
 python3 -m pip install EmbedSeg
 ```
 
@@ -45,27 +41,20 @@ and then install <b>[pytorch](https://pytorch.org/get-started/previous-versions/
 conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
 ```
 
+- Alternately, one could use the `environment.yml` file (this would also install `pytorch`, `torchvision` and `cudatoolkit`). 
+Create a new environment using :
+
+```conda env create -f path/to/environment.yml```.
+
+
 ### Getting Started
 
-Please open a new terminal window and run the following commands one after the other.
-
-```shell
-git clone https://github.com/juglab/EmbedSeg.git
-cd EmbedSeg
-conda env create -f EmbedSeg_environment.yml
-conda activate EmbedSegEnv
-python3 -m pip install -e .
-python3 -m ipykernel install --user --name EmbedSegEnv --display-name "EmbedSegEnv"
-cd examples
-jupyter notebook
-```
-
-(In case `conda activate EmbedSegEnv` generates an error, please try `source activate EmbedSegEnv` instead). Next, look in the `examples` directory,  and try out the `dsb-2018` example set of notebooks (to begin with). Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
+Look in the `examples` directory,  and try out one of the provided notebooks. Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
 
 
 ### Training & Inference on your data
    
-`*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. (In order to prepare such instance masks, one could use the Fiji plugin <b>Labkit</b> as detailed <b>[here](https://github.com/juglab/EmbedSeg/wiki/Use-Labkit-to-prepare-instance-masks)</b>). These are cropped in smaller patches in the notebook `01-data.ipynb`. The following would be a desired structure as to how data should be prepared.
+`*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. (In order to prepare such instance masks, one could use the Fiji plugin <b>Labkit</b> as suggested <b>[here](https://github.com/juglab/EmbedSeg/wiki/Use-Labkit-to-prepare-instance-masks)</b>). The following would be a desired structure as to how data should be prepared.
 
 ```
 $data_dir
