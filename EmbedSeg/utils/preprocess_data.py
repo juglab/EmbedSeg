@@ -335,6 +335,9 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
             max_x = np.clip((n + 1) * 8, a_min=1024, a_max=None)
         else:
             max_x = np.clip(max_x, a_min=1024, a_max = None)
+        max_x_y = np.maximum(max_x, max_y)
+        max_x = max_x_y
+        max_y = max_x_y
         print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
         return None, max_y.astype(np.float), max_x.astype(np.float)
     elif mode == '3d':
@@ -350,6 +353,9 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         if (max_x % 8 != 0):
             n = max_x // 8
             max_x = (n + 1)*8
+        max_x_y = np.maximum(max_x, max_y)
+        max_x = max_x_y
+        max_y = max_x_y
         print("Maximum evaluation image size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(project_name, max_z, max_y, max_x))
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
