@@ -1,5 +1,13 @@
 ## EmbedSeg 
 
+
+[![License](https://img.shields.io/pypi/l/napari-minimal-plugin.svg?color=green)](https://github.com/juglab/EmbedSeg/raw/master/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/napari-minimal-plugin.svg?color=green)](https://pypi.org/project/EmbedSeg)
+[![Python Version](https://img.shields.io/pypi/pyversions/napari-minimal-plugin.svg?color=green)](https://python.org)
+[![tests](https://github.com/juglab/napari-minimal-plugin/workflows/tests/badge.svg)](https://github.com/juglab/EmbedSeg/actions)
+[![codecov](https://codecov.io/gh/juglab/napari-minimal-plugin/branch/master/graph/badge.svg)](https://codecov.io/gh/juglab/EmbedSeg)
+
+
 ### Introduction
 This repository hosts the version of the code used for the **[preprint](https://arxiv.org/abs/2101.10033)** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage](https://juglab.github.io/EmbedSeg/)**.
 
@@ -29,7 +37,7 @@ If you find our work useful in your research, please consider citing:
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
 
-- One could install `EmbedSeg` with `pip`:
+- One could install `EmbedSeg` with [pip]:
 ```
 conda create -n EmbedSegEnv python==3.7
 conda activate EmbedSegEnv
@@ -81,3 +89,16 @@ $data_dir
 ```
 
 
+
+### Contributing
+
+Contributions are very welcome. Tests can be run with [tox], please ensure
+the coverage at least stays the same before you submit a pull request.
+
+### Issues
+
+If you encounter any problems, please [file an issue] along with a detailed description.
+
+[file an issue]: https://github.com/juglab/EmbedSeg/issues
+[tox]: https://tox.readthedocs.io/en/latest/
+[pip]: https://pypi.org/project/pip/
