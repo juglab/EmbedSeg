@@ -3,28 +3,57 @@ import numpy as np
 
 
 def to_cuda(im_numpy):
-    im_numpy = im_numpy[np.newaxis, np.newaxis, ...]
+    """
+
+    :param im_numpy: numpy array
+            C x Y x X
+    :return: torch tensor
+            B x C x Y x X
+    """
+    im_numpy = im_numpy[np.newaxis, ...]
     return torch.from_numpy(im_numpy).float().cuda()
 
 
 def to_numpy(im_cuda):
+    """
+    :param im_cuda: torch tensor
+            B x C x Y x X
+    :return: numpy array
+            B x C x Y x X
+    """
     return im_cuda.cpu().detach().numpy()
 
 
 def process_flips(im_numpy):
+    """
+    :param im_numpy: numpy array
+
+    :return: numpy array
+    """
     im_numpy_correct = im_numpy
     im_numpy_correct[0, 1, ...] = -1 * im_numpy[
         0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
     return im_numpy_correct
 
 def to_cuda_3d(im_numpy):
+    """
+    :param im_numpy: numpy array
+            B x C x Z x Y x X
+    :return:
+    """
     im_numpy = im_numpy[np.newaxis, ...]
     return torch.from_numpy(im_numpy).float().cuda()
 
 
 def apply_tta_2d(im, model):
-    im_numpy = im.cpu().detach().numpy()
-    im0 = im_numpy[0, ...]  # remove batch dimension, now CZYX
+    """
+
+    :param im:
+    :param model:
+    :return:
+    """
+    im_numpy = im.cpu().detach().numpy() # BCYX
+    im0 = im_numpy[0, ...]  # remove batch dimension, now CYX
     im1 = np.rot90(im0, 1, (1, 2))
     im2 = np.rot90(im0, 2, (1, 2))
     im3 = np.rot90(im0, 3, (1, 2))
@@ -33,14 +62,14 @@ def apply_tta_2d(im, model):
     im6 = np.flip(im2, 1)
     im7 = np.flip(im3, 1)
 
-    im0_cuda = to_cuda(im0[0, ...])
-    im1_cuda = to_cuda(np.ascontiguousarray(im1[0, ...]))
-    im2_cuda = to_cuda(np.ascontiguousarray(im2[0, ...]))
-    im3_cuda = to_cuda(np.ascontiguousarray(im3[0, ...]))
-    im4_cuda = to_cuda(np.ascontiguousarray(im4[0, ...]))
-    im5_cuda = to_cuda(np.ascontiguousarray(im5[0, ...]))
-    im6_cuda = to_cuda(np.ascontiguousarray(im6[0, ...]))
-    im7_cuda = to_cuda(np.ascontiguousarray(im7[0, ...]))
+    im0_cuda = to_cuda(im0) # BCYX
+    im1_cuda = to_cuda(np.ascontiguousarray(im1))
+    im2_cuda = to_cuda(np.ascontiguousarray(im2))
+    im3_cuda = to_cuda(np.ascontiguousarray(im3))
+    im4_cuda = to_cuda(np.ascontiguousarray(im4))
+    im5_cuda = to_cuda(np.ascontiguousarray(im5))
+    im6_cuda = to_cuda(np.ascontiguousarray(im6))
+    im7_cuda = to_cuda(np.ascontiguousarray(im7))
 
     output0 = model(im0_cuda)
     output1 = model(im1_cuda)
@@ -133,6 +162,13 @@ def apply_tta_2d(im, model):
 
 
 def apply_tta_3d(im, model, index):
+    """
+
+    :param im:
+    :param model:
+    :param index:
+    :return:
+    """
     im_numpy = im.cpu().detach().numpy()  # BCZYX
     im_transformed = im_numpy[0, ...]  # remove batch dimension, now CZYX
     if index == 0:
