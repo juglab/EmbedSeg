@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="EmbedSeg", 
-    version="0.2.1",
+    version="0.2.2",
     author="Manan Lalit, Pavel Tomancak, Florian Jug",
     author_email="lalit@mpi-cbg.de",
     description="EmbedSeg provides automatic detection and segmentation of objects in microscopy images",
