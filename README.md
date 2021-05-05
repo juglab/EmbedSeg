@@ -1,4 +1,4 @@
-## EmbedSeg 
+
 
 
 [![License](https://img.shields.io/pypi/l/EmbedSeg.svg?color=green)](https://github.com/juglab/EmbedSeg/raw/master/LICENSE)
@@ -6,6 +6,25 @@
 [![Python Version](https://img.shields.io/pypi/pyversions/EmbedSeg.svg?color=green)](https://python.org)
 [![tests](https://github.com/juglab/EmbedSeg/workflows/tests/badge.svg)](https://github.com/juglab/EmbedSeg/actions)
 [![codecov](https://codecov.io/gh/juglab/EmbedSeg/branch/master/graph/badge.svg)](https://codecov.io/gh/juglab/EmbedSeg)
+
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/34229641/117163211-bb727300-adc3-11eb-8fe4-ebd7d0e5fceb.png" width=300 />
+</p>
+<h2 align="center">Embedding-based Instance Segmentation in Microscopy</h2>
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Dependencies](#dependencies)
+- [Getting Started](#getting-started)
+- [Datasets](#datasets)
+- [Training & Inference on your data](#training-&-Inference-on-your-data)
+- [Animated figures](#animated-figures)
+- [Contribution](#contributing)
+- [Issues](#issues)
+- [Citation](#citation)
+- [Acknowledgements](#acknowledgements)
 
 
 ### Introduction
@@ -20,19 +39,6 @@ We refer to the techniques elaborated in the publication, here as **EmbedSeg**. 
 
 With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world microscopy datasets. `EmbedSeg` has a small enough memory footprint (between 0.7 to about 3 GB) to allow network training on virtually all CUDA enabled hardware, including laptops.
 
-### Citation
-If you find our work useful in your research, please consider citing:
-
-```bibtex
-@misc{lalit2021embeddingbased,
-      title={Embedding-based Instance Segmentation of Microscopy Images}, 
-      author={Manan Lalit and Pavel Tomancak and Florian Jug},
-      year={2021},
-      eprint={2101.10033},
-      archivePrefix={arXiv},
-      primaryClass={eess.IV}
-}
-```
 
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
@@ -101,3 +107,18 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [file an issue]: https://github.com/juglab/EmbedSeg/issues
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
+
+
+### Citation
+If you find our work useful in your research, please consider citing:
+
+```bibtex
+@misc{lalit2021embeddingbased,
+      title={Embedding-based Instance Segmentation of Microscopy Images}, 
+      author={Manan Lalit and Pavel Tomancak and Florian Jug},
+      year={2021},
+      eprint={2101.10033},
+      archivePrefix={arXiv},
+      primaryClass={eess.IV}
+}
+```
