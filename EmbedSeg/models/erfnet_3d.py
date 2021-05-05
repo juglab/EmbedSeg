@@ -8,11 +8,11 @@ class DownsamplerBlock(nn.Module):
         super().__init__()
 
         self.conv = nn.Conv3d(ninput, noutput - ninput,
-                              (3, 3, 3), stride=2, padding=1, bias=True)  # TODO
+                              (3, 3, 3), stride=2, padding=1, bias=True)  
 
-        self.pool = nn.MaxPool3d(2, stride=2)  # TODO
+        self.pool = nn.MaxPool3d(2, stride=2)  
 
-        self.bn = nn.BatchNorm3d(noutput, eps=1e-3)  # TODO
+        self.bn = nn.BatchNorm3d(noutput, eps=1e-3)  
 
     def forward(self, input):
         output = torch.cat([self.conv(input), self.pool(input)], 1)
@@ -24,21 +24,21 @@ class non_bottleneck_1d(nn.Module):
     def __init__(self, chann, dropprob, dilated):
         super().__init__()
         self.conv3x1x1_1 = nn.Conv3d(
-            chann, chann, (3, 1, 1), stride=1, padding=(1, 0, 0), bias=True)  # TODO
+            chann, chann, (3, 1, 1), stride=1, padding=(1, 0, 0), bias=True)  
 
         self.conv1x3x1_1 = nn.Conv3d(
-            chann, chann, (1, 3, 1), stride=1, padding=(0, 1, 0), bias=True)  # TODO
+            chann, chann, (1, 3, 1), stride=1, padding=(0, 1, 0), bias=True)  
 
         self.conv1x1x3_1 = nn.Conv3d(
-            chann, chann, (1, 1, 3), stride=1, padding=(0, 0, 1), bias=True)  # TODO
+            chann, chann, (1, 1, 3), stride=1, padding=(0, 0, 1), bias=True)  
 
-        self.bn1 = nn.BatchNorm3d(chann, eps=1e-03)  # TODO
+        self.bn1 = nn.BatchNorm3d(chann, eps=1e-03)  
 
         self.conv3x1x1_2 = nn.Conv3d(chann, chann, (3, 1, 1), stride=1, padding=(
-            1 * dilated, 0, 0), bias=True, dilation=(dilated, 1, 1))  # TODO
+            1 * dilated, 0, 0), bias=True, dilation=(dilated, 1, 1))  
 
         self.conv1x3x1_2 = nn.Conv3d(chann, chann, (1, 3, 1), stride=1, padding=(
-            0, 1 * dilated, 0), bias=True, dilation=(1, dilated, 1))  # TODO
+            0, 1 * dilated, 0), bias=True, dilation=(1, dilated, 1))  
 
         self.conv1x1x3_2 = nn.Conv3d(chann, chann, (1, 1, 3), stride=1, padding=(
             0, 0, 1 * dilated), bias=True, dilation=(1, 1, dilated))
@@ -50,7 +50,7 @@ class non_bottleneck_1d(nn.Module):
     def forward(self, input):
         output = self.conv3x1x1_1(input)
         output = F.relu(output)
-        output = self.conv1x3x1_1(output)  # TODO
+        output = self.conv1x3x1_1(output)  
         output = F.relu(output)
         output = self.conv1x1x3_1(output)
         # TODO think about adding a relu here!
@@ -60,7 +60,7 @@ class non_bottleneck_1d(nn.Module):
 
         output = self.conv3x1x1_2(output)
         output = F.relu(output)
-        output = self.conv1x3x1_2(output)  # TODO
+        output = self.conv1x3x1_2(output)  
         output = F.relu(output)
         output = self.conv1x1x3_2(output)
         output = self.bn2(output)
@@ -74,7 +74,7 @@ class non_bottleneck_1d(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, num_classes, input_channels):
         super().__init__()
-        self.initial_block = DownsamplerBlock(input_channels, 16)  # TODO: earlier 3, 16
+        self.initial_block = DownsamplerBlock(input_channels, 16)  
 
         self.layers = nn.ModuleList()
 
@@ -92,7 +92,7 @@ class Encoder(nn.Module):
             self.layers.append(non_bottleneck_1d(128, 0.3, 16))
 
         self.output_conv = nn.Conv3d(
-            128, num_classes, 1, stride=1, padding=0, bias=True)  # TODO
+            128, num_classes, 1, stride=1, padding=0, bias=True)  
 
     def forward(self, input, predict=False):
         output = self.initial_block(input)
@@ -111,7 +111,7 @@ class UpsamplerBlock(nn.Module):
         super().__init__()
         self.conv = nn.ConvTranspose3d(
             ninput, noutput, 3, stride=2, padding=1, output_padding=1, bias=True)
-        self.bn = nn.BatchNorm3d(noutput, eps=1e-3)  # TODO
+        self.bn = nn.BatchNorm3d(noutput, eps=1e-3)  
 
     def forward(self, input):
         output = self.conv(input)

@@ -192,7 +192,7 @@ class Cluster_3d:
                         instance_mask = torch.zeros(depth, height, width).short()
                         instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()
                         count += 1
-                        unclustered[proposal] = 0
+                unclustered[proposal] = 0
 
             instance_map[mask.squeeze().cpu()] = instance_map_masked.cpu()
 

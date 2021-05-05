@@ -207,6 +207,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
 
 
 def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None, avg_bg = 0):
+    
     model.eval()
     # cluster module
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
@@ -244,7 +245,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()
                 instances = F.pad(instances, p3d, "constant", 0)
-
+            
             if (tta):
                 for iter in range(16):
                     if iter == 0:
@@ -273,7 +274,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                     resultList.append(sc)
             else:
                 if ('instance' in sample):
-                    sc=matching_dataset(y_true= [instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) # TODO 1 jan
+                    sc=matching_dataset(y_true= [instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) 
                     if (verbose):
                         print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
                     resultList.append(sc.accuracy)

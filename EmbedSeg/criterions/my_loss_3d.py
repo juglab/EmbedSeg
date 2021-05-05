@@ -35,9 +35,9 @@ class SpatialEmbLoss_3d(nn.Module):
 
         for b in range(0, batch_size):
 
-            spatial_emb = torch.tanh(prediction[b, 0:3]) + xyzm_s  # 3 x d x h x w #TODO
+            spatial_emb = torch.tanh(prediction[b, 0:3]) + xyzm_s  # 3 x d x h x w 
             sigma = prediction[b, 3:3 + self.n_sigma]  # n_sigma x d x h x w
-            seed_map = torch.sigmoid(prediction[b, 3 + self.n_sigma:3 + self.n_sigma + 1])  # 1 x d x h x w # TODO
+            seed_map = torch.sigmoid(prediction[b, 3 + self.n_sigma:3 + self.n_sigma + 1])  # 1 x d x h x w 
             # loss accumulators
             var_loss = 0
             instance_loss = 0
@@ -63,7 +63,7 @@ class SpatialEmbLoss_3d(nn.Module):
                 if (center_mask.sum().eq(1)):
                     center = xyzm_s[center_mask.expand_as(xyzm_s)].view(3, 1, 1, 1)
                 else:
-                    xyz_in = xyzm_s[in_mask.expand_as(xyzm_s)].view(3, -1)  # TODO --> should this edge case change!
+                    xyz_in = xyzm_s[in_mask.expand_as(xyzm_s)].view(3, -1)  
                     center = xyz_in.mean(1).view(3, 1, 1, 1)  # 3 x 1 x 1 x 1
 
                 # calculate sigma
