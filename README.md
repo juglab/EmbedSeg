@@ -19,23 +19,18 @@
 - [Dependencies](#dependencies)
 - [Getting Started](#getting-started)
 - [Datasets](#datasets)
-- [Training & Inference on your data](#training-&-Inference-on-your-data)
+- [Training & Inference on your data](#training-and-inference-on-your-data)
 - [Animated figures](#animated-figures)
-- [Contribution](#contributing)
+- [Contributing](#contributing)
 - [Issues](#issues)
 - [Citation](#citation)
 - [Acknowledgements](#acknowledgements)
 
 
 ### Introduction
-This repository hosts the version of the code used for the **[preprint](https://arxiv.org/abs/2101.10033)** **Embedding-based Instance Segmentation of Microscopy Images**. For a short summary of the main attributes of the publication, please check out the **[project webpage](https://juglab.github.io/EmbedSeg/)**.
+This repository hosts the version of the code used for the **[preprint](https://arxiv.org/abs/2101.10033)** **Embedding-based Instance Segmentation of Microscopy Images**. 
 
 We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, based on the ideas by **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
-
-<p align="center">
-  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
-</p>
-
 
 With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world microscopy datasets. `EmbedSeg` has a small enough memory footprint (between 0.7 to about 3 GB) to allow network training on virtually all CUDA enabled hardware, including laptops.
 
@@ -66,7 +61,11 @@ Create a new environment using :
 Look in the `examples` directory,  and try out one of the provided notebooks. Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
 
 
-### Training & Inference on your data
+### Datasets
+
+...
+
+### Training and Inference on your data
    
 `*.tif`-type images and the corresponding masks should be respectively present under `images` and `masks`, under directories `train`, `val` and `test`. (In order to prepare such instance masks, one could use the Fiji plugin <b>Labkit</b> as suggested <b>[here](https://github.com/juglab/EmbedSeg/wiki/Use-Labkit-to-prepare-instance-masks)</b>). The following would be a desired structure as to how data should be prepared.
 
@@ -94,6 +93,11 @@ $data_dir
             └───...
 ```
 
+### Animated Figures
+
+<p align="center">
+  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
+</p>
 
 
 ### Contributing
