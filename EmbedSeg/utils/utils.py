@@ -224,7 +224,7 @@ class Cluster:
         spatial_emb = torch.tanh(prediction[0:2]) + xym_s  # 2 x h x w
         sigma = prediction[2:2 + n_sigma]  # n_sigma x h x w
 
-        instance_map = torch.zeros(height, width).byte().cuda()
+        instance_map = torch.zeros(height, width).short().cuda()
         if (self.one_hot):
             unique_instances = torch.arange(instance.size(0))
         else:
@@ -295,7 +295,7 @@ class Cluster:
                         instance_map_masked[proposal.squeeze()] = count
                         instance_mask = torch.zeros(height, width).short()
                         instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()  # TODO
-                        center_image = torch.zeros(height, width).byte()
+                        center_image = torch.zeros(height, width).short()
 
                         center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
                         center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
@@ -484,7 +484,7 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
         sample_spatial_embedding_x[id.item()] = add_samples(samples_spatial_embeddings, 0, grid_x - 1, pixel_x)
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1, pixel_y)
         center_image = predictions[id.item() - 1]['center-image']  # predictions is a list!
-        center_mask = in_mask & center_image
+        center_mask = in_mask & center_image.byte()
 
         if (center_mask.sum().eq(1)):
             center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
