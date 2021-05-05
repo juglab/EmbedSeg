@@ -1,9 +1,7 @@
 import os
-
 import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import Cluster, Cluster_3d, prepare_embedding_for_test_image
@@ -12,11 +10,11 @@ import torch.nn.functional as F
 torch.backends.cudnn.benchmark = True
 import numpy as np
 from tifffile import imsave
-
 from matplotlib.patches import Ellipse
+from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 
 
-def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None):
+def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None, avg_bg = None):
     global n_sigma, ap_val, min_mask_sum, min_unclustered_sum, min_object_size
     global tta, seed_thresh, model, dataset_it, save_images, save_results, save_dir
 
@@ -54,232 +52,12 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
     if(test_configs['name']=='2d'):
         test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'],
              pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'],
-             one_hot = test_configs['dataset']['kwargs']['one_hot'])
+             one_hot = test_configs['dataset']['kwargs']['one_hot'], avg_bg = avg_bg)
     elif(test_configs['name']=='3d'):
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                 pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity)
-
-def to_cuda(im_numpy):
-    im_numpy = im_numpy[np.newaxis, np.newaxis, ...]
-    return torch.from_numpy(im_numpy).float().cuda()
-
-
-def to_numpy(im_cuda):
-    return im_cuda.cpu().detach().numpy()
-
-
-def process_flips(im_numpy):
-    im_numpy_correct = im_numpy
-    im_numpy_correct[0, 1, ...] = -1 * im_numpy[
-        0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
-    return im_numpy_correct
-
-def to_cuda_3d(im_numpy):
-    im_numpy = im_numpy[np.newaxis, ...]
-    return torch.from_numpy(im_numpy).float().cuda()
-
-
-def apply_tta_2d(im):
-    im_numpy = im.cpu().detach().numpy()
-    im0 = im_numpy[0, 0]  # remove batch and channel dimensions # TODO: this is not correct for multi channel images
-    im0 = im0[np.newaxis, ...]  # add z dimension --> helps in rotating!
-
-    im1 = np.rot90(im0, 1, (1, 2))
-    im2 = np.rot90(im0, 2, (1, 2))
-    im3 = np.rot90(im0, 3, (1, 2))
-    im4 = np.flip(im0, 1)
-    im5 = np.flip(im1, 1)
-    im6 = np.flip(im2, 1)
-    im7 = np.flip(im3, 1)
-
-    im0_cuda = to_cuda(im0[0, ...])
-    im1_cuda = to_cuda(np.ascontiguousarray(im1[0, ...]))
-    im2_cuda = to_cuda(np.ascontiguousarray(im2[0, ...]))
-    im3_cuda = to_cuda(np.ascontiguousarray(im3[0, ...]))
-    im4_cuda = to_cuda(np.ascontiguousarray(im4[0, ...]))
-    im5_cuda = to_cuda(np.ascontiguousarray(im5[0, ...]))
-    im6_cuda = to_cuda(np.ascontiguousarray(im6[0, ...]))
-    im7_cuda = to_cuda(np.ascontiguousarray(im7[0, ...]))
-
-    output0 = model(im0_cuda)
-    output1 = model(im1_cuda)
-    output2 = model(im2_cuda)
-    output3 = model(im3_cuda)
-    output4 = model(im4_cuda)
-    output5 = model(im5_cuda)
-    output6 = model(im6_cuda)
-    output7 = model(im7_cuda)
-
-    # detransform outputs
-    output0_numpy = to_numpy(output0)
-    output1_numpy = to_numpy(output1)
-    output2_numpy = to_numpy(output2)
-    output3_numpy = to_numpy(output3)
-    output4_numpy = to_numpy(output4)
-    output5_numpy = to_numpy(output5)
-    output6_numpy = to_numpy(output6)
-    output7_numpy = to_numpy(output7)
-
-    # invert rotations and flipping
-
-    output1_numpy = np.rot90(output1_numpy, 1, (3, 2))
-    output2_numpy = np.rot90(output2_numpy, 2, (3, 2))
-    output3_numpy = np.rot90(output3_numpy, 3, (3, 2))
-    output4_numpy = np.flip(output4_numpy, 2)
-    output5_numpy = np.flip(output5_numpy, 2)
-    output5_numpy = np.rot90(output5_numpy, 1, (3, 2))
-    output6_numpy = np.flip(output6_numpy, 2)
-    output6_numpy = np.rot90(output6_numpy, 2, (3, 2))
-    output7_numpy = np.flip(output7_numpy, 2)
-    output7_numpy = np.rot90(output7_numpy, 3, (3, 2))
-
-    # have to also process the offsets and covariance sensibly
-    output0_numpy_correct = output0_numpy
-
-    # note rotations are always [cos(theta) sin(theta); -sin(theta) cos(theta)]
-    output1_numpy_correct = np.zeros_like(output1_numpy)
-    output1_numpy_correct[0, 0, ...] = -output1_numpy[0, 1, ...]
-    output1_numpy_correct[0, 1, ...] = output1_numpy[0, 0, ...]
-    output1_numpy_correct[0, 2, ...] = output1_numpy[0, 3, ...]
-    output1_numpy_correct[0, 3, ...] = output1_numpy[0, 2, ...]
-    output1_numpy_correct[0, 4, ...] = output1_numpy[0, 4, ...]
-
-    output2_numpy_correct = np.zeros_like(output2_numpy)
-    output2_numpy_correct[0, 0, ...] = -output2_numpy[0, 0, ...]
-    output2_numpy_correct[0, 1, ...] = -output2_numpy[0, 1, ...]
-    output2_numpy_correct[0, 2, ...] = output2_numpy[0, 2, ...]
-    output2_numpy_correct[0, 3, ...] = output2_numpy[0, 3, ...]
-    output2_numpy_correct[0, 4, ...] = output2_numpy[0, 4, ...]
-
-    output3_numpy_correct = np.zeros_like(output3_numpy)
-    output3_numpy_correct[0, 0, ...] = output3_numpy[0, 1, ...]
-    output3_numpy_correct[0, 1, ...] = -output3_numpy[0, 0, ...]
-    output3_numpy_correct[0, 2, ...] = output3_numpy[0, 3, ...]
-    output3_numpy_correct[0, 3, ...] = output3_numpy[0, 2, ...]
-    output3_numpy_correct[0, 4, ...] = output3_numpy[0, 4, ...]
-
-    output4_numpy_correct = process_flips(output4_numpy)
-
-    output5_numpy_flipped = process_flips(output5_numpy)
-    output5_numpy_correct = np.zeros_like(output5_numpy_flipped)
-    output5_numpy_correct[0, 0, ...] = -output5_numpy_flipped[0, 1, ...]
-    output5_numpy_correct[0, 1, ...] = output5_numpy_flipped[0, 0, ...]
-    output5_numpy_correct[0, 2, ...] = output5_numpy_flipped[0, 3, ...]
-    output5_numpy_correct[0, 3, ...] = output5_numpy_flipped[0, 2, ...]
-    output5_numpy_correct[0, 4, ...] = output5_numpy_flipped[0, 4, ...]
-
-    output6_numpy_flipped = process_flips(output6_numpy)
-    output6_numpy_correct = np.zeros_like(output6_numpy_flipped)
-    output6_numpy_correct[0, 0, ...] = -output6_numpy_flipped[0, 0, ...]
-    output6_numpy_correct[0, 1, ...] = -output6_numpy_flipped[0, 1, ...]
-    output6_numpy_correct[0, 2, ...] = output6_numpy_flipped[0, 2, ...]
-    output6_numpy_correct[0, 3, ...] = output6_numpy_flipped[0, 3, ...]
-    output6_numpy_correct[0, 4, ...] = output6_numpy_flipped[0, 4, ...]
-
-    output7_numpy_flipped = process_flips(output7_numpy)
-    output7_numpy_correct = np.zeros_like(output7_numpy_flipped)
-    output7_numpy_correct[0, 0, ...] = output7_numpy_flipped[0, 1, ...]
-    output7_numpy_correct[0, 1, ...] = -output7_numpy_flipped[0, 0, ...]
-    output7_numpy_correct[0, 2, ...] = output7_numpy_flipped[0, 3, ...]
-    output7_numpy_correct[0, 3, ...] = output7_numpy_flipped[0, 2, ...]
-    output7_numpy_correct[0, 4, ...] = output7_numpy_flipped[0, 4, ...]
-
-    output = np.concatenate((output0_numpy_correct, output1_numpy_correct, output2_numpy_correct, output3_numpy_correct,
-                             output4_numpy_correct, output5_numpy_correct, output6_numpy_correct,
-                             output7_numpy_correct), 0)
-    output = np.mean(output, 0, keepdims=True)  # 1 5 Y X
-    return torch.from_numpy(output).float().cuda()
-
-
-def apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot):
-    im_numpy = im.cpu().detach().numpy() # BCZYX
-    im_transformed = im_numpy[0, :] # remove batch dimension, now CZYX
-
-    if dir_rot == 0:  # rotate about ZY
-        temp = np.ascontiguousarray(np.rot90(im_transformed, 2 * times, (
-        1, 2)))  # CZYX
-    elif dir_rot == 1:  # rotate about YX
-        temp = np.ascontiguousarray(np.rot90(im_transformed, times, (2, 3)))
-    elif dir_rot == 2:  # rotate about XZ
-        temp = np.ascontiguousarray(np.rot90(im_transformed, 2 * times, (3, 1)))
-
-    if flip == 0: # no flip
-        pass
-    else: # flip
-        if dir_flip == 0:
-            temp = np.ascontiguousarray(np.flip(temp, axis = 1))  # Z
-        elif dir_flip == 1:
-            temp = np.ascontiguousarray(np.flip(temp, axis = 2))  # Y
-        elif dir_flip == 2:
-            temp = np.ascontiguousarray(np.flip(temp, axis = 3))  # X
-
-    output_transformed = model(to_cuda_3d(temp)) #BCZYX = 1 7 Z Y X
-    output_transformed_numpy = to_numpy(output_transformed) # BCZYX
-
-    # detransform output
-    if flip ==0:
-        temp_detransformed_numpy = output_transformed_numpy
-    else:
-        if dir_flip == 0:
-            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=2))  # Z
-        elif dir_flip == 1:
-            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=3))  # Y
-        elif dir_flip == 2:
-            temp_detransformed_numpy = np.ascontiguousarray(np.flip(output_transformed_numpy, axis=4))  # X
-
-    if dir_rot == 0:  # rotate about ZY
-        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, 2 * times, (
-        3, 2)))  # BCZYX
-    elif dir_rot == 1:  # rotate about YX
-        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, times, (4, 3)))
-    elif dir_rot == 2:  # rotate about XZ
-        temp_detransformed_numpy = np.ascontiguousarray(np.rot90(temp_detransformed_numpy, 2 * times, (2, 4)))
-
-    #  have to also process the offsets and covariance sensibly
-    # for flipping, just the direction of the offset should reverse
-    temp_detransformed_numpy_flipped = temp_detransformed_numpy.copy()
-    if flip ==0:
-        temp_detransformed_numpy_flipped = temp_detransformed_numpy
-    else:
-        if dir_flip == 0:
-            temp_detransformed_numpy_flipped[:, 2, ...] = - temp_detransformed_numpy[:, 2, ...]
-        elif dir_flip == 1:
-            temp_detransformed_numpy_flipped[:, 1, ...] = - temp_detransformed_numpy[:, 1, ...]
-        elif dir_flip == 2:
-            temp_detransformed_numpy_flipped[:, 0, ...] = - temp_detransformed_numpy[:, 0, ...]
-
-    temp_detransformed_numpy_correct = temp_detransformed_numpy_flipped.copy()
-    if dir_rot == 0 and times%2==1:  # rotate about ZY
-
-        temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
-        temp_detransformed_numpy_correct[:, 2, ...] = -temp_detransformed_numpy_flipped[:, 2, ...]
-
-
-    elif dir_rot == 1:  # rotate about YX
-        if times ==0:
-            pass
-        elif times ==1:
-            temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
-            temp_detransformed_numpy_correct[:, 1, ...] = temp_detransformed_numpy_flipped[:, 0, ...]
-
-            temp_detransformed_numpy_correct[:, 3, ...] = temp_detransformed_numpy_flipped[:, 4, ...]
-            temp_detransformed_numpy_correct[:, 4, ...] = temp_detransformed_numpy_flipped[:, 3, ...]
-        elif times ==2:
-            temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
-            temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 1, ...]
-        elif times ==3:
-            temp_detransformed_numpy_correct[:, 0, ...] = temp_detransformed_numpy_flipped[:, 1, ...]
-            temp_detransformed_numpy_correct[:, 1, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
-
-            temp_detransformed_numpy_correct[:, 3, ...] = temp_detransformed_numpy_flipped[:, 4, ...]
-            temp_detransformed_numpy_correct[:, 4, ...] = temp_detransformed_numpy_flipped[:, 3, ...]
-
-    elif dir_rot == 2 and times%2==1:  # rotate about XZ
-        temp_detransformed_numpy_correct[:, 2, ...] = -temp_detransformed_numpy_flipped[:, 2, ...]
-        temp_detransformed_numpy_correct[:, 0, ...] = -temp_detransformed_numpy_flipped[:, 0, ...]
-    return temp_detransformed_numpy_correct
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity, avg_bg = avg_bg)
 
 
 
@@ -291,7 +69,7 @@ def get_instance_map(image):
 
 
 
-def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False):
+def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, avg_bg = 0):
     model.eval()
 
     # cluster module
@@ -316,13 +94,13 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 diff_x = 0
             p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)  # last dim, second last dim
 
-            im = F.pad(im, p2d, "constant", 0)
+            im = F.pad(im, p2d, "constant", avg_bg)
             if('instance' in sample):
                 instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
                 instances = F.pad(instances, p2d, "constant", 0)
 
             if (tta):
-                output = apply_tta_2d(im)
+                output = apply_tta_2d(im, model)
             else:
                 output = model(im)
 
@@ -417,7 +195,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
 
 
-def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None):
+def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None, avg_bg = 0):
     model.eval()
     # cluster module
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
@@ -451,27 +229,17 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 diff_x = 0
             p3d = (diff_x//2, diff_x - diff_x//2, diff_y//2, diff_y -diff_y//2, diff_z//2, diff_z - diff_z//2) # last dim, second last dim, third last dim!
 
-            im = F.pad(im, p3d, "constant", 0)
+            im = F.pad(im, p3d, "constant", avg_bg)
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()
                 instances = F.pad(instances, p3d, "constant", 0)
 
-            times_list =   [0, 1, 2, 3,    0, 1, 2, 3,    0, 1, 2, 3,    1, 1, 1, 1,    0, 1, 2, 3,    1, 1, 1, 1] # 0 --> 0 deg, 1 --> 90 deg, 2 --> 180 deg, 3 --> 270 deg
-            flip_list =    [0, 0, 0, 0,    1, 1, 1, 1,    1, 1, 1, 1,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> no, 1 --> yes
-            dir_rot_list = [1, 1, 1, 1,    1, 1, 1, 1,    1, 1, 1, 1,    2, 2, 2, 2,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> ZY plane, 1 --> YX plane, 2--> XZ plane
-            dir_flip_list= [0, 0, 0, 0,    0, 0, 0, 0,    2, 2, 2, 2,    0, 0, 0, 0,    1, 1, 1, 1,    0, 0, 0, 0] # 0 --> Z axis, 1 --> Y axis, 2 --> X axis
-
             if (tta):
-                for iter in range(24):
-                    times = times_list[iter]
-                    flip = flip_list[iter]  # no or yes
-                    dir_rot = dir_rot_list[iter]  # 0 --> ZY, 1 --> YX, 2 --> XZ
-                    dir_flip = dir_flip_list[iter]  # 0 --> Z , 1--> Y, 2--> X
+                for iter in range(16):
                     if iter == 0:
-                        output_average = apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot) # BCZYX
+                        output_average = apply_tta_3d(im, model, iter)  # iter
                     else:
-                        output_average = 1/(iter+1)*(output_average * iter + apply_tta_3d_probabilistic(im, flip, times, dir_flip, dir_rot))
-
+                        output_average = 1 / (iter + 1) * (output_average * iter + apply_tta_3d(im, model, iter))  # iter
                 output = torch.from_numpy(output_average).float().cuda()
             else:
                 output = model(im)
