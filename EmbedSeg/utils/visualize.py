@@ -14,9 +14,7 @@ def create_color_map(n_colors= 10):
     p_ = np.hstack((p, np.ones((p.shape[0], 1))))
     p_ = np.where(p_>0, p_, 0)
     p_ = np.where(p_<=1, p_, 1)
-    np.save('../../../cmaps/cmap_'+str(n_colors), p_)
-    newcmp = ListedColormap(p_)
-    return newcmp
+    return p_
 
 def visualize(image, prediction, ground_truth, embedding, new_cmp):
     font = {'family': 'serif',
@@ -31,11 +29,12 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
     plt.text(30, 30, "IM", fontdict=font)
     plt.xlabel('Image')
     plt.axis('off')
-    plt.subplot(222); 
-    plt.axis('off')
-    plt.imshow(ground_truth, cmap=new_cmp, interpolation = 'None')
-    plt.text(30, 30, "GT", fontdict=font)
-    plt.xlabel('Ground Truth')
+    if(ground_truth is not None):    
+        plt.subplot(222); 
+        plt.axis('off')
+        plt.imshow(ground_truth, cmap=new_cmp, interpolation = 'None')
+        plt.text(30, 30, "GT", fontdict=font)
+        plt.xlabel('Ground Truth')
     plt.subplot(223);
     plt.axis('off')
     plt.imshow(embedding,  interpolation = 'None')

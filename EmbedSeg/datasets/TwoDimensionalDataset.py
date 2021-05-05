@@ -88,16 +88,13 @@ class TwoDimensionalDataset(Dataset):
             instance_map = np.zeros((pic.shape[0], pic.shape[1], pic.shape[2]), dtype=np.uint8)
             class_map = np.zeros((pic.shape[1], pic.shape[2]), dtype=np.uint8)
         else:
-            #instance_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.uint8) #TODO
             instance_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.int16)
             class_map = np.zeros((pic.shape[0], pic.shape[1]), dtype=np.uint8)
 
         if bg_id is not None:
             mask = pic > bg_id
-
             if mask.sum() > 0:
                 ids, _, _ = relabel_sequential(pic[mask])
-
                 instance_map[mask] = ids
                 if (one_hot):
                     class_map[np.max(mask, axis=0)] = 1

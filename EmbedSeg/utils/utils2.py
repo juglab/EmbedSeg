@@ -1,3 +1,8 @@
+"""
+Modified from StarDist `matching.py`
+https://github.com/stardist/stardist/blob/master/stardist/matching.py
+"""
+
 from skimage.measure import regionprops
 from skimage.draw import polygon
 import numpy as np

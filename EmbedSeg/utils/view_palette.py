@@ -1,3 +1,6 @@
+"""
+Modified from https://github.com/taketwo/glasbey
+"""
 #!/usr/bin/env python
 # encoding: utf-8
 
