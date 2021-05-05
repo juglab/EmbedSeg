@@ -1,10 +1,10 @@
 import os
 import numpy as np
 import tifffile
+from numba import jit
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
-from scipy.spatial import distance_matrix
-from numba import jit
+
 
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
@@ -70,7 +70,7 @@ def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
 def pairwise_python(X):
     M = X.shape[0]
     N = X.shape[1]
-    D = np.empty((M, M), dtype=np.float32) 
+    D = np.empty((M, M), dtype=np.float32)
     for i in range(M):
         for j in range(M):
             d = 0.0
@@ -115,17 +115,17 @@ def generate_center_image(instance, center, ids, one_hot):
                 ym, xm = y[imin], x[imin]
             elif (center == 'medoid'):
                 ### option - 1 (scipy `distance_matrix`) (slow-ish)
-                #dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
-                #imin = np.argmin(np.sum(dist_matrix, axis=0))
-                #ym, xm = y[imin], x[imin]
-                
+                # dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
+                # imin = np.argmin(np.sum(dist_matrix, axis=0))
+                # ym, xm = y[imin], x[imin]
+
                 ### option - 2 (`hdmedoid`) (slightly faster than scipy `distance_matrix`)
-                #ym, xm = hd.medoid(np.vstack((y,x))) 
-                
+                # ym, xm = hd.medoid(np.vstack((y,x)))
+
                 ### option - 3 (`numba`) 
                 dist_matrix = pairwise_python(np.vstack((x, y)).transpose())
                 imin = np.argmin(np.sum(dist_matrix, axis=0))
-                ym, xm = y[imin], x[imin]		
+                ym, xm = y[imin], x[imin]
             center_image[int(np.round(ym)), int(np.round(xm))] = True
     return center_image
 
@@ -140,13 +140,14 @@ def generate_center_image_3d(instance, center, ids, one_hot, anisotropy_factor, 
                 zm, ym, xm = np.mean(z), np.mean(y), np.mean(x)
             elif (center == 'approximate-medoid'):
                 zm_temp, ym_temp, xm_temp = np.median(z), np.median(y), np.median(x)
-                imin = np.argmin((x - xm_temp) ** 2 + (y - ym_temp) ** 2 + (anisotropy_factor* (z - zm_temp)) ** 2)
+                imin = np.argmin((x - xm_temp) ** 2 + (y - ym_temp) ** 2 + (anisotropy_factor * (z - zm_temp)) ** 2)
                 zm, ym, xm = z[imin], y[imin], x[imin]
             elif (center == 'medoid'):
-                dist_matrix = pairwise_python(np.vstack((speed_up*x, speed_up*y, anisotropy_factor*z)).transpose())
+                dist_matrix = pairwise_python(
+                    np.vstack((speed_up * x, speed_up * y, anisotropy_factor * z)).transpose())
                 imin = np.argmin(np.sum(dist_matrix, axis=0))
                 zm, ym, xm = z[imin], y[imin], x[imin]
-            center_image[int(np.round(zm)), int(np.round(speed_up*ym)), int(np.round(speed_up*xm))] = True
+            center_image[int(np.round(zm)), int(np.round(speed_up * ym)), int(np.round(speed_up * xm))] = True
     return center_image
 
 
@@ -231,7 +232,36 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
             tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
-def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False, one_hot=False, anisotropy_factor = 1.0, speed_up=1.0):
+
+def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
+               one_hot=False, anisotropy_factor=1.0, speed_up=1.0):
+    """
+    :param im: string
+            Path to image file
+    :param inst: string
+            Path to instance file
+    :param crops_dir: string
+            Path to crops directory
+    :param data_subset: string
+            One of 'train' or 'val'
+    :param crop_size_x: int
+            Size of image along x dimension
+    :param crop_size_y: int
+            Size of image along y dimension
+    :param crop_size_z: int
+            Size of image along z dimension
+    :param center: string
+            One of 'medoid' or 'centroid'
+    :param norm: boolean
+            if True, then images are min-max normalized and then cropped
+    :param one_hot: boolean
+            set to True, if the instances are encoded in a one-hot fashion
+    :param anisotropy_factor: float
+            ratio of size of voxel in z dimension to size of voxel in x or y dimension
+    :param speed_up: int
+            for faster medoid evaluation, the x and y dimensions are sub-sampled by this factor
+    :return:
+    """
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -268,14 +298,16 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
         jj = int(np.clip(ym - crop_size_y / 2, 0, h - crop_size_y))
         ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
 
-        if (image[kk:kk+crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (crop_size_z, crop_size_y, crop_size_x)):
-            im_crop = image[kk:kk+crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
-            instance_crop = instance[kk:kk+crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
-            center_image_crop = generate_center_image_3d(instance_crop, center, ids, one_hot=one_hot, anisotropy_factor=anisotropy_factor, speed_up=speed_up)
+        if (image[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (
+        crop_size_z, crop_size_y, crop_size_x)):
+            im_crop = image[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
+            instance_crop = instance[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
+            center_image_crop = generate_center_image_3d(instance_crop, center, ids, one_hot=one_hot,
+                                                         anisotropy_factor=anisotropy_factor, speed_up=speed_up)
             tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
-            tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop.astype(np.uint16))
+            tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
+                            instance_crop.astype(np.uint16))
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
-
 
 
 def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=False, one_hot=True):
@@ -318,7 +350,7 @@ def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=Fals
     if (norm):
         image = normalize(image, 1, 99.8, axis=(0, 1))
     instance = fill_label_holes(instance)
-    
+
     h, w = image.shape
     instance_np = np.array(instance, copy=False)
     object_mask = instance_np > 0

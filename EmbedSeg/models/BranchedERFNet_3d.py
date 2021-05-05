@@ -1,7 +1,3 @@
-"""
-Author: Davy Neven
-Licensed under the CC BY-NC 4.0 license (https://creativecommons.org/licenses/by-nc/4.0/)
-"""
 import torch
 import torch.nn as nn
 import EmbedSeg.models.erfnet_3d as erfnet
