@@ -41,7 +41,8 @@ setup(
           "seaborn",
           "scikit-image",
           "colorspacious",
-          "itkwidgets"
+          "itkwidgets",
+          "pytest"
         ]
 )
 
