@@ -5,7 +5,6 @@ from torchvision.transforms import transforms as T
 
 
 class RandomRotationsAndFlips(T.RandomRotation):
-
     def __init__(self, keys=[], one_hot=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.keys = keys

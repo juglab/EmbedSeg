@@ -15,6 +15,15 @@ from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 
 
 def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None, avg_bg = None):
+    """
+    :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
+    :param verbose: if verbose=True, then average precision for each image is shown
+    :param mask_region: list of lists. Specify as [[mask_start_z, mask_start_y, mask_start_x], [mask_end_z, mask_end_y, mask_end_x]].
+    where, mask_start_x etc are pixel coordinates of the cuboidal region which should be masked
+    :param mask_intensity: insert this value in the masked region of the image
+    :param avg_bg: Average background image intensity in the train and val images
+    :return:
+    """
     global n_sigma, ap_val, min_mask_sum, min_unclustered_sum, min_object_size
     global tta, seed_thresh, model, dataset_it, save_images, save_results, save_dir
 
@@ -61,15 +70,17 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
 
 
 
-def get_instance_map(image):
-    for z in range(image.shape[0]):
-        image[z, image[z, ...] == 1] = z + 1
-    return image
-
-
-
-
 def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, avg_bg = 0):
+    """
+    :param verbose: if True, then average prevision is printed out for each image
+    :param grid_y:
+    :param grid_x:
+    :param pixel_y:
+    :param pixel_x:
+    :param one_hot: True, if the instance masks are encoded in a one-hot fashion
+    :param avg_bg: Average Background Image Intensity
+    :return:
+    """
     model.eval()
 
     # cluster module

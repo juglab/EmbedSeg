@@ -151,8 +151,7 @@ class Cluster_3d:
 
         return instance_map
 
-    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=128,
-                min_object_size=36):
+    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=128, min_object_size=36):
 
         depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
         xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]
