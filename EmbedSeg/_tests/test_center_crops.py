@@ -21,11 +21,3 @@ def test_generate_center_image_2():
     assert np.abs(y-50)<=1 and np.abs(x-50)<=1    
 
 
-def test_generate_center_image_3():
-    ma = np.zeros((40, 40, 40), dtype=np.uint16)
-    ma [10:-10, 10:-10, 10:-10] = 2
-    ids = np.unique(ma)
-    ids = ids[ids!=0]
-    center_image = generate_center_image_3d(ma, center='medoid', ids=ids, one_hot = False, anisotropy_factor=1, speed_up=1)
-    z, y, x = np.where(center_image==True)
-    assert np.abs(z-20)<=1 and np.abs(y-20)<=1 and np.abs(x-20)<=1
