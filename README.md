@@ -1,11 +1,11 @@
 ## EmbedSeg 
 
 
-[![License](https://img.shields.io/pypi/l/napari-minimal-plugin.svg?color=green)](https://github.com/juglab/EmbedSeg/raw/master/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/napari-minimal-plugin.svg?color=green)](https://pypi.org/project/EmbedSeg)
-[![Python Version](https://img.shields.io/pypi/pyversions/napari-minimal-plugin.svg?color=green)](https://python.org)
-[![tests](https://github.com/juglab/napari-minimal-plugin/workflows/tests/badge.svg)](https://github.com/juglab/EmbedSeg/actions)
-[![codecov](https://codecov.io/gh/juglab/napari-minimal-plugin/branch/master/graph/badge.svg)](https://codecov.io/gh/juglab/EmbedSeg)
+[![License](https://img.shields.io/pypi/l/EmbedSeg.svg?color=green)](https://github.com/juglab/EmbedSeg/raw/master/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/EmbedSeg.svg?color=green)](https://pypi.org/project/EmbedSeg)
+[![Python Version](https://img.shields.io/pypi/pyversions/EmbedSeg.svg?color=green)](https://python.org)
+[![tests](https://github.com/juglab/EmbedSeg/workflows/tests/badge.svg)](https://github.com/juglab/EmbedSeg/actions)
+[![codecov](https://codecov.io/gh/juglab/EmbedSeg/branch/master/graph/badge.svg)](https://codecov.io/gh/juglab/EmbedSeg)
 
 
 ### Introduction
@@ -92,8 +92,7 @@ $data_dir
 
 ### Contributing
 
-Contributions are very welcome. Tests can be run with [tox], please ensure
-the coverage at least stays the same before you submit a pull request.
+Contributions are very welcome. Tests can be run with [tox].
 
 ### Issues
 
