@@ -23,7 +23,7 @@ def test_generate_center_image_2():
 
 def test_generate_center_image_3():
     ma = np.zeros((100, 100, 100))
-    ma [30:-30, 30:-30, 30:-30] = 2
+    ma [40:-40, 40:-40, 40:-40] = 2
     ids = np.unique(ma)
     ids = ids[ids!=0]
     center_image = generate_center_image_3d(ma, center='medoid', ids=ids, one_hot = False, anisotropy_factor=1, speed_up=1)
