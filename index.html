@@ -202,21 +202,11 @@
 
 
 <p align="justify">
-    Automatic detection and segmentation of objects in microscopy images is important for many biological applications.
-    In the domain of natural images, and in particular in the context of city street scenes, embedding-based instance
-    segmentation leads to high-quality results.
-    Inspired by this line of work, we introduce <strong>EmbedSeg</strong>, an end-to-end trainable deep learning method
-    based on the work by
-    <emph>Neven et al</emph>
-    .
-    While their approach embeds each pixel to the centroid of any given instance, in
-    <emph>EmbedSeg</emph>, motivated by the complex shapes of biological objects, we propose to use the medoid instead.
-    Additionally, we make use of a test-time augmentation scheme, and show that both suggested modifications improve the
-    instance segmentation performance on biological microscopy datasets notably.
-    We demonstrate that embedding-based instance segmentation achieves competitive results in comparison to
-    state-of-the-art methods on diverse and biologically relevant microscopy datasets.
-    Finally, we show that the overall pipeline has a small enough memory footprint to be used on virtually all
-    CUDA-enabled laptop hardware.
+    Automatic detection and segmentation of objects in 2D and 3D microscopy data is important for countless biomedical applications. 
+    In the natural image domain, spatial embedding-based instance segmentation methods are known to yield high-quality results, but their utility for segmenting microscopy data is currently little researched. 
+    Here we introduce <strong>EmbedSeg</strong>, an embedding-based instance segmentation method which outperforms existing state-of-the-art baselines on 2D as well as 3D microscopy datasets. 
+    Additionally, we show that <strong>EmbedSeg</strong> has a GPU memory footprint small enough to train even on laptop GPUs, making it accessible to virtually everyone. 
+    Finally, we introduce four new 3D microscopy datasets, which we make publicly available alongside ground truth training labels.
 </p>
 <br><br>
 <hr>
