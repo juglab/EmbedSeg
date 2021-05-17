@@ -8,16 +8,16 @@
 
 ## Table of Contents
 
-- [Introduction](#introduction)
-- [Dependencies](#dependencies)
-- [Getting Started](#getting-started)
-- [Datasets](#datasets)
-- [Training & Inference on your data](#training-and-inference-on-your-data)
-- [Animated figures](#animated-figures)
-- [Contributing](#contributing)
-- [Issues](#issues)
-- [Citation](#citation)
-- [Acknowledgements](#acknowledgements)
+- **[Introduction](#introduction)**
+- **[Dependencies](#dependencies)**
+- **[Getting Started](#getting-started)**
+- **[Datasets](#datasets)**
+- **[Training & Inference on your data](#training-and-inference-on-your-data)**
+- **[Animated figures](#animated-figures)**
+- **[Contributing](#contributing)**
+- **[Issues](#issues)**
+- **[Citation](#citation)**
+- **[Acknowledgements](#acknowledgements)**
 
 
 ### Introduction
@@ -31,7 +31,7 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
 
-- One could install `EmbedSeg` with [pip]:
+- One could install `EmbedSeg` with **[pip]**:
 ```
 conda create -n EmbedSegEnv python==3.7
 conda activate EmbedSegEnv
@@ -55,9 +55,8 @@ Look in the `examples` directory,  and try out one of the provided notebooks. Pl
 
 
 ### Datasets
-3D datasets are available [here](https://github.com/juglab/EmbedSeg/releases/tag/v0.1.0). 
-![3d](https://user-images.githubusercontent.com/34229641/117218924-7458a200-ae04-11eb-91d1-bfc925befa88.png)
-
+3D datasets are available as release assets **[here](https://github.com/juglab/EmbedSeg/releases/tag/v0.1.0)**. 
+![datasets](https://user-images.githubusercontent.com/34229641/118558022-5bd27b00-b766-11eb-889b-00886b725c2a.png)
 
 ### Training and Inference on your data
    
@@ -96,15 +95,15 @@ $data_dir
 
 ### Contributing
 
-Contributions are very welcome. Tests can be run with [tox].
+Contributions are very welcome. Tests can be run with **[tox]**.
 
 ### Issues
 
-If you encounter any problems, please [file an issue] along with a detailed description.
+If you encounter any problems, please **[file an issue]** along with a detailed description.
 
 [file an issue]: https://github.com/juglab/EmbedSeg/issues
 [tox]: https://tox.readthedocs.io/en/latest/
-[pip]: https://pypi.org/project/pip/
+[pip]: https://pypi.org/project/EmbedSeg/
 
 
 ### Citation
