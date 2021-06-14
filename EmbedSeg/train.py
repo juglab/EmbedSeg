@@ -248,7 +248,7 @@ def val_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y,
                     if one_hot:
                         instance = invert_one_hot(instances[0].cpu().detach().numpy())
                         visualizer.display(instance, key='groundtruth', title='Ground Truth')  # TODO
-                        instance_ids = np.arange(instances[0].size(1))
+                        instance_ids = np.arange(instances.size(1))
                     else:
                         visualizer.display(instances[0].cpu(), key='groundtruth', title='Ground Truth')  # TODO
                         instance_ids = instances[0].unique()
@@ -327,7 +327,7 @@ def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid
                     if one_hot:
                         instance = invert_one_hot(instances[0].cpu().detach().numpy())
                         visualizer.display(instance, key='groundtruth', title='Ground Truth')  # TODO
-                        instance_ids = np.arange(instances[0].size(1))
+                        instance_ids = np.arange(instances.size(1))
                     else:
                         visualizer.display(instances[0].cpu(), key='groundtruth', title='Ground Truth')  # TODO
                         instance_ids = instances[0].unique()

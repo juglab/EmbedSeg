@@ -419,9 +419,9 @@ def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y,
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1,
                                                             pixel_y)
 
-        centre_mask = in_mask & center_images[0]
-        if (centre_mask.sum().eq(1)):
-            center = xym_s[centre_mask.expand_as(xym_s)].view(2, 1, 1)
+        center_mask = in_mask & center_images[0].byte()
+        if (center_mask.sum().eq(1)):
+            center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
         else:
             xy_in = xym_s[in_mask.expand_as(xym_s)].view(2, -1)
             center = xy_in.mean(1).view(2, 1, 1)  # 2 x 1 x 1
