@@ -61,7 +61,7 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
     if(test_configs['name']=='2d'):
         test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'],
              pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'],
-             one_hot = test_configs['dataset']['kwargs']['one_hot'], avg_bg = avg_bg)
+             one_hot = test_configs['dataset']['kwargs']['one_hot'], avg_bg = avg_bg, n_sigma=n_sigma)
     elif(test_configs['name']=='3d'):
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
@@ -70,7 +70,7 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
 
 
 
-def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, avg_bg = 0):
+def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, avg_bg = 0, n_sigma = 2):
     """
     :param verbose: if True, then average prevision is printed out for each image
     :param grid_y:
@@ -126,7 +126,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
 
             center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, \
             color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y,
-                                                                                     pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions)
+                                                                                     pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions, n_sigma = n_sigma)
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
             imageFileNames.append(base)

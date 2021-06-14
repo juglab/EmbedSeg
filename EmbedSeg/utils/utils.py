@@ -444,7 +444,7 @@ def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y,
            sample_spatial_embedding_y, sigma_x, sigma_y, color_sample_dic, color_embedding_dic
 
 
-def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel_x, pixel_y, predictions):
+def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel_x, pixel_y, predictions, n_sigma):
     instance_ids = instance_map.unique()
     instance_ids = instance_ids[instance_ids != 0]
 
@@ -454,7 +454,7 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
     height, width = instance_map.size(0), instance_map.size(1)
     xym_s = xym[:, 0:height, 0:width].contiguous()
     spatial_emb = torch.tanh(output[0, 0:2]).cpu() + xym_s
-    sigma = output[0, 2:2 + 2]  # 2/3 Y X replace last + 2 with n_sigma parameter IMP TODO
+    sigma = output[0, 2:2 + n_sigma]
     color_sample = sns.color_palette("dark")
     color_embedding = sns.color_palette("bright")
     color_sample_dic = {}
@@ -495,7 +495,7 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
         center_y[id.item()] = degrid(center[1], grid_y - 1, pixel_y)
 
         # sigma
-        s = sigma[in_mask.expand_as(sigma)].view(2, -1).mean(1)  # TODO view(2, -1) should become nsigma, -1
+        s = sigma[in_mask.expand_as(sigma)].view(n_sigma, -1).mean(1)
         s = torch.exp(s * 10)
         sigma_x_tmp = 0.5 / s[0]
         sigma_y_tmp = 0.5 / s[1]
