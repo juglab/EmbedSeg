@@ -375,13 +375,14 @@ def invert_one_hot(image):
     return instance
 
 
-def save_checkpoint(state, is_best, epoch, save_dir, name='checkpoint.pth'):
+def save_checkpoint(state, is_best, epoch, save_dir, save_checkpoint_frequency, name='checkpoint.pth'):
     print('=> saving checkpoint')
     file_name = os.path.join(save_dir, name)
     torch.save(state, file_name)
-    if (epoch % 10 == 0):
-        file_name2 = os.path.join(save_dir, str(epoch) + "_" + name)
-        torch.save(state, file_name2)
+    if(save_checkpoint_frequency is not None):
+        if (epoch % int(save_checkpoint_frequency) == 0):
+            file_name2 = os.path.join(save_dir, str(epoch) + "_" + name)
+            torch.save(state, file_name2)
     if is_best:
         shutil.copyfile(file_name, os.path.join(
             save_dir, 'best_iou_model.pth'))
@@ -558,6 +559,6 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                 'optim_state_dict': optimizer.state_dict(),
                 'logger_data': logger.data,
             }
-        save_checkpoint(state, is_best, epoch, save_dir=configs['save_dir'])
+        save_checkpoint(state, is_best, epoch, save_dir=configs['save_dir'], save_checkpoint_frequency=configs['save_checkpoint_frequency'])
 
 
