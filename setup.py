@@ -33,7 +33,7 @@ setup(
           'matplotlib',
           'numpy',
           'scipy',
-          "tifffile",
+          "tifffile==2021.4.8",
           "numba",
           "tqdm",
           "jupyter",
