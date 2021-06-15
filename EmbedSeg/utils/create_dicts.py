@@ -302,7 +302,8 @@ def create_configs(save_dir,
                    anisotropy_factor = None,
                    l_y = 1,
                    l_x = 1,
-
+                   save_checkpoint_frequency = None,
+                   display_zslice = None
                    ):
     """
         Creates `configs` dictionary from parameters.
@@ -337,6 +338,9 @@ def create_configs(save_dir,
             Pixel size in y
         pixel_x: int
             Pixel size in x
+        save_checkpoint_frequency: int
+            Save model weights after 'n' epochs (in addition to last and best model weights)
+            Default is None
     """
     if (n_z is None):
         l_z = None
@@ -358,7 +362,10 @@ def create_configs(save_dir,
                    pixel_z = l_z,
                    pixel_y = l_y,
                    pixel_x = l_x,
-                   one_hot=one_hot)
+                   one_hot=one_hot,
+                   save_checkpoint_frequency=save_checkpoint_frequency,
+                   display_zslice = display_zslice
+                  )
     print(
         "`configs` dictionary successfully created with: "
         "\n -- n_epochs equal to {}, "

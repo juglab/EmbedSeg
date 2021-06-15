@@ -1,15 +1,12 @@
 import os
 import shutil
-
 import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
-
 from EmbedSeg.criterions import get_loss
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import AverageMeter, Cluster, Cluster_3d, Logger, Visualizer, prepare_embedding_for_train_image
-
 torch.backends.cudnn.benchmark = True
 from matplotlib.colors import ListedColormap
 import numpy as np
@@ -137,7 +134,7 @@ def train_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
 
 
 def train_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, n_sigma,
-                  args):  # this is without virtual batches!
+                     zslice, args):  # this is without virtual batches!
 
     # define meters
     loss_meter = AverageMeter()
@@ -163,48 +160,20 @@ def train_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, gr
         loss_meter.update(loss.item())
         if display and i % display_it == 0:
             with torch.no_grad():
-                visualizer.display(im[0], key='image', title='Image')
+                visualizer.display(im[0, 0, zslice], key='image', title='Image')
                 predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=n_sigma)
                 if one_hot:
                     instance = invert_one_hot(instances[0].cpu().detach().numpy())
                     visualizer.display(instance, key='groundtruth', title='Ground Truth')  # TODO
                     instance_ids = np.arange(instances.size(1))  # instances[0] --> DYX
                 else:
-                    visualizer.display(instances[0].cpu(), key='groundtruth', title='Ground Truth')  # TODO
+                    visualizer.display(instances[0, zslice].cpu(), key='groundtruth', title='Ground Truth')  # TODO
                     instance_ids = instances[0].unique()
                     instance_ids = instance_ids[instance_ids != 0]
 
-                if display_embedding:
-                    center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, \
-                    sample_spatial_embedding_y, sigma_x, sigma_y, color_sample_dic, color_embedding_dic = \
-                        prepare_embedding_for_train_image(one_hot=one_hot, grid_x=grid_x, grid_y=grid_y,
-                                                          pixel_x=pixel_x, pixel_y=pixel_y,
-                                                          predictions=predictions, instance_ids=instance_ids,
-                                                          center_images=center_images,
-                                                          output=output, instances=instances, n_sigma=n_sigma)
-                    if one_hot:
-                        visualizer.display(torch.max(instances[0], dim=0)[0], key='center', title='Center',
-                                           center_x=center_x,
-                                           center_y=center_y,
-                                           samples_x=samples_x, samples_y=samples_y,
-                                           sample_spatial_embedding_x=sample_spatial_embedding_x,
-                                           sample_spatial_embedding_y=sample_spatial_embedding_y,
-                                           sigma_x=sigma_x, sigma_y=sigma_y,
-                                           color_sample=color_sample_dic, color_embedding=color_embedding_dic)
-                    else:
-                        visualizer.display(instances[0] > 0, key='center', title='Center', center_x=center_x,
-                                           center_y=center_y,
-                                           samples_x=samples_x, samples_y=samples_y,
-                                           sample_spatial_embedding_x=sample_spatial_embedding_x,
-                                           sample_spatial_embedding_y=sample_spatial_embedding_y,
-                                           sigma_x=sigma_x, sigma_y=sigma_y,
-                                           color_sample=color_sample_dic, color_embedding=color_embedding_dic)
-                visualizer.display(predictions.cpu(), key='prediction', title='Prediction')  # TODO
+                visualizer.display(predictions.cpu()[zslice, ...], key='prediction', title='Prediction')  # TODO
 
     return loss_meter.avg
-
-
-
 
 
 def val(virtual_batch_multiplier, one_hot, n_sigma, args):
@@ -248,7 +217,7 @@ def val_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y,
                     if one_hot:
                         instance = invert_one_hot(instances[0].cpu().detach().numpy())
                         visualizer.display(instance, key='groundtruth', title='Ground Truth')  # TODO
-                        instance_ids = np.arange(instances[0].size(1))
+                        instance_ids = np.arange(instances.size(1))
                     else:
                         visualizer.display(instances[0].cpu(), key='groundtruth', title='Ground Truth')  # TODO
                         instance_ids = instances[0].unique()
@@ -284,8 +253,6 @@ def val_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y,
 
     return loss_meter.avg, iou_meter.avg
 
-
-
 def val_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
@@ -306,7 +273,7 @@ def val_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
     return loss_meter.avg * virtual_batch_multiplier, iou_meter.avg
 
 
-def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, n_sigma, args):
+def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, n_sigma, zslice, args):
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
     # put model into eval mode
@@ -322,44 +289,19 @@ def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid
             loss = loss.mean()
             if display and i % display_it == 0:
                 with torch.no_grad():
-                    visualizer.display(im[0], key='image', title='Image')
+                    visualizer.display(im[0, 0, zslice], key='image', title='Image')
                     predictions = cluster.cluster_with_gt(output[0], instances[0], n_sigma=n_sigma)
                     if one_hot:
                         instance = invert_one_hot(instances[0].cpu().detach().numpy())
                         visualizer.display(instance, key='groundtruth', title='Ground Truth')  # TODO
-                        instance_ids = np.arange(instances[0].size(1))
+                        instance_ids = np.arange(instances.size(1))
                     else:
-                        visualizer.display(instances[0].cpu(), key='groundtruth', title='Ground Truth')  # TODO
+                        visualizer.display(instances[0, zslice].cpu(), key='groundtruth', title='Ground Truth')  # TODO
                         instance_ids = instances[0].unique()
                         instance_ids = instance_ids[instance_ids != 0]
-                    if (display_embedding):
-                        center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, \
-                        sample_spatial_embedding_y, sigma_x, sigma_y, color_sample_dic, color_embedding_dic = \
-                            prepare_embedding_for_train_image(one_hot=one_hot, grid_x=grid_x, grid_y=grid_y,
-                                                              pixel_x=pixel_x, pixel_y=pixel_y,
-                                                              predictions=predictions, instance_ids=instance_ids,
-                                                              center_images=center_images,
-                                                              output=output, instances=instances, n_sigma=n_sigma)
-                        if one_hot:
-                            visualizer.display(torch.max(instances[0], dim=0)[0].cpu(), key='center', title='Center',
-                                               # torch.max returns a tuple
-                                               center_x=center_x,
-                                               center_y=center_y,
-                                               samples_x=samples_x, samples_y=samples_y,
-                                               sample_spatial_embedding_x=sample_spatial_embedding_x,
-                                               sample_spatial_embedding_y=sample_spatial_embedding_y,
-                                               sigma_x=sigma_x, sigma_y=sigma_y,
-                                               color_sample=color_sample_dic, color_embedding=color_embedding_dic)
-                        else:
-                            visualizer.display(instances[0] > 0, key='center', title='Center', center_x=center_x,
-                                               center_y=center_y,
-                                               samples_x=samples_x, samples_y=samples_y,
-                                               sample_spatial_embedding_x=sample_spatial_embedding_x,
-                                               sample_spatial_embedding_y=sample_spatial_embedding_y,
-                                               sigma_x=sigma_x, sigma_y=sigma_y,
-                                               color_sample=color_sample_dic, color_embedding=color_embedding_dic)
 
-                    visualizer.display(predictions.cpu(), key='prediction', title='Prediction')  # TODO
+
+                    visualizer.display(predictions.cpu()[zslice, ...], key='prediction', title='Prediction')  # TODO
 
             loss_meter.update(loss.item())
 
@@ -375,13 +317,14 @@ def invert_one_hot(image):
     return instance
 
 
-def save_checkpoint(state, is_best, epoch, save_dir, name='checkpoint.pth'):
+def save_checkpoint(state, is_best, epoch, save_dir, save_checkpoint_frequency, name='checkpoint.pth'):
     print('=> saving checkpoint')
     file_name = os.path.join(save_dir, name)
     torch.save(state, file_name)
-    if (epoch % 10 == 0):
-        file_name2 = os.path.join(save_dir, str(epoch) + "_" + name)
-        torch.save(state, file_name2)
+    if(save_checkpoint_frequency is not None):
+        if (epoch % int(save_checkpoint_frequency) == 0):
+            file_name2 = os.path.join(save_dir, str(epoch) + "_" + name)
+            torch.save(state, file_name2)
     if is_best:
         shutil.copyfile(file_name, os.path.join(
             save_dir, 'best_iou_model.pth'))
@@ -408,7 +351,6 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     global train_dataset_it, val_dataset_it, model, criterion, optimizer, visualizer, cluster
 
     # train dataloader
-
 
     train_dataset = get_dataset(train_dataset_dict['name'], train_dataset_dict['kwargs'])
     train_dataset_it = torch.utils.data.DataLoader(train_dataset, batch_size=train_dataset_dict['batch_size'],
@@ -459,8 +401,6 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                           configs['pixel_x'], configs['one_hot'])
 
     # Visualizer
-
-    
     visualizer = Visualizer(('image', 'groundtruth', 'prediction', 'center'), color_map)  # 5 keys
 
     # Logger
@@ -519,10 +459,10 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                 train_loss = train_vanilla_3d(display=configs['display'],
                                               display_embedding=configs['display_embedding'],
                                               display_it=configs['display_it'], one_hot=configs['one_hot'],
-                                              n_sigma=loss_dict['lossOpts']['n_sigma'], grid_x=configs['grid_x'],
+                                              n_sigma=loss_dict['lossOpts']['n_sigma'], zslice = configs['display_zslice'], grid_x=configs['grid_x'],
                                               grid_y=configs['grid_y'], grid_z=configs['grid_z'],
                                               pixel_x=configs['pixel_x'], pixel_y=configs['pixel_y'],
-                                              pixel_z=configs['pixel_z'], args=loss_dict['lossW'])
+                                              pixel_z=configs['pixel_z'], args=loss_dict['lossW'], )
 
             if (val_dataset_dict['virtual_batch_multiplier'] > 1):
                 val_loss, val_iou = val_3d(virtual_batch_multiplier=val_dataset_dict['virtual_batch_multiplier'],
@@ -532,7 +472,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                 val_loss, val_iou = val_vanilla_3d(display=configs['display'],
                                                    display_embedding=configs['display_embedding'],
                                                    display_it=configs['display_it'], one_hot=configs['one_hot'],
-                                                   n_sigma=loss_dict['lossOpts']['n_sigma'], grid_x=configs['grid_x'],
+                                                   n_sigma=loss_dict['lossOpts']['n_sigma'], zslice = configs['display_zslice'], grid_x=configs['grid_x'],
                                                    grid_y=configs['grid_y'], grid_z=configs['grid_z'],
                                                    pixel_x=configs['pixel_x'], pixel_y=configs['pixel_y'], pixel_z=configs['pixel_z'],
                                                    args=loss_dict['lossW'])
@@ -558,6 +498,6 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                 'optim_state_dict': optimizer.state_dict(),
                 'logger_data': logger.data,
             }
-        save_checkpoint(state, is_best, epoch, save_dir=configs['save_dir'])
+        save_checkpoint(state, is_best, epoch, save_dir=configs['save_dir'], save_checkpoint_frequency=configs['save_checkpoint_frequency'])
 
 
