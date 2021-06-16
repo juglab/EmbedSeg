@@ -147,7 +147,7 @@ class Cluster_3d:
             s = torch.exp(s * 10)  # n_sigma x 1 x 1
             dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
             proposal = (dist > 0.5)
-            instance_map[proposal] = id
+            instance_map[proposal] = id.item() # TODO
 
         return instance_map
 
@@ -215,7 +215,6 @@ class Cluster:
         self.pixel_y = pixel_y
 
     def cluster_with_gt(self, prediction, instance, n_sigma=1, ):
-
         height, width = prediction.size(1), prediction.size(2)
 
         xym_s = self.xym[:, 0:height, 0:width]  # 2 x h x w
@@ -245,9 +244,9 @@ class Cluster:
             dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
             proposal = (dist > 0.5)
             if (self.one_hot):
-                instance_map[proposal] = id + 1
+                instance_map[proposal] = id.item() + 1 # TODO
             else:
-                instance_map[proposal] = id
+                instance_map[proposal] = id.item() #TODO
 
         return instance_map
 
@@ -419,7 +418,8 @@ def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y,
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1,
                                                             pixel_y)
 
-        center_mask = in_mask & center_images[0].byte()
+        #center_mask = in_mask & center_images[0].byte()
+        center_mask = in_mask & center_images[0]
         if (center_mask.sum().eq(1)):
             center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
         else:
@@ -483,7 +483,8 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
         sample_spatial_embedding_x[id.item()] = add_samples(samples_spatial_embeddings, 0, grid_x - 1, pixel_x)
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1, pixel_y)
         center_image = predictions[id.item() - 1]['center-image']  # predictions is a list!
-        center_mask = in_mask & center_image.byte()
+        #center_mask = in_mask & center_image.byte()
+        center_mask = in_mask & center_image
 
         if (center_mask.sum().eq(1)):
             center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
