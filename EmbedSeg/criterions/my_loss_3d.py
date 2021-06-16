@@ -59,7 +59,8 @@ class SpatialEmbLoss_3d(nn.Module):
             for id in instance_ids:
 
                 in_mask = instance.eq(id)  # 1 x d x h x w
-                center_mask = in_mask & center_image.byte()
+                #center_mask = in_mask & center_image.byte()
+                center_mask = in_mask & center_image
                 if (center_mask.sum().eq(1)):
                     center = xyzm_s[center_mask.expand_as(xyzm_s)].view(3, 1, 1, 1)
                 else:
