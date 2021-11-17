@@ -280,7 +280,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
     image = tifffile.imread(im)
 
     if (norm):
-        image = normalize(image, 1, 99.8, axis=(0, 1))
+        image = normalize(image, 1, 99.8, axis=(0, 1, 2))
     instance = fill_label_holes(instance)
 
     d, h, w = image.shape
