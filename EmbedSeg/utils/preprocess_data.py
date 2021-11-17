@@ -330,7 +330,7 @@ def calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_
         instance_dir = os.path.join(data_dir, project_name, name, 'masks')
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
-    for i in tqdm(range(len(instance_names))):
+    for i in tqdm(range(len(instance_names[:process_k]))):
         ma = tifffile.imread(instance_names[i])
         if (one_hot and mode == '2d'):
             for z in range(ma.shape[0]):
@@ -358,7 +358,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
     size_y_list = []
     size_x_list = []
     for name in test_name:
-        instance_dir = os.path.join(data_dir, project_name, name, 'masks')
+        instance_dir = os.path.join(data_dir, project_name, name, 'images')
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
     for i in tqdm(range(len(instance_names))):
@@ -389,8 +389,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         max_x_y = np.maximum(max_x, max_y)
         max_x = max_x_y
         max_y = max_x_y
-        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
-                                                                                               max_x))
+        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
         return None, max_y.astype(np.float), max_x.astype(np.float)
     elif mode == '3d':
         max_z = np.max(size_z_list)
@@ -469,8 +468,8 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
                                                                            one_hot)
-    data_properties_dir['min_object_size'] = calculate_min_object_size(data_dir, project_name, train_val_name, mode,
-                                                                       one_hot).astype(np.float)
+    data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir['avg_object_size_y'], data_properties_dir['avg_object_size_x'] \
+        = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot).astype(np.float)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
         data_dir, project_name, test_name, mode, one_hot)
     data_properties_dir['one_hot'] = one_hot
