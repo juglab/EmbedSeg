@@ -83,7 +83,7 @@ class SpatialEmbLoss(nn.Module):
                 # calculate var loss before exp
                 var_loss = var_loss + \
                            torch.mean(
-                               torch.pow(sigma_in - s.detach(), 2))
+                               torch.pow(sigma_in - s[..., 0].detach(), 2))
 
                 s = torch.exp(s * 10)  # TODO
                 dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0, keepdim=True))
