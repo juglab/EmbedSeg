@@ -30,7 +30,7 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 
 ### Dependencies 
 We have tested this implementation using `pytorch` version 1.10.0 and `cudatoolkit` version 10.2 on a `linux` OS machine. 
-One could execute these lines of code to use this code branch.
+One could execute these lines of code to run this branch:
 
 ```
 conda create -n EmbedSegEnv python==3.7
