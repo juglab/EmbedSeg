@@ -333,7 +333,11 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
         instance_dir = os.path.join(data_dir, project_name, name, 'masks')
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
-    for i in tqdm(range(len(instance_names[:process_k[0]]))):
+    if process_k is not None:
+        n_images = process_k[0]
+    else:
+        n_images = len((instance_names))
+    for i in tqdm(range(len(instance_names[:n_images]))):
         ma = tifffile.imread(instance_names[i])
         if (one_hot and mode == '2d'):
             for z in range(ma.shape[0]):
@@ -351,20 +355,24 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list.append(len(x))
         elif (not one_hot and mode == '3d'):
             ids = np.unique(ma)
-            ids = ids[ids != 0][:process_k[1]]
-            for id in tqdm(ids, position=0, leave=True):
+            ids = ids[ids != 0]
+            if process_k is not None:
+                n_ids = process_k[1]
+            else:
+                n_ids = len(ids)
+            for id in tqdm(ids[:n_ids], position=0, leave=True):
                 z, y, x = np.where(ma == id)
                 size_list_z.append(np.max(z) - np.min(z))
                 size_list_y.append(np.max(y) - np.min(y))
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list.append(len(x))
     print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
-    print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name, np.mean(size_list_x)))
-    print("Average object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name, np.mean(size_list_y)))
+    print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name, np.median(size_list_x)))
+    print("Average object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name, np.median(size_list_y)))
 
     if mode =='3d':
-        print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name, np.mean(size_list_z)))
-        return np.min(size_list).astype(np.float), np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float)
+        print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name, np.median(size_list_z)))
+        return np.min(size_list).astype(np.float), np.median(size_list_z).astype(np.float), np.median(size_list_y).astype(np.float), np.median(size_list_x).astype(np.float)
     else:
         return np.min(size_list).astype(np.float), None, np.mean(size_list_y).astype(
             np.float), np.mean(size_list_x).astype(np.float)
@@ -466,7 +474,7 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
     return np.mean(statistics)
 
 
-def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=(50, 50)):
+def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None):
     """
     :param data_dir: string
             Path to directory containing all data
