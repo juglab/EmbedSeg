@@ -125,8 +125,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
 
 
             center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, \
-            color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y,
-                                                                                     pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions, n_sigma = n_sigma)
+            color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y, pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions, n_sigma = n_sigma)
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
             imageFileNames.append(base)

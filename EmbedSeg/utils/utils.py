@@ -167,7 +167,7 @@ class Cluster_3d:
         mask = seed_map > 0.5
         if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast 128 pixels in foreground!
 
-            spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(3, -1)
+            spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(n_sigma, -1)
             sigma_masked = sigma[mask.expand_as(sigma)].view(n_sigma, -1)
             seed_map_masked = seed_map[mask].view(1, -1)
 
@@ -269,7 +269,7 @@ class Cluster:
 
         if mask.sum() > min_mask_sum:
 
-            spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(2, -1)
+            spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(n_sigma, -1)
             sigma_masked = sigma[mask.expand_as(sigma)].view(n_sigma, -1)
             seed_map_masked = seed_map[mask].view(1, -1)
 
