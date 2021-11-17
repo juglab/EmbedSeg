@@ -255,7 +255,7 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='2d'):
     }
     print(
         "`model_dict` dictionary successfully created with: \n -- num of classes equal to {}, \n -- input channels equal to {}, \n -- name equal to {}".format(
-            input_channels, num_classes, name))
+            input_channels, num_classes, model_dict['name']))
     return model_dict
 
 
