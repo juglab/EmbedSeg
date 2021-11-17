@@ -310,7 +310,7 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, on
     return np.mean(statistics)
 
 
-def calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_hot):
+def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k):
     """
     :param data_dir: string
             Name of directory storing the data. For example, 'data'
@@ -325,32 +325,49 @@ def calculate_min_object_size(data_dir, project_name, train_val_name, mode, one_
     :return:
     """
     instance_names = []
+    size_list_x = []
+    size_list_y = []
+    size_list_z = []
     size_list = []
     for name in train_val_name:
         instance_dir = os.path.join(data_dir, project_name, name, 'masks')
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
-    for i in tqdm(range(len(instance_names[:process_k]))):
+    for i in tqdm(range(len(instance_names[:process_k[0]]))):
         ma = tifffile.imread(instance_names[i])
         if (one_hot and mode == '2d'):
             for z in range(ma.shape[0]):
                 y, x = np.where(ma[z] == 1)
-                size_list.append(len(y))
+                size_list_x.append(np.max(x) - np.min(x))
+                size_list_y.append(np.max(y) - np.min(y))
+                size_list.append(len(x))
         elif (not one_hot and mode == '2d'):
             ids = np.unique(ma)
             ids = ids[ids != 0]
             for id in ids:
                 y, x = np.where(ma == id)
-                size_list.append(len(y))
+                size_list_x.append(np.max(x) - np.min(x))
+                size_list_y.append(np.max(y) - np.min(y))
+                size_list.append(len(x))
         elif (not one_hot and mode == '3d'):
             ids = np.unique(ma)
-            ids = ids[ids != 0]
-            for id in ids:
+            ids = ids[ids != 0][:process_k[1]]
+            for id in tqdm(ids, position=0, leave=True):
                 z, y, x = np.where(ma == id)
-                size_list.append(len(z))
+                size_list_z.append(np.max(z) - np.min(z))
+                size_list_y.append(np.max(y) - np.min(y))
+                size_list_x.append(np.max(x) - np.min(x))
+                size_list.append(len(x))
     print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
-    return np.min(size_list).astype(np.float)
+    print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name, np.mean(size_list_x)))
+    print("Average object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name, np.mean(size_list_y)))
 
+    if mode =='3d':
+        print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name, np.mean(size_list_z)))
+        return np.min(size_list).astype(np.float), np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float)
+    else:
+        return np.min(size_list).astype(np.float), None, np.mean(size_list_y).astype(
+            np.float), np.mean(size_list_x).astype(np.float)
 
 def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot):
     instance_names = []
