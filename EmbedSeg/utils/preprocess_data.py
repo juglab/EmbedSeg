@@ -466,7 +466,7 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
     return np.mean(statistics)
 
 
-def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot):
+def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=(50, 50)):
     """
     :param data_dir: string
             Path to directory containing all data
@@ -480,16 +480,20 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
             One of '2d' or '3d'
     :param one_hot: boolean
             set to True, if instances are encoded in a one-hot fashion
+    :param process_k (int, int)
+            first `int` argument in tuple specifies number of images which must be processed
+            second `int` argument in tuple specifies number of ids which must be processed
     :return:
     """
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
                                                                            one_hot)
     data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir['avg_object_size_y'], data_properties_dir['avg_object_size_x'] \
-        = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot).astype(np.float)
+        = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
         data_dir, project_name, test_name, mode, one_hot)
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
                                                                                          train_val_name, one_hot)
+    data_properties_dir['project_name']= project_name
     return data_properties_dir
