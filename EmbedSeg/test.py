@@ -55,7 +55,7 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
         state = torch.load(test_configs['checkpoint_path'])
         model.load_state_dict(state['model_state_dict'], strict=True)
     else:
-        assert (False, 'checkpoint_path {} does not exist!'.format(test_configs['checkpoint_path']))
+        assert False, 'checkpoint_path {} does not exist!'.format(test_configs['checkpoint_path'])
 
     # test on evaluation images:
     if(test_configs['name']=='2d'):
@@ -156,13 +156,16 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                     os.makedirs(os.path.join(save_dir, 'embedding/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'embedding/')))
 
-
+                # save predictions
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
+                imsave(instances_file, instance_map.cpu().detach().numpy().astype(
+                    np.uint16))
+                # save ground truth
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
                     imsave(gt_file, instances.cpu().detach().numpy().astype(np.uint16))
+
                 embedding_file = os.path.join(save_dir, 'embedding/', base + '.tif')
                 import matplotlib
                 matplotlib.use('Agg')
