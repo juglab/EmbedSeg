@@ -384,26 +384,23 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
             np.float), np.std(size_list_x).astype(np.float)
 
 def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot):
-    instance_names = []
+    image_names = []
     size_z_list = []
     size_y_list = []
     size_x_list = []
     for name in test_name:
         instance_dir = os.path.join(data_dir, project_name, name, 'images')
-        instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
+        image_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
-    for i in tqdm(range(len(instance_names))):
-        ma = tifffile.imread(instance_names[i])
-        if (one_hot and mode == '2d'):
-            size_y_list.append(ma.shape[1])
-            size_x_list.append(ma.shape[2])
-        elif (not one_hot and mode == '2d'):
-            size_y_list.append(ma.shape[0])
-            size_x_list.append(ma.shape[1])
+    for i in tqdm(range(len(image_names))):
+        im = tifffile.imread(image_names[i])
+        if (mode == '2d'):
+            size_y_list.append(im.shape[0])
+            size_x_list.append(im.shape[1])
         elif (not one_hot and mode == '3d'):
-            size_z_list.append(ma.shape[0])
-            size_y_list.append(ma.shape[1])
-            size_x_list.append(ma.shape[2])
+            size_z_list.append(im.shape[0])
+            size_y_list.append(im.shape[1])
+            size_x_list.append(im.shape[2])
     if mode == '2d':
         max_y = np.max(size_y_list)
         max_x = np.max(size_x_list)
