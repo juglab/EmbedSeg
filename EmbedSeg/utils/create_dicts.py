@@ -127,7 +127,8 @@ def create_test_configs_dict(data_dir,
                              anisotropy_factor = None,
                              l_y = 1,
                              l_x = 1,
-                             name = '2d'
+                             name = '2d',
+                             input_channels=1
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -221,6 +222,7 @@ def create_test_configs_dict(data_dir,
         model={
             'name': model_name,
             'kwargs': {
+                'input_channels': input_channels,
                 'num_classes': num_classes,
             }
         }
