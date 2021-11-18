@@ -204,12 +204,18 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
 
     instance = tifffile.imread(inst).astype(np.uint16)
     image = tifffile.imread(im)
-
-    if (norm):
-        image = normalize(image, 1, 99.8, axis=(0, 1))
+    if image.ndim==2: # gray-scale
+        if (norm):
+            image = normalize(image, 1, 99.8, axis=(0, 1))
+    elif image.ndim==3: # multi-channel image (C, H, W)
+        if (norm):
+            image = normalize(image, 1, 99.8, axis=(1, 2))
     instance = fill_label_holes(instance)
 
-    h, w = image.shape
+    if image.ndim==2:
+        h, w = image.shape
+    elif image.ndim==3:
+        c,h,w=image.shape
     instance_np = np.array(instance, copy=False)
     object_mask = instance_np > 0
 
@@ -223,15 +229,22 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
 
         jj = int(np.clip(ym - crop_size / 2, 0, h - crop_size))
         ii = int(np.clip(xm - crop_size / 2, 0, w - crop_size))
-
-        if (image[jj:jj + crop_size, ii:ii + crop_size].shape == (crop_size, crop_size)):
-            im_crop = image[jj:jj + crop_size, ii:ii + crop_size]
-            instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
-            center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
-            tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
-            tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
-            tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
-
+        if image.ndim==2:
+            if (image[jj:jj + crop_size, ii:ii + crop_size].shape == (crop_size, crop_size)):
+                im_crop = image[jj:jj + crop_size, ii:ii + crop_size]
+                instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
+                center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
+                tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
+                tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
+                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
+        elif image.ndim==3:
+            if (image[:, jj:jj + crop_size, ii:ii + crop_size].shape == (c, crop_size, crop_size)):
+                im_crop = image[:, jj:jj + crop_size, ii:ii + crop_size]
+                instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
+                center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
+                tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
+                tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
+                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0):

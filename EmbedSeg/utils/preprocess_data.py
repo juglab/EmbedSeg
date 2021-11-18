@@ -471,10 +471,15 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
             ma = tifffile.imread(instance_names[i])
             bg_mask = ma == 0
             im = tifffile.imread(image_names[i])
-            statistics.append(np.average(im[bg_mask]))
-    print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name,
-                                                                                        np.mean(statistics)))
-    return np.mean(statistics)
+            if im.ndim==ma.ndim:
+                statistics.append(np.average(im[bg_mask]))
+            elif im.ndim==ma.ndim+1: # multi-channel image
+                statistics.append(np.average(im[:, bg_mask], axis=1))
+    if im.ndim == ma.ndim:
+        print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics, 0)))
+    elif im.ndim==ma.ndim+1:
+        print("Average background intensity of the `{}` dataset set equal to {}".format(project_name, np.mean(statistics, 0)))
+    return np.mean(statistics, 0).tolist()
 
 
 def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None):
