@@ -6,6 +6,7 @@ import tifffile
 from glob import glob
 from skimage.segmentation import relabel_sequential
 from EmbedSeg.utils.glasbey import Glasbey
+from EmbedSeg.train import invert_one_hot
 
 
 def create_color_map(n_colors=10):
@@ -53,7 +54,7 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
     plt.show()
 
 
-def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images, new_cmp):
+def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images, new_cmp, one_hot=False):
     font = {'family': 'serif',
             'color':  'black',
             'weight': 'bold',
@@ -67,14 +68,21 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
     spec = gridspec.GridSpec(ncols=n_images, nrows=3, figure=fig)
     for i, index in enumerate(indices):
         ax0 = fig.add_subplot(spec[0, i])
-        ax0.imshow(tifffile.imread(im_filenames[index])[0], cmap='magma', interpolation='None')
+        im = tifffile.imread(im_filenames[index])
+        if im.ndim==2:
+            ax0.imshow(im, cmap='magma', interpolation='None')
+        else:
+            ax0.imshow(im[0], cmap='magma', interpolation='None')
         ax0.axes.get_xaxis().set_visible(False)
         ax0.set_yticklabels([])
         ax0.set_yticks([])
         if i==0:
             ax0.set_ylabel('IM', fontdict=font)
         ax1 = fig.add_subplot(spec[1, i])
-        label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
+        if one_hot:
+            label = invert_one_hot(tifffile.imread(ma_filenames[index]))
+        else:
+            label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
         ax1.imshow(label, cmap=new_cmp, interpolation='None')
         ax1.axes.get_xaxis().set_visible(False)
         ax1.set_yticklabels([])
