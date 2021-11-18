@@ -23,7 +23,7 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
         'size': 16,
         }
     plt.figure(figsize=(15,15))
-    img_show = image if image.ndim==2 else image[...,0]
+    img_show = image if image.ndim==2 else image[0, ...]
     plt.subplot(221); 
     plt.imshow(img_show, cmap='magma'); 
     plt.text(30, 30, "IM", fontdict=font)
