@@ -337,7 +337,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
         n_images = process_k[0]
     else:
         n_images = len((instance_names))
-    for i in tqdm(range(len(instance_names[:n_images]))):
+    for i in tqdm(range(len(instance_names[:n_images])), position=0, leave=True):
         ma = tifffile.imread(instance_names[i])
         if (one_hot and mode == '2d'):
             for z in range(ma.shape[0]):
@@ -360,7 +360,8 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 n_ids = process_k[1]
             else:
                 n_ids = len(ids)
-            for id in tqdm(ids[:n_ids], position=0, leave=True):
+            # for id in tqdm(ids[:n_ids], position=0, leave=True):
+            for id in ids:
                 z, y, x = np.where(ma == id)
                 size_list_z.append(np.max(z) - np.min(z))
                 size_list_y.append(np.max(y) - np.min(y))
