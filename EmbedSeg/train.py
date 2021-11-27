@@ -424,7 +424,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     for epoch in range(start_epoch, configs['n_epochs']):
 
         print('Starting epoch {}'.format(epoch))
-        scheduler.step(epoch)
+        #scheduler.step(epoch)
 
         if (configs['grid_z'] is None):
             if (train_dataset_dict['virtual_batch_multiplier'] > 1):
@@ -478,7 +478,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
                                                    args=loss_dict['lossW'])
 
 
-
+        scheduler.step()
         print('===> train loss: {:.2f}'.format(train_loss))
         print('===> val loss: {:.2f}, val iou: {:.2f}'.format(val_loss, val_iou))
 

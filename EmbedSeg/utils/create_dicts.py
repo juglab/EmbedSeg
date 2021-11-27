@@ -118,8 +118,8 @@ def create_test_configs_dict(data_dir,
                              min_object_size=36,
                              save_images=True,
                              save_results=True,
-                             min_mask_sum=128,
-                             min_unclustered_sum=128,
+                             min_mask_sum=0,
+                             min_unclustered_sum=0,
                              cuda=True,
                              n_z = None,
                              n_y = 1024,
@@ -127,7 +127,8 @@ def create_test_configs_dict(data_dir,
                              anisotropy_factor = None,
                              l_y = 1,
                              l_x = 1,
-                             name = '2d'
+                             name = '2d',
+                             input_channels=1
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -221,6 +222,7 @@ def create_test_configs_dict(data_dir,
         model={
             'name': model_name,
             'kwargs': {
+                'input_channels': input_channels,
                 'num_classes': num_classes,
             }
         }
@@ -255,7 +257,7 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='2d'):
     }
     print(
         "`model_dict` dictionary successfully created with: \n -- num of classes equal to {}, \n -- input channels equal to {}, \n -- name equal to {}".format(
-            input_channels, num_classes, name))
+            input_channels, num_classes, model_dict['name']))
     return model_dict
 
 

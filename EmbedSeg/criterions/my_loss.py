@@ -67,7 +67,8 @@ class SpatialEmbLoss(nn.Module):
                     in_mask = instance[:, id, ...].eq(1)
                 else:
                     in_mask = instance.eq(id)  # 1 x h x w
-                center_mask = in_mask & center_image.byte()
+                #center_mask = in_mask & center_image.byte()
+                center_mask = in_mask & center_image
                 if (center_mask.sum().eq(1)):
                     center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
                 else:
@@ -82,7 +83,7 @@ class SpatialEmbLoss(nn.Module):
                 # calculate var loss before exp
                 var_loss = var_loss + \
                            torch.mean(
-                               torch.pow(sigma_in - s.detach(), 2))
+                               torch.pow(sigma_in - s[..., 0].detach(), 2))
 
                 s = torch.exp(s * 10)  # TODO
                 dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0, keepdim=True))

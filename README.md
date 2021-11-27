@@ -29,25 +29,18 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 
 
 ### Dependencies 
-We have tested this implementation using `pytorch` version 1.1.0 and `cudatoolkit` version 10.0 on a `linux` OS machine. 
+We have tested this implementation using `pytorch` version 1.10.0 and `cudatoolkit` version 10.2 on a `linux` OS machine. 
+One could execute these lines of code to run this branch:
 
-- One could install `EmbedSeg` with **[pip]**:
 ```
 conda create -n EmbedSegEnv python==3.7
 conda activate EmbedSegEnv
-python3 -m pip install EmbedSeg
+conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
+git clone https://github.com/juglab/EmbedSeg.git
+cd EmbedSeg
+git checkout v0.2.4
+pip install -e .
 ```
-
-and then install <b>[pytorch](https://pytorch.org/get-started/previous-versions/)</b>:
-```
-conda install pytorch==1.1.0 torchvision==0.3.0 cudatoolkit=10.0 -c pytorch
-```
-
-- Alternately, one could use the `environment.yml` file (this would also install `pytorch`, `torchvision` and `cudatoolkit`). 
-Create a new environment using :
-
-```conda env create -f path/to/environment.yml```.
-
 
 ### Getting Started
 

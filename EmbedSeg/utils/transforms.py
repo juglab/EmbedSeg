@@ -94,8 +94,10 @@ class ToTensorFromNumpy(object):
             if (k in sample):
                 if k == 'image':  # image
                     sample[k] = torch.from_numpy(sample[k].astype("float32")).float().div(self.normalization_factor)
-                elif k =='instance' or k=='label' or k=='center-image':
-                    sample[k] = torch.from_numpy(sample[k]).short()
+                elif k =='instance' or k=='label':
+                    sample[k] = torch.from_numpy(sample[k]) # np.int16 to torch.int16 or short (since np.uint16 can not be directly cast to torch uint16)
+                elif k=='center-image':
+                    sample[k] = torch.from_numpy(sample[k]) # np.bool to torch.Bool
         return sample
 
 
