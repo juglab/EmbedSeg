@@ -38,7 +38,6 @@ conda activate EmbedSegEnv
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
-git checkout v0.2.4
 pip install -e .
 ```
 
