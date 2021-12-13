@@ -14,7 +14,7 @@ from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 
 
-def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None, avg_bg = None):
+def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None):
     """
     :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
     :param verbose: if verbose=True, then average precision for each image is shown
@@ -61,16 +61,16 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
     if(test_configs['name']=='2d'):
         test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'],
              pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'],
-             one_hot = test_configs['dataset']['kwargs']['one_hot'], avg_bg = avg_bg, n_sigma=n_sigma)
+             one_hot = test_configs['dataset']['kwargs']['one_hot'], n_sigma=n_sigma)
     elif(test_configs['name']=='3d'):
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                 pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity, avg_bg = avg_bg)
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity, )
 
 
 
-def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, avg_bg = 0, n_sigma = 2):
+def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, n_sigma = 2):
     """
     :param verbose: if True, then average prevision is printed out for each image
     :param grid_y:
@@ -105,7 +105,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 diff_x = 0
             p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)  # last dim, second last dim
 
-            im = F.pad(im, p2d, "constant", avg_bg)
+            im = F.pad(im, p2d, "reflect")
             if('instance' in sample):
                 instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
                 instances = F.pad(instances, p2d, "constant", 0)
@@ -208,7 +208,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
 
 
-def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None, avg_bg = 0):
+def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None):
     
     model.eval()
     # cluster module
@@ -243,7 +243,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 diff_x = 0
             p3d = (diff_x//2, diff_x - diff_x//2, diff_y//2, diff_y -diff_y//2, diff_z//2, diff_z - diff_z//2) # last dim, second last dim, third last dim!
 
-            im = F.pad(im, p3d, "constant", avg_bg)
+            im = F.pad(im, p3d, "reflect")
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()
                 instances = F.pad(instances, p3d, "constant", 0)

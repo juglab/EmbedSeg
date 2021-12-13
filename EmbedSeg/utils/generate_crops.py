@@ -393,7 +393,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
         pass
 
     instance = tifffile.imread(inst).astype(np.uint16)
-    image = tifffile.imread(im).astype(np.float32)  # TODO
+    image = tifffile.imread(im).astype(np.float32)
 
     if (norm == 'min-max-percentile'):
         image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
