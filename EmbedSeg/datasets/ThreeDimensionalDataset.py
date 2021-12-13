@@ -5,14 +5,14 @@ import numpy as np
 import tifffile
 from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
+from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
 
 class ThreeDimensionalDataset(Dataset):
     """
         ThreeDimensionalDataset class
-        This class is not functional currently for one-hot instances!
     """
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False):
+                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit'):
         print('3-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
         # get image and instance list
@@ -37,6 +37,9 @@ class ThreeDimensionalDataset(Dataset):
         self.real_size = len(self.image_list)
         self.transform = transform
         self.one_hot = one_hot
+        self.norm = norm
+        self.data_type=data_type
+        self.type=type
 
     def convert_zyx_to_czyx(self, im, key):
         im = im[np.newaxis, ...] # CZYX
@@ -52,6 +55,16 @@ class ThreeDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # ZYX
+        if (self.norm == 'min-max-percentile'):
+            image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
+        elif (self.norm == 'mean-std'):
+            image = normalize_mean_std(image)
+        elif (self.norm == 'absolute'):
+            image = image.astype(np.float32)
+            if self.data_type == '8-bit':
+                image /= 255
+            elif self.data_type == '16-bit':
+                image /= 65535
         image = self.convert_zyx_to_czyx(image, key='image') # CZYX
         sample['image'] = image  # CZYX
         sample['im_name'] = self.image_list[index]

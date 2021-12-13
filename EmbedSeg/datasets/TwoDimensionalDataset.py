@@ -5,7 +5,7 @@ import numpy as np
 import tifffile
 from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
-
+from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
 
 class TwoDimensionalDataset(Dataset):
     """
@@ -13,7 +13,7 @@ class TwoDimensionalDataset(Dataset):
     """
 
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False):
+                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit'):
 
         print('2-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
@@ -39,6 +39,9 @@ class TwoDimensionalDataset(Dataset):
         self.real_size = len(self.image_list)
         self.transform = transform
         self.one_hot = one_hot
+        self.norm = norm
+        self.type = type
+        self.data_type=data_type
 
     def __len__(self):
 
@@ -60,6 +63,22 @@ class TwoDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # YX or CYX
+        if (self.type=='test' and self.norm == 'min-max-percentile'):
+            if image.ndim == 2:  # gray-scale
+                image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
+            elif image.ndim == 3:  # multi-channel image (C, H, W)
+                image = normalize_min_max_percentile(image, 1, 99.8, axis=(1, 2))
+        elif (self.type=='test' and self.norm == 'mean-std'):
+            if image.ndim == 2:
+                image = normalize_mean_std(image)  # axis == None
+            elif image.ndim == 3:
+                image = normalize_mean_std(image, axis=(1, 2))
+        elif (self.type=='test' and self.norm == 'absolute'):
+            image = image.astype(np.float32)
+            if self.data_type == '8-bit':
+                image /= 255
+            elif self.data_type == '16-bit':
+                image /= 65535
         image = self.convert_yx_to_cyx(image, key='image')
         sample['image'] = image  # CYX
         sample['im_name'] = self.image_list[index]
