@@ -8,7 +8,6 @@ def create_dataset_dict(data_dir,
                         size,
                         center,
                         type,
-                        normalization_factor,
                         one_hot= False,
                         name='2d',
                         batch_size=16,
@@ -29,8 +28,6 @@ def create_dataset_dict(data_dir,
             One of 'centroid', 'approximate-medoid', 'medoid'
         type: string
             One of 'train', 'val'
-        normalization_factor: int/float
-            For 8-bit image, normalization_factor = 255. For 16-bit image, normalization_factor = 65535.
         one_hot: boolean
             If 'True', instance images are perceived as DYX (here each object is encoded as 1 in its individual slice)
             If 'False', instance image is perceived as YX and has the same dimensionality as raw image
@@ -58,7 +55,6 @@ def create_dataset_dict(data_dir,
                 'opts': {
                     'keys': ('image', 'instance', 'label', 'center_image'),
                     'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
-                    'normalization_factor': normalization_factor
                 }
             },
         ])
@@ -77,7 +73,6 @@ def create_dataset_dict(data_dir,
                 'opts': {
                     'keys': ('image', 'instance', 'label', 'center_image'),
                     'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
-                    'normalization_factor': normalization_factor
                 }
             },
         ])
@@ -100,10 +95,8 @@ def create_dataset_dict(data_dir,
           "\n -- number of images per epoch equal to {}, "
           "\n -- batch size set at {}, "
           "\n -- virtual batch multiplier set as {}, "
-          "\n -- normalization_factor set as {}, "
           "\n -- one_hot set as {}, "
-          .format(type, type, os.path.join(data_dir, project_name, type, 'images'), size, batch_size, virtual_batch_multiplier,
-                  normalization_factor, one_hot))
+          .format(type, type, os.path.join(data_dir, project_name, type, 'images'), size, batch_size, virtual_batch_multiplier, one_hot))
     return dataset_dict
 
 
@@ -111,6 +104,8 @@ def create_test_configs_dict(data_dir,
                              checkpoint_path,
                              save_dir,
                              normalization_factor,
+                             norm,
+                             data_type,
                              tta = True,
                              one_hot= False,
                              ap_val = 0.5,
@@ -128,7 +123,7 @@ def create_test_configs_dict(data_dir,
                              l_y = 1,
                              l_x = 1,
                              name = '2d',
-                             input_channels=1
+                             input_channels=1,
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -205,6 +200,8 @@ def create_test_configs_dict(data_dir,
             'kwargs': {
                 'data_dir': data_dir,
                 'type': 'test',
+                'data_type': data_type,
+                'norm': norm,
                 'transform': my_transforms.get_transform([
                     {
                         'name': 'ToTensorFromNumpy',
