@@ -5,7 +5,6 @@ from numba import jit
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
 
-
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
     for l in (set(np.unique(lbl_img)) - set([0])):
@@ -38,7 +37,7 @@ def fill_label_holes(lbl_img, **kwargs):
     return lbl_img_filled
 
 
-def normalize(x, pmin=3, pmax=99.8, axis=None, clip=False, eps=1e-20, dtype=np.float32):
+def normalize_min_max_percentile(x, pmin=3, pmax=99.8, axis=None, clip=False, eps=1e-20, dtype=np.float32):
     """
         Percentile-based image normalization.
     """
@@ -64,6 +63,21 @@ def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
         x = np.clip(x, 0, 1)
 
     return x
+
+
+def normalize_mean_std(x, axis=None):
+    x = x.astype(np.float32)
+    if axis is None:
+        mean = np.mean(x)
+        std = np.std(x)
+    else:
+        mean = np.mean(x, axis=axis) # (C,)
+        std = np.std(x, axis=axis) #(C,)
+        mean= np.expand_dims(mean, axis=axis) # (C, H, W)
+        std = np.expand_dims(std, axis=axis) # (C, H, W)
+    return (x - mean)/std
+
+
 
 
 @jit(nopython=True)
@@ -166,7 +180,7 @@ def sparsify(instance):
     return np.array(instance_sparse)
 
 
-def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False):
+def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False, data_type='8-bit'):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -203,13 +217,26 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
         print("Created new directory : {}".format(center_image_path))
 
     instance = tifffile.imread(inst).astype(np.uint16)
-    image = tifffile.imread(im)
-    if image.ndim==2: # gray-scale
-        if (norm):
-            image = normalize(image, 1, 99.8, axis=(0, 1))
-    elif image.ndim==3: # multi-channel image (C, H, W)
-        if (norm):
-            image = normalize(image, 1, 99.8, axis=(1, 2))
+    image = tifffile.imread(im).astype(np.float32)
+
+    if (norm == 'min-max-percentile'):
+        if image.ndim ==2: # gray-scale
+            image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
+        elif image.ndim == 3: # multi-channel image (C, H, W)
+            image = normalize_min_max_percentile(image, 1, 99.8, axis=(1, 2))
+    elif (norm =='mean-std'):
+        if image.ndim==2:
+            image = normalize_mean_std(image) # axis == None
+        elif image.ndim==3:
+            image = normalize_mean_std(image, axis=(1,2))
+    elif (norm == 'absolute'):
+        if data_type=='8-bit':
+            image /= 255
+        elif data_type=='16-bit':
+            image/= 65535
+
+
+
     instance = fill_label_holes(instance)
 
     if image.ndim==2:
@@ -247,7 +274,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
                 tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
-               one_hot=False, anisotropy_factor=1.0, speed_up=1.0):
+               one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit'):
     """
     :param im: string
             Path to image file
@@ -290,10 +317,18 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
         print("Created new directory : {}".format(center_image_path))
 
     instance = tifffile.imread(inst).astype(np.uint16)
-    image = tifffile.imread(im)
+    image = tifffile.imread(im).astype(np.float32)
 
-    if (norm):
-        image = normalize(image, 1, 99.8, axis=(0, 1, 2))
+    if (norm == 'min-max-percentile'):
+        image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
+    elif (norm =='mean-std'):
+        image = normalize_mean_std(image)
+    elif (norm == 'absolute'):
+        if data_type=='8-bit':
+            image /= 255
+        elif data_type=='16-bit':
+            image/= 65535
+
     instance = fill_label_holes(instance)
 
     d, h, w = image.shape
@@ -323,7 +358,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
 
-def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=False, one_hot=True):
+def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile', data_type='8-bit'):
     """
         Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -346,9 +381,9 @@ def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=Fals
 
     """
 
-    image_path = os.path.join(cropsDir, dataSubset, 'images/')
-    instance_path = os.path.join(cropsDir, dataSubset, 'masks/')
-    center_image_path = os.path.join(cropsDir, dataSubset, 'center-' + center + '/')
+    image_path = os.path.join(crops_dir, data_subset, 'images/')
+    instance_path = os.path.join(crops_dir, data_subset, 'masks/')
+    center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
 
     try:
         os.makedirs(os.path.dirname(image_path))
@@ -358,15 +393,21 @@ def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=Fals
         pass
 
     instance = tifffile.imread(inst).astype(np.uint16)
-    image = tifffile.imread(im)  # TODO
+    image = tifffile.imread(im).astype(np.float32)  # TODO
 
-    if (norm):
-        image = normalize(image, 1, 99.8, axis=(0, 1))
+    if (norm == 'min-max-percentile'):
+        image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
+    elif (norm =='mean-std'):
+        image = normalize_mean_std(image)
+    elif (norm == 'absolute'):
+        if data_type=='8-bit':
+            image /= 255
+        elif data_type=='16-bit':
+            image/= 65535
     instance = fill_label_holes(instance)
 
     h, w = image.shape
     instance_np = np.array(instance, copy=False)
-    object_mask = instance_np > 0
 
     ids = np.arange(instance.shape[0])
 
@@ -385,6 +426,6 @@ def process_one_hot(im, inst, cropsDir, dataSubset, crop_size, center, norm=Fals
             instance_crop = instance[:, jj:jj + crop_size, ii:ii + crop_size]
             center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
             instance_crop_sparse = sparsify(instance_crop)
-            tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)  # TODO
+            tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
             tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop_sparse)
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
