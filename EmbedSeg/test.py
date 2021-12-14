@@ -14,7 +14,7 @@ from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 
 
-def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intensity = None):
+def begin_evaluating(test_configs, verbose=True, mask_region = None):
     """
     :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
     :param verbose: if verbose=True, then average precision for each image is shown
@@ -66,7 +66,7 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None, mask_intens
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                 pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region, mask_intensity=mask_intensity, )
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region)
 
 
 
@@ -208,8 +208,12 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
 
 
-def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None, mask_intensity = None):
-    
+def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None):
+    """
+    mask_region: list of two lists
+                first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
+                second list contains ending coordinates of region which needs to be masked in z, y and x ordering fashion
+    """
     model.eval()
     # cluster module
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
@@ -219,10 +223,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
         imageFileNames = []
         for sample in tqdm(dataset_it):
             im = sample['image']
-            if(mask_region is not None and mask_intensity is not None):
-                im[:, :, int(mask_region[0][0]):, : int(mask_region[1][1]), int(mask_region[0][2]):] = mask_intensity # B 1 Z Y X
-            else:
-                pass
+
 
 
             multiple_z =im.shape[2]//8
@@ -266,7 +267,11 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                                                         min_object_size=min_object_size,
                                                         )
 
-
+            if (mask_region is not None):
+                # ignore predictions in this region prior to saving the tiffs or prior to comparison with GT masks
+                instance_map[int(mask_region[0][0]):int(mask_region[1][0]), int(mask_region[0][1]):int(mask_region[1][1]), int(mask_region[0][2]):int(mask_region[1][2])] = 0  # Z Y X
+            else:
+                pass
 
             if (one_hot):
                 if ('instance' in sample):
