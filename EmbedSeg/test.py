@@ -123,6 +123,8 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size)
 
+
+
             center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, \
             color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map=instance_map,
                                                                                      output=output, grid_x=grid_x,
@@ -130,6 +132,16 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                                                                                      pixel_y=pixel_y,
                                                                                      predictions=predictions,
                                                                                      n_sigma=n_sigma)
+
+            # unpad instance_map, instances and images
+            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
+                instance_map = instance_map[diff_y // 2:-(diff_y - diff_y // 2), ...]
+                instances = instances[diff_y // 2:-(diff_y - diff_y // 2), ...]
+                im = im[:, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
+            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
+                instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
             imageFileNames.append(base)
@@ -274,6 +286,20 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size,
                                                         )
+
+            # unpad instance_map, instances and images
+            if diff_z//2 is not 0 and (diff_z-diff_z//2) is not 0:
+                instance_map = instance_map[diff_z//2:-(diff_z-diff_z//2), ...]
+                instances = instances[diff_z//2:-(diff_z-diff_z//2), ...]
+                im = im[:, :, diff_z//2:-(diff_z-diff_z//2), ...]
+            if diff_y//2 is not 0 and (diff_y-diff_y//2) is not 0:
+                instance_map = instance_map[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
+                instances = instances[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
+                im = im[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
+            if diff_x//2 is not 0 and (diff_x-diff_x//2) is not 0:
+                instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
 
             if (mask_region is not None):
                 # ignore predictions in this region prior to saving the tiffs or prior to comparison with GT masks
