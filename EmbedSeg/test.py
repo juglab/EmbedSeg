@@ -1,12 +1,14 @@
 import os
 import torch
+import torch.nn.functional as F
 from matplotlib import pyplot as plt
 from tqdm import tqdm
+
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import Cluster, Cluster_3d, prepare_embedding_for_test_image
 from EmbedSeg.utils.utils2 import matching_dataset, obtain_AP_one_hot
-import torch.nn.functional as F
+
 torch.backends.cudnn.benchmark = True
 import numpy as np
 from tifffile import imsave
@@ -14,7 +16,7 @@ from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 
 
-def begin_evaluating(test_configs, verbose=True, mask_region = None):
+def begin_evaluating(test_configs, verbose=True, mask_region=None):
     """
     :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
     :param verbose: if verbose=True, then average precision for each image is shown
@@ -58,19 +60,18 @@ def begin_evaluating(test_configs, verbose=True, mask_region = None):
         assert False, 'checkpoint_path {} does not exist!'.format(test_configs['checkpoint_path'])
 
     # test on evaluation images:
-    if(test_configs['name']=='2d'):
-        test(verbose = verbose, grid_x = test_configs['grid_x'], grid_y = test_configs['grid_y'],
-             pixel_x = test_configs['pixel_x'], pixel_y = test_configs['pixel_y'],
-             one_hot = test_configs['dataset']['kwargs']['one_hot'], n_sigma=n_sigma)
-    elif(test_configs['name']=='3d'):
+    if (test_configs['name'] == '2d'):
+        test(verbose=verbose, grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'],
+             pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],
+             one_hot=test_configs['dataset']['kwargs']['one_hot'], n_sigma=n_sigma)
+    elif (test_configs['name'] == '3d'):
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
-                pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region= mask_region)
+                pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'], pixel_z=test_configs['pixel_z'],
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region)
 
 
-
-def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = False, n_sigma = 2):
+def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False, n_sigma=2):
     """
     :param verbose: if True, then average prevision is printed out for each image
     :param grid_y:
@@ -106,7 +107,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             p2d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2)  # last dim, second last dim
 
             im = F.pad(im, p2d, "reflect")
-            if('instance' in sample):
+            if ('instance' in sample):
                 instances = sample['instance'].squeeze()  # Y X  (squeeze takes away first two dimensions) or DYX
                 instances = F.pad(instances, p2d, "constant", 0)
 
@@ -115,7 +116,6 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             else:
                 output = model(im)
 
-
             instance_map, predictions = cluster.cluster(output[0],
                                                         n_sigma=n_sigma,
                                                         seed_thresh=seed_thresh,
@@ -123,27 +123,32 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size)
 
-
             center_x, center_y, samples_x, samples_y, sample_spatial_embedding_x, sample_spatial_embedding_y, sigma_x, sigma_y, \
-            color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map = instance_map, output = output, grid_x = grid_x, grid_y = grid_y, pixel_x = pixel_x, pixel_y =pixel_y, predictions =predictions, n_sigma = n_sigma)
+            color_sample_dic, color_embedding_dic = prepare_embedding_for_test_image(instance_map=instance_map,
+                                                                                     output=output, grid_x=grid_x,
+                                                                                     grid_y=grid_y, pixel_x=pixel_x,
+                                                                                     pixel_y=pixel_y,
+                                                                                     predictions=predictions,
+                                                                                     n_sigma=n_sigma)
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
             imageFileNames.append(base)
 
             if (one_hot):
                 if ('instance' in sample):
-                    results = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
+                                                prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(results), flush=True)
                     resultList.append(results)
             else:
                 if ('instance' in sample):
-                    results=matching_dataset(y_true=[instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False)
+                    results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
+                                               y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
+                                               show_progress=False)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(results.accuracy), flush=True)
                     resultList.append(results.accuracy)
-
-
 
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
@@ -169,7 +174,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 embedding_file = os.path.join(save_dir, 'embedding/', base + '.tif')
                 import matplotlib
                 matplotlib.use('Agg')
-                fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi =150)
+                fig, ax = plt.subplots(1, 1, figsize=(10, 10), dpi=150)
                 ax.imshow(instance_map > 0, cmap='gray')
 
                 for i in range(len(color_sample_dic.items())):
@@ -189,7 +194,8 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
             if not os.path.exists(os.path.join(save_dir, 'results/')):
                 os.makedirs(os.path.join(save_dir, 'results/'))
                 print("Created new directory {}".format(os.path.join(save_dir, 'results/')))
-            txt_file = os.path.join(save_dir, 'results/combined_AP-' + '{:.02f}'.format(ap_val) + '_tta-' + str(tta) + '.txt')
+            txt_file = os.path.join(save_dir,
+                                    'results/combined_AP-' + '{:.02f}'.format(ap_val) + '_tta-' + str(tta) + '.txt')
             with open(txt_file, 'w') as f:
                 f.writelines(
                     "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
@@ -205,10 +211,12 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot = Fals
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
 
-            print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+            print(
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
 
 
-def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1, pixel_z = 1, one_hot = False, mask_region = None):
+def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
+            mask_region=None):
     """
     mask_region: list of two lists
                 first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
@@ -224,37 +232,37 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
         for sample in tqdm(dataset_it):
             im = sample['image']
 
+            multiple_z = im.shape[2] // 8
+            multiple_y = im.shape[3] // 8
+            multiple_x = im.shape[4] // 8
 
-
-            multiple_z =im.shape[2]//8
-            multiple_y =im.shape[3]//8
-            multiple_x =im.shape[4]//8
-
-            if im.shape[2]%8!=0:
-                diff_z= 8 * (multiple_z + 1) - im.shape[2]
+            if im.shape[2] % 8 != 0:
+                diff_z = 8 * (multiple_z + 1) - im.shape[2]
             else:
                 diff_z = 0
-            if im.shape[3]%8!=0:
-                diff_y= 8 * (multiple_y + 1) - im.shape[3]
+            if im.shape[3] % 8 != 0:
+                diff_y = 8 * (multiple_y + 1) - im.shape[3]
             else:
                 diff_y = 0
-            if im.shape[4]%8!=0:
-                diff_x= 8 * (multiple_x + 1) - im.shape[4]
+            if im.shape[4] % 8 != 0:
+                diff_x = 8 * (multiple_x + 1) - im.shape[4]
             else:
                 diff_x = 0
-            p3d = (diff_x//2, diff_x - diff_x//2, diff_y//2, diff_y -diff_y//2, diff_z//2, diff_z - diff_z//2) # last dim, second last dim, third last dim!
+            p3d = (diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2, diff_z // 2,
+                   diff_z - diff_z // 2)  # last dim, second last dim, third last dim!
 
             im = F.pad(im, p3d, "reflect")
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()
                 instances = F.pad(instances, p3d, "constant", 0)
-            
+
             if (tta):
                 for iter in range(16):
                     if iter == 0:
                         output_average = apply_tta_3d(im, model, iter)  # iter
                     else:
-                        output_average = 1 / (iter + 1) * (output_average * iter + apply_tta_3d(im, model, iter))  # iter
+                        output_average = 1 / (iter + 1) * (
+                                    output_average * iter + apply_tta_3d(im, model, iter))  # iter
                 output = torch.from_numpy(output_average).float().cuda()
             else:
                 output = model(im)
@@ -269,27 +277,27 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
 
             if (mask_region is not None):
                 # ignore predictions in this region prior to saving the tiffs or prior to comparison with GT masks
-                instance_map[int(mask_region[0][0]):int(mask_region[1][0]), int(mask_region[0][1]):int(mask_region[1][1]), int(mask_region[0][2]):int(mask_region[1][2])] = 0  # Z Y X
+                instance_map[int(mask_region[0][0]):int(mask_region[1][0]),
+                int(mask_region[0][1]):int(mask_region[1][1]),
+                int(mask_region[0][2]):int(mask_region[1][2])] = 0  # Z Y X
             else:
                 pass
 
             if (one_hot):
                 if ('instance' in sample):
-                    sc = obtain_AP_one_hot(gt_image = instances.cpu().detach().numpy(), prediction_image = instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    sc = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
+                                           prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(sc), flush=True)
                     resultList.append(sc)
             else:
                 if ('instance' in sample):
-                    sc=matching_dataset(y_true= [instances.cpu().detach().numpy()], y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val, show_progress = False) 
+                    sc = matching_dataset(y_true=[instances.cpu().detach().numpy()],
+                                          y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
+                                          show_progress=False)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
                     resultList.append(sc.accuracy)
-
-
-
-
-
 
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
@@ -305,7 +313,6 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                     os.makedirs(os.path.join(save_dir, 'images/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'images/')))
 
-
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 imageFileNames.append(base)
 
@@ -319,14 +326,14 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
 
                 im_file = os.path.join(save_dir, 'images/', base + '.tif')
-                imsave(im_file, im[0,0].cpu().detach().numpy())
-
+                imsave(im_file, im[0, 0].cpu().detach().numpy())
 
         if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
                 os.makedirs(os.path.join(save_dir, 'results/'))
                 print("Created new directory {}".format(os.path.join(save_dir, 'results/')))
-            txt_file = os.path.join(save_dir, 'results/combined_AP-' + '{:.02f}'.format(ap_val) + '_tta-' + str(tta) + '.txt')
+            txt_file = os.path.join(save_dir,
+                                    'results/combined_AP-' + '{:.02f}'.format(ap_val) + '_tta-' + str(tta) + '.txt')
             with open(txt_file, 'w') as f:
                 f.writelines(
                     "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
@@ -342,4 +349,5 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z= 32, pixel_x=1, pixel_y=1,
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
 
-            print("Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+            print(
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
