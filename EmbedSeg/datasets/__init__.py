@@ -4,6 +4,8 @@ from EmbedSeg.datasets.ThreeDimensionalDataset import ThreeDimensionalDataset
 def get_dataset(name, dataset_opts):
     if name == "2d": 
         return TwoDimensionalDataset(**dataset_opts)
+    elif name =="3d_sliced":
+        return ThreeDimensionalDataset(**dataset_opts)
     elif name=="3d":
         return ThreeDimensionalDataset(**dataset_opts)
     else:
