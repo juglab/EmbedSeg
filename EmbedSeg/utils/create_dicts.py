@@ -174,6 +174,10 @@ def create_test_configs_dict(data_dir,
         n_sigma = 3
         num_classes= [6, 1]
         model_name = 'branched_erfnet_3d'
+    elif name=='3d_sliced':
+        n_sigma = 3
+        num_classes = [4, 1]
+        model_name = 'branched_erfnet'
 
     test_configs = dict(
         ap_val=ap_val,
