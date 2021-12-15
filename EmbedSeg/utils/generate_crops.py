@@ -1,9 +1,10 @@
-import os
 import numpy as np
+import os
 import tifffile
 from numba import jit
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
+from scipy.ndimage import zoom
 
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
@@ -71,13 +72,11 @@ def normalize_mean_std(x, axis=None):
         mean = np.mean(x)
         std = np.std(x)
     else:
-        mean = np.mean(x, axis=axis) # (C,)
-        std = np.std(x, axis=axis) #(C,)
-        mean= np.expand_dims(mean, axis=axis) # (C, H, W)
-        std = np.expand_dims(std, axis=axis) # (C, H, W)
+        mean = np.mean(x, axis=axis)  # (C,)
+        std = np.std(x, axis=axis)  # (C,)
+        mean = np.expand_dims(mean, axis=axis)  # (C, H, W)
+        std = np.expand_dims(std, axis=axis)  # (C, H, W)
     return (x - mean)/std
-
-
 
 
 @jit(nopython=True)
@@ -95,6 +94,7 @@ def pairwise_python(X):
     return D
 
 
+
 def generate_center_image(instance, center, ids, one_hot):
     """
         Generates a `center_image` which is one (True) for all center locations and zero (False) otherwise.
@@ -109,6 +109,7 @@ def generate_center_image(instance, center, ids, one_hot):
             Unique ids corresponding to the objects present in the instance image.
         one_hot: boolean
             True (in this case, `instance` has shape DYX) or False (in this case, `instance` has shape YX).
+
     """
 
     if (not one_hot):
@@ -128,20 +129,12 @@ def generate_center_image(instance, center, ids, one_hot):
                 imin = np.argmin((x - xm_temp) ** 2 + (y - ym_temp) ** 2)
                 ym, xm = y[imin], x[imin]
             elif (center == 'medoid'):
-                ### option - 1 (scipy `distance_matrix`) (slow-ish)
-                # dist_matrix = distance_matrix(np.vstack((x, y)).transpose(), np.vstack((x, y)).transpose())
-                # imin = np.argmin(np.sum(dist_matrix, axis=0))
-                # ym, xm = y[imin], x[imin]
-
-                ### option - 2 (`hdmedoid`) (slightly faster than scipy `distance_matrix`)
-                # ym, xm = hd.medoid(np.vstack((y,x)))
-
-                ### option - 3 (`numba`) 
                 dist_matrix = pairwise_python(np.vstack((x, y)).transpose())
                 imin = np.argmin(np.sum(dist_matrix, axis=0))
                 ym, xm = y[imin], x[imin]
             center_image[int(np.round(ym)), int(np.round(xm))] = True
     return center_image
+
 
 
 def generate_center_image_3d(instance, center, ids, one_hot, anisotropy_factor, speed_up):
@@ -220,29 +213,27 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
     image = tifffile.imread(im).astype(np.float32)
 
     if (norm == 'min-max-percentile'):
-        if image.ndim ==2: # gray-scale
+        if image.ndim == 2:  # gray-scale
             image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
-        elif image.ndim == 3: # multi-channel image (C, H, W)
+        elif image.ndim == 3:  # multi-channel image (C, H, W)
             image = normalize_min_max_percentile(image, 1, 99.8, axis=(1, 2))
-    elif (norm =='mean-std'):
-        if image.ndim==2:
-            image = normalize_mean_std(image) # axis == None
-        elif image.ndim==3:
-            image = normalize_mean_std(image, axis=(1,2))
+    elif (norm == 'mean-std'):
+        if image.ndim == 2:
+            image = normalize_mean_std(image)  # axis == None
+        elif image.ndim == 3:
+            image = normalize_mean_std(image, axis=(1, 2))
     elif (norm == 'absolute'):
-        if data_type=='8-bit':
+        if data_type == '8-bit':
             image /= 255
-        elif data_type=='16-bit':
-            image/= 65535
-
-
+        elif data_type == '16-bit':
+            image /= 65535
 
     instance = fill_label_holes(instance)
 
-    if image.ndim==2:
+    if image.ndim == 2:
         h, w = image.shape
-    elif image.ndim==3:
-        c,h,w=image.shape
+    elif image.ndim == 3:
+        c, h, w = image.shape
     instance_np = np.array(instance, copy=False)
     object_mask = instance_np > 0
 
@@ -256,22 +247,25 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
 
         jj = int(np.clip(ym - crop_size / 2, 0, h - crop_size))
         ii = int(np.clip(xm - crop_size / 2, 0, w - crop_size))
-        if image.ndim==2:
+        if image.ndim == 2:
             if (image[jj:jj + crop_size, ii:ii + crop_size].shape == (crop_size, crop_size)):
                 im_crop = image[jj:jj + crop_size, ii:ii + crop_size]
                 instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
                 center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
                 tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
                 tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
-                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
-        elif image.ndim==3:
+                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
+                                center_image_crop)
+        elif image.ndim == 3:
             if (image[:, jj:jj + crop_size, ii:ii + crop_size].shape == (c, crop_size, crop_size)):
                 im_crop = image[:, jj:jj + crop_size, ii:ii + crop_size]
                 instance_crop = instance[jj:jj + crop_size, ii:ii + crop_size]
                 center_image_crop = generate_center_image(instance_crop, center, ids, one_hot)
                 tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
                 tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop)
-                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
+                tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
+                                center_image_crop)
+
 
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit'):
@@ -321,13 +315,13 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
 
     if (norm == 'min-max-percentile'):
         image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
-    elif (norm =='mean-std'):
+    elif (norm == 'mean-std'):
         image = normalize_mean_std(image)
     elif (norm == 'absolute'):
-        if data_type=='8-bit':
+        if data_type == '8-bit':
             image /= 255
-        elif data_type=='16-bit':
-            image/= 65535
+        elif data_type == '16-bit':
+            image /= 65535
 
     instance = fill_label_holes(instance)
 
@@ -347,7 +341,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
         ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
 
         if (image[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (
-        crop_size_z, crop_size_y, crop_size_x)):
+                crop_size_z, crop_size_y, crop_size_x)):
             im_crop = image[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
             instance_crop = instance[kk:kk + crop_size_z, jj:jj + crop_size_y, ii:ii + crop_size_x]
             center_image_crop = generate_center_image_3d(instance_crop, center, ids, one_hot=one_hot,
@@ -358,7 +352,8 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
 
 
-def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile', data_type='8-bit'):
+def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile',
+                    data_type='8-bit'):
     """
         Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -397,13 +392,13 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 
     if (norm == 'min-max-percentile'):
         image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
-    elif (norm =='mean-std'):
+    elif (norm == 'mean-std'):
         image = normalize_mean_std(image)
     elif (norm == 'absolute'):
-        if data_type=='8-bit':
+        if data_type == '8-bit':
             image /= 255
-        elif data_type=='16-bit':
-            image/= 65535
+        elif data_type == '16-bit':
+            image /= 65535
     instance = fill_label_holes(instance)
 
     h, w = image.shape
@@ -429,3 +424,101 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
             tifffile.imsave(image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), im_crop)
             tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), instance_crop_sparse)
             tifffile.imsave(center_image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j), center_image_crop)
+
+
+def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, one_hot=False,
+                      anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit', fraction_max_ids=0.25):
+    image_path = os.path.join(crops_dir, data_subset, 'images/')
+    instance_path = os.path.join(crops_dir, data_subset, 'masks/')
+    center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
+
+    if not os.path.exists(image_path):
+        os.makedirs(os.path.dirname(image_path))
+        print("Created new directory : {}".format(image_path))
+    if not os.path.exists(instance_path):
+        os.makedirs(os.path.dirname(instance_path))
+        print("Created new directory : {}".format(instance_path))
+    if not os.path.exists(center_image_path):
+        os.makedirs(os.path.dirname(center_image_path))
+        print("Created new directory : {}".format(center_image_path))
+
+    instance = tifffile.imread(inst).astype(np.uint16)
+    image = tifffile.imread(im).astype(np.float32)
+    if (norm == 'min-max-percentile'):
+        image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
+    elif (norm == 'mean-std'):
+        image = normalize_mean_std(image)
+    elif (norm == 'absolute'):
+        if data_type == '8-bit':
+            image /= 255
+        elif data_type == '16-bit':
+            image /= 65535
+    instance = fill_label_holes(instance)
+
+    # upsample
+    image = zoom(image, (anisotropy_factor, 1, 1), order=0)
+    instance = zoom(instance, (anisotropy_factor, 1, 1), order=0)
+
+
+    d, h, w = image.shape
+    instance_np = np.array(instance, copy=False)
+    object_mask = instance_np > 0
+
+    ids = np.unique(instance_np[object_mask])
+    ids = ids[ids != 0]
+
+    # loop over instances
+    for id in ids[:int(fraction_max_ids*len(ids))]:
+        z, y, x = np.where(instance_np == id)
+        zm, ym, xm = np.mean(z), np.mean(y), np.mean(x)
+        kk = int(np.clip(zm - crop_size_z / 2, 0, d - crop_size_z))
+        jj = int(np.clip(ym - crop_size_y / 2, 0, h - crop_size_y))
+        ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
+
+        # ZY
+        for x in range(ii, ii + crop_size_x):
+            if (image[kk:kk + crop_size_z, jj:jj + crop_size_y, x].shape == (crop_size_z, crop_size_y)):
+                im_crop = image[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
+                instance_crop = instance[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
+                if np.sum(instance_crop) > 0:  # shouldn't be only background
+                    center_image_crop = generate_center_image(instance_crop, center, ids, one_hot=one_hot)
+                    tifffile.imsave(
+                        image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(x) + "_ZY.tif",
+                        im_crop)
+                    tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                        x) + "_ZY.tif", instance_crop.astype(np.uint16))
+                    tifffile.imsave(
+                        center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                            x) + "_ZY.tif", center_image_crop)
+
+        # YX
+        for z in range(kk, kk + crop_size_z):
+            if (image[z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (crop_size_y, crop_size_x)):
+                im_crop = image[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
+                instance_crop = instance[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
+                if np.sum(instance_crop) > 0:
+                    center_image_crop = generate_center_image(instance_crop, center, ids, one_hot=one_hot)
+                    tifffile.imsave(
+                        image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(z) + "_YX.tif",
+                        im_crop)
+                    tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                        z) + "_YX.tif", instance_crop.astype(np.uint16))
+                    tifffile.imsave(
+                        center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                            z) + "_YX.tif", center_image_crop)
+
+        # XZ
+        for y in range(jj, jj + crop_size_y):
+            if (image[kk:kk + crop_size_z, y, ii:ii + crop_size_x].shape == (crop_size_z, crop_size_x)):
+                im_crop = np.transpose(image[kk:kk + crop_size_z, y, ii:ii + crop_size_x])
+                instance_crop = np.transpose(instance[kk:kk + crop_size_z, y, ii:ii + crop_size_x])
+                if np.sum(instance_crop) > 0:
+                    center_image_crop = generate_center_image(instance_crop, center, ids, one_hot=one_hot)
+                    tifffile.imsave(
+                        image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(y) + "_XZ.tif",
+                        im_crop)
+                    tifffile.imsave(instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                        y) + "_XZ.tif", instance_crop.astype(np.uint16))
+                    tifffile.imsave(
+                        center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
+                            y) + "_XZ.tif", center_image_crop)
