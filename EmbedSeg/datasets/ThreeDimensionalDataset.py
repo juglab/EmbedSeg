@@ -41,6 +41,7 @@ class ThreeDimensionalDataset(Dataset):
         self.data_type=data_type
         self.type=type
 
+
     def convert_zyx_to_czyx(self, im, key):
         im = im[np.newaxis, ...] # CZYX
         return im
@@ -55,11 +56,11 @@ class ThreeDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # ZYX
-        if (self.norm == 'min-max-percentile'):
+        if (self.type=='test' and self.norm == 'min-max-percentile'):
             image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
-        elif (self.norm == 'mean-std'):
+        elif (self.type=='test' and self.norm == 'mean-std'):
             image = normalize_mean_std(image)
-        elif (self.norm == 'absolute'):
+        elif (self.type=='test' and self.norm == 'absolute'):
             image = image.astype(np.float32)
             if self.data_type == '8-bit':
                 image /= 255
