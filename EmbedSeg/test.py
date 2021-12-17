@@ -14,7 +14,7 @@ import numpy as np
 from tifffile import imsave
 from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
-
+from scipy.ndimage import zoom
 
 def begin_evaluating(test_configs, verbose=True, mask_region=None):
     """
@@ -39,6 +39,7 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
     save_images = test_configs['save_images']
     save_results = test_configs['save_results']
     save_dir = test_configs['save_dir']
+    anisotropy_factor = test_configs['anisotropy_factor']
 
     # set device
     device = torch.device("cuda:0" if test_configs['cuda'] else "cpu")
@@ -74,7 +75,8 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
                        grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                        pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],
                        pixel_z=test_configs['pixel_z'],
-                       one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma = n_sigma)
+                       one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma = n_sigma,
+                       anisotropy_factor=anisotropy_factor)
 
 
 def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False, n_sigma=2):
@@ -94,8 +96,8 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
     cluster = Cluster(grid_y, grid_x, pixel_y, pixel_x)
 
     with torch.no_grad():
-        resultList = []
-        imageFileNames = []
+        result_list = []
+        image_file_names = []
         for sample in tqdm(dataset_it):
 
             im = sample['image']  # B 1 Y X
@@ -148,23 +150,23 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                 im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
 
             base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
-            imageFileNames.append(base)
+            image_file_names.append(base)
 
             if (one_hot):
                 if ('instance' in sample):
-                    results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
+                    all_results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
                                                 prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(results), flush=True)
-                    resultList.append(results)
+                        print("Accuracy: {:.03f}".format(all_results), flush=True)
+                    result_list.append(all_results)
             else:
                 if ('instance' in sample):
-                    results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
+                    all_results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
                                                y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
                                                show_progress=False)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(results.accuracy), flush=True)
-                    resultList.append(results.accuracy)
+                        print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
@@ -216,19 +218,19 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                 f.writelines(
                     "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                for ind, im_name in enumerate(imageFileNames):
+                for ind, im_name in enumerate(image_file_names):
                     im_name_png = im_name + '.png'
-                    score = resultList[ind]
+                    score = result_list[ind]
                     f.writelines(
                         "{} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.05f} \n".format(im_name_png, min_mask_sum,
                                                                                        min_unclustered_sum,
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
+                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))
 
 
 def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
@@ -243,8 +245,8 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
 
     with torch.no_grad():
-        resultList = []
-        imageFileNames = []
+        result_list = []
+        image_file_names = []
         for sample in tqdm(dataset_it):
             im = sample['image']
 
@@ -315,19 +317,19 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
 
             if (one_hot):
                 if ('instance' in sample):
-                    sc = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
+                    all_results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
                                            prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(sc), flush=True)
-                    resultList.append(sc)
+                        print("Accuracy: {:.03f}".format(all_results), flush=True)
+                    result_list.append(all_results)
             else:
                 if ('instance' in sample):
-                    sc = matching_dataset(y_true=[instances.cpu().detach().numpy()],
+                    all_results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
                                           y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
                                           show_progress=False)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
-                    resultList.append(sc.accuracy)
+                        print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
@@ -344,7 +346,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
                     print("Created new directory {}".format(os.path.join(save_dir, 'images/')))
 
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
-                imageFileNames.append(base)
+                image_file_names.append(base)
 
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
                 imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
@@ -368,23 +370,23 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
                 f.writelines(
                     "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                for ind, im_name in enumerate(imageFileNames):
+                for ind, im_name in enumerate(image_file_names):
                     im_name_png = im_name + '.png'
-                    score = resultList[ind]
+                    score = result_list[ind]
                     f.writelines(
                         "{} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.05f} \n".format(im_name_png, min_mask_sum,
                                                                                        min_unclustered_sum,
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
+                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))
 
 
 def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
-            mask_region=None, n_sigma = 3):
+            mask_region=None, n_sigma = 3, anisotropy_factor=1.0):
     """
     mask_region: list of two lists
                 first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
@@ -395,11 +397,11 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
 
     with torch.no_grad():
-        resultList = []
-        imageFileNames = []
+        result_list = []
+        image_file_names = []
         for sample in tqdm(dataset_it):
-            im = sample['image']
-
+            im = sample['image'] # isotropically expanded image
+            print("Isotropically expanded image has shape = {}".format(im.shape))
             multiple_z = im.shape[2] // 8
             multiple_y = im.shape[3] // 8
             multiple_x = im.shape[4] // 8
@@ -421,7 +423,7 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
 
             im = F.pad(im, p3d, "reflect")
             if ('instance' in sample):
-                instances = sample['instance'].squeeze()
+                instances = sample['instance'].squeeze() # isotropically expanded GT instance map
                 instances = F.pad(instances, p3d, "constant", 0)
 
             print("Processing `YX` slices .....")
@@ -507,21 +509,23 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
             else:
                 pass
 
+            # reverse the isotropic sampling
+            gt_image = zoom(instances.cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
+            prediction_image = zoom(instance_map.cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
+            image = zoom(im[0,0].cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
+            print("Restored image has shape = {}".format(image.shape))
             if (one_hot):
                 if ('instance' in sample):
-                    sc = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
-                                           prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    all_results = obtain_AP_one_hot(gt_image=gt_image, prediction_image=prediction_image, ap_val=ap_val)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(sc), flush=True)
-                    resultList.append(sc)
+                        print("Accuracy: {:.03f}".format(all_results), flush=True)
+                    result_list.append(all_results)
             else:
                 if ('instance' in sample):
-                    sc = matching_dataset(y_true=[instances.cpu().detach().numpy()],
-                                          y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
-                                          show_progress=False)
+                    all_results = matching_dataset(y_true=[gt_image], y_pred=[prediction_image], thresh=ap_val, show_progress=False)
                     if (verbose):
-                        print("Accuracy: {:.03f}".format(sc.accuracy), flush=True)
-                    resultList.append(sc.accuracy)
+                        print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
@@ -538,19 +542,19 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
                     print("Created new directory {}".format(os.path.join(save_dir, 'images/')))
 
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
-                imageFileNames.append(base)
+                image_file_names.append(base)
 
-                instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
+                prediction_file = os.path.join(save_dir, 'predictions/', base + '.tif')
+                imsave(prediction_file, prediction_image.astype(np.uint16))
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                    imsave(gt_file, instances.cpu().detach().numpy().astype(np.uint16))
+                    imsave(gt_file, gt_image.astype(np.uint16))
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
                 imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
 
                 im_file = os.path.join(save_dir, 'images/', base + '.tif')
-                imsave(im_file, im[0, 0].cpu().detach().numpy())
+                imsave(im_file, image)
 
         if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
@@ -562,16 +566,16 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
                 f.writelines(
                     "image_file_name, min_mask_sum, min_unclustered_sum, min_object_size, seed_thresh, intersection_threshold, accuracy \n")
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                for ind, im_name in enumerate(imageFileNames):
+                for ind, im_name in enumerate(image_file_names):
                     im_name_png = im_name + '.png'
-                    score = resultList[ind]
+                    score = result_list[ind]
                     f.writelines(
                         "{} {:.02f} {:.02f} {:.02f} {:.02f} {:.02f} {:.05f} \n".format(im_name_png, min_mask_sum,
                                                                                        min_unclustered_sum,
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(resultList)))
+                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(resultList)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))

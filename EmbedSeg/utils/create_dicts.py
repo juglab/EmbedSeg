@@ -179,6 +179,10 @@ def create_test_configs_dict(data_dir,
         num_classes = [4, 1]
         model_name = 'branched_erfnet'
 
+    if name =='3d_sliced':
+        sliced_mode = True
+    else:
+        sliced_mode= False
     test_configs = dict(
         ap_val=ap_val,
         min_mask_sum=min_mask_sum,
@@ -199,6 +203,7 @@ def create_test_configs_dict(data_dir,
         pixel_y = l_y,
         pixel_z = l_z,
         name = name,
+        anisotropy_factor = anisotropy_factor,
         dataset={
             'name': name,
             'kwargs': {
@@ -206,6 +211,8 @@ def create_test_configs_dict(data_dir,
                 'type': 'test',
                 'data_type': data_type,
                 'norm': norm,
+                'sliced_mode': sliced_mode,
+                'anisotropy_factor': anisotropy_factor,
                 'transform': my_transforms.get_transform([
                     {
                         'name': 'ToTensorFromNumpy',
