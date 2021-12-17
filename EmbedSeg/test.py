@@ -16,6 +16,7 @@ from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 from scipy.ndimage import zoom
 
+
 def begin_evaluating(test_configs, verbose=True, mask_region=None):
     """
     :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
@@ -69,13 +70,13 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
         test_3d(verbose=verbose,
                 grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                 pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'], pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma = n_sigma)
+                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma=n_sigma)
     elif (test_configs['name'] == '3d_sliced'):
         test_3d_sliced(verbose=verbose,
                        grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
                        pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],
                        pixel_z=test_configs['pixel_z'],
-                       one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma = n_sigma,
+                       one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma=n_sigma,
                        anisotropy_factor=anisotropy_factor)
 
 
@@ -155,15 +156,15 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
             if (one_hot):
                 if ('instance' in sample):
                     all_results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
-                                                prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                                                    prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results), flush=True)
                     result_list.append(all_results)
             else:
                 if ('instance' in sample):
                     all_results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
-                                               y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
-                                               show_progress=False)
+                                                   y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
+                                                   show_progress=False)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
                     result_list.append(all_results.accuracy)
@@ -230,11 +231,12 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
+                                                                                           np.mean(result_list)))
 
 
 def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
-            mask_region=None, n_sigma = 3):
+            mask_region=None, n_sigma=3):
     """
     mask_region: list of two lists
                 first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
@@ -318,15 +320,15 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
             if (one_hot):
                 if ('instance' in sample):
                     all_results = obtain_AP_one_hot(gt_image=instances.cpu().detach().numpy(),
-                                           prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                                                    prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results), flush=True)
                     result_list.append(all_results)
             else:
                 if ('instance' in sample):
                     all_results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
-                                          y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
-                                          show_progress=False)
+                                                   y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
+                                                   show_progress=False)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
                     result_list.append(all_results.accuracy)
@@ -382,11 +384,12 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
+                                                                                           np.mean(result_list)))
 
 
 def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
-            mask_region=None, n_sigma = 3, anisotropy_factor=1.0):
+                   mask_region=None, n_sigma=3, anisotropy_factor=1.0):
     """
     mask_region: list of two lists
                 first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
@@ -400,8 +403,7 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
         result_list = []
         image_file_names = []
         for sample in tqdm(dataset_it):
-            im = sample['image'] # isotropically expanded image
-            print("Isotropically expanded image has shape = {}".format(im.shape))
+            im = sample['image']  # isotropically expanded image
             multiple_z = im.shape[2] // 8
             multiple_y = im.shape[3] // 8
             multiple_x = im.shape[4] // 8
@@ -423,7 +425,7 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
 
             im = F.pad(im, p3d, "reflect")
             if ('instance' in sample):
-                instances = sample['instance'].squeeze() # isotropically expanded GT instance map
+                instances = sample['instance'].squeeze()  # isotropically expanded GT instance map
                 instances = F.pad(instances, p3d, "constant", 0)
 
             print("Processing `YX` slices .....")
@@ -459,47 +461,55 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
             output = torch.from_numpy(np.zeros((1, 7, im.shape[2], im.shape[3], im.shape[4]))).float().cuda()
 
             # handle seediness
-            output[:, 6, ...] = 1/3*(output_YX_3d[:, 4, ...]+ output_ZX_3d[:, 4, ...] + output_ZY_3d[:, 4, ...])
+            output[:, 6, ...] = 1 / 3 * (output_YX_3d[:, 4, ...] + output_ZX_3d[:, 4, ...] + output_ZY_3d[:, 4, ...])
 
             # handle offset in X
-            output[:, 0, ...] = 1/2*(output_YX_3d[:, 0, ...] + output_ZX_3d[:, 0, ...])
+            output[:, 0, ...] = 1 / 2 * (output_YX_3d[:, 0, ...] + output_ZX_3d[:, 0, ...])
 
             # handle offset in Y
-            output[:, 1, ...] = 1/2*(output_YX_3d[:, 1, ...] + output_ZY_3d[:, 0, ...])
+            output[:, 1, ...] = 1 / 2 * (output_YX_3d[:, 1, ...] + output_ZY_3d[:, 0, ...])
 
             # handle offset in Z
-            output[:, 2, ...] = 1/2 * (output_ZX_3d[:, 1, ...] + output_ZY_3d[:, 1, ...])
+            output[:, 2, ...] = 1 / 2 * (output_ZX_3d[:, 1, ...] + output_ZY_3d[:, 1, ...])
 
             # sigma in X
-            output[:, 3, ...] = 1/2 * (output_YX_3d[:, 2, ...] + output_ZX_3d[:, 2, ...])
+            output[:, 3, ...] = 1 / 2 * (output_YX_3d[:, 2, ...] + output_ZX_3d[:, 2, ...])
 
             # sigma in Y
-            output[:, 4, ...] = 1/2*(output_YX_3d[:, 3, ...] + output_ZY_3d[:, 2, ...])
+            output[:, 4, ...] = 1 / 2 * (output_YX_3d[:, 3, ...] + output_ZY_3d[:, 2, ...])
 
             # sigma in Z
-            output[:, 5, ...] = 1/2*(output_ZX_3d[:, 3, ...] + output_ZY_3d[:, 3, ...])
+            output[:, 5, ...] = 1 / 2 * (output_ZX_3d[:, 3, ...] + output_ZY_3d[:, 3, ...])
+
+            # unpad output, instances and image
+            if diff_z // 2 is not 0 and (diff_z - diff_z // 2) is not 0:
+                output = output[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
+                instances = instances[diff_z // 2:-(diff_z - diff_z // 2), ...]
+                im = im[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
+            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
+                output = output[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
+                instances = instances[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
+                im = im[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
+            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
+                output = output[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
+
+            # reverse the isotropic sampling
+            output_cpu = output.cpu().detach().numpy()  # BCZYX
+            output_cpu = zoom(output_cpu, (1, 1, 1 / anisotropy_factor, 1, 1), order=0)
+            output = torch.from_numpy(output_cpu).float().cuda()
+            gt_image = zoom(instances.cpu().detach().numpy(), (1 / anisotropy_factor, 1, 1), order=0)
+            image = zoom(im[0, 0].cpu().detach().numpy(), (1 / anisotropy_factor, 1, 1), order=0)
 
             instance_map, predictions = cluster.cluster(output[0],
-                                                        n_sigma=n_sigma, # 3
+                                                        n_sigma=n_sigma,  # 3
                                                         seed_thresh=seed_thresh,
                                                         min_mask_sum=min_mask_sum,
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size,
                                                         )
 
-            # unpad instance_map, instances and images
-            if diff_z // 2 is not 0 and (diff_z - diff_z // 2) is not 0:
-                instance_map = instance_map[diff_z // 2:-(diff_z - diff_z // 2), ...]
-                instances = instances[diff_z // 2:-(diff_z - diff_z // 2), ...]
-                im = im[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
-            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
-                instance_map = instance_map[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
-                instances = instances[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
-                im = im[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
-            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
-                instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
-                instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
-                im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
 
             if (mask_region is not None):
                 # ignore predictions in this region prior to saving the tiffs or prior to comparison with GT masks
@@ -509,20 +519,18 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
             else:
                 pass
 
-            # reverse the isotropic sampling
-            gt_image = zoom(instances.cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
-            prediction_image = zoom(instance_map.cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
-            image = zoom(im[0,0].cpu().detach().numpy(), (1/anisotropy_factor, 1, 1), order=0)
-            print("Restored image has shape = {}".format(image.shape))
             if (one_hot):
                 if ('instance' in sample):
-                    all_results = obtain_AP_one_hot(gt_image=gt_image, prediction_image=prediction_image, ap_val=ap_val)
+                    all_results = obtain_AP_one_hot(gt_image=gt_image,
+                                                    prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results), flush=True)
                     result_list.append(all_results)
             else:
                 if ('instance' in sample):
-                    all_results = matching_dataset(y_true=[gt_image], y_pred=[prediction_image], thresh=ap_val, show_progress=False)
+                    all_results = matching_dataset(y_true=[gt_image], y_pred=[instance_map.cpu().detach().numpy()],
+                                                   thresh=ap_val,
+                                                   show_progress=False)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
                     result_list.append(all_results.accuracy)
@@ -545,7 +553,7 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
                 image_file_names.append(base)
 
                 prediction_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(prediction_file, prediction_image.astype(np.uint16))
+                imsave(prediction_file, instance_map.cpu().detach().numpy().astype(np.uint16))
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
                     imsave(gt_file, gt_image.astype(np.uint16))
@@ -578,4 +586,5 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
                 f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val, np.mean(result_list)))
+                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
+                                                                                           np.mean(result_list)))
