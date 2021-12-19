@@ -192,7 +192,7 @@ def encode(filename, img, one_hot=False):
 
 
 def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False, data_type='8-bit',
-            rle_encode=False):
+            rle_encode=False, fraction_max_ids = 1.0):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -260,7 +260,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
     ids = ids[ids != 0]
 
     # loop over instances
-    for j, id in enumerate(ids):
+    for j, id in enumerate(ids[:int(fraction_max_ids * len(ids))]):
         y, x = np.where(instance_np == id)
         ym, xm = np.mean(y), np.mean(x)
 
@@ -298,7 +298,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
 
 
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
-               one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', rle_encode=False):
+               one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', rle_encode=False, fraction_max_ids = 1.0):
     """
     :param im: string
             Path to image file
@@ -363,7 +363,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
     ids = ids[ids != 0]
 
     # loop over instances
-    for j, id in enumerate(ids):
+    for j, id in enumerate(ids[:int(fraction_max_ids * len(ids))]):
         z, y, x = np.where(instance_np == id)
         zm, ym, xm = np.mean(z), np.mean(y), np.mean(x)
         kk = int(np.clip(zm - crop_size_z / 2, 0, d - crop_size_z))
@@ -389,7 +389,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
 
 
 def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile',
-                    data_type='8-bit', rle_encode=False):
+                    data_type='8-bit', fraction_max_ids = 1.0, rle_encode=False):
     """
         Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -443,7 +443,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
     ids = np.arange(instance.shape[0])
 
     # loop over instances
-    for j, id in enumerate(ids):
+    for j, id in enumerate(ids[:int(fraction_max_ids * len(ids))]):
 
         y, x = np.where(instance_np[id] == 1)
         ym, xm = np.mean(y), np.mean(x)
@@ -472,7 +472,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 
 def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                       one_hot=False, anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit',
-                      fraction_max_ids=0.10, rle_encode=False):
+                      fraction_max_ids = 0.10, rle_encode=False):
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
