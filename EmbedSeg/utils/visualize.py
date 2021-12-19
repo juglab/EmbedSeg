@@ -8,6 +8,10 @@ from skimage.segmentation import relabel_sequential
 from EmbedSeg.utils.glasbey import Glasbey
 from EmbedSeg.train import invert_one_hot
 from scipy.ndimage import zoom
+import pandas as pd
+import ast
+import pycocotools.mask as rletools
+
 
 def create_color_map(n_colors=10):
     gb = Glasbey(base_palette=[(255, 0, 0), (0, 255, 0), (0, 0, 255)],
@@ -53,6 +57,33 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
     plt.tight_layout()
     plt.show()
 
+# TODO --> code repetition in datasets directory!
+def decode(filename, one_hot = False, center=False):
+    df = pd.read_csv(filename, header=None)
+    df_numpy = df.to_numpy()
+    d = {}
+
+    if one_hot:
+        mask_decoded = []
+        for row in df_numpy:
+            d['counts'] = ast.literal_eval(row[1])
+            d['size'] = ast.literal_eval(row[2])
+            mask = rletools.decode(d)  # returns binary mask
+            mask_decoded.append(mask)
+    else:
+        if center:
+            mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                    dtype=np.bool)  # obtain size by reading first row of csv file
+        else:
+            mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                    dtype=np.uint16)  # obtain size by reading first row of csv file
+        for row in df_numpy:
+            d['counts'] = ast.literal_eval(row[1])
+            d['size'] = ast.literal_eval(row[2])
+            mask = rletools.decode(d)  # returns binary mask
+            y, x = np.where(mask == 1)
+            mask_decoded[y, x] = int(row[0])
+    return np.asarray(mask_decoded)
 
 def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images, new_cmp, one_hot=False):
     font = {'family': 'serif',
@@ -61,8 +92,8 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
             'size': 16,
             }
     im_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+'/images/*.tif'))
-    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/masks/*.tif'))
-    center_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/center-'+center+'/*.tif'))
+    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/masks/*')) # `tifs` or `csvs`
+    center_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/center-'+center+'/*')) # `tifs` or `csvs`
     indices = np.random.randint(0, len(im_filenames), n_images)
     fig = plt.figure(constrained_layout=False, figsize=(16, 10))
     spec = gridspec.GridSpec(ncols=n_images, nrows=3, figure=fig)
@@ -80,7 +111,10 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
             ax0.set_ylabel('IM', fontdict=font)
         ax1 = fig.add_subplot(spec[1, i])
         if one_hot:
-            label = invert_one_hot(tifffile.imread(ma_filenames[index]))
+            if(ma_filenames[index][-3:]=='csv'):
+                label = invert_one_hot(decode(ma_filenames[index], one_hot = True))
+            else:
+                label = invert_one_hot(tifffile.imread(ma_filenames[index]))
         else:
             label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
         ax1.imshow(label, cmap=new_cmp, interpolation='None')
@@ -90,7 +124,10 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
         if i==0:
             ax1.set_ylabel('MASK', fontdict=font)
         ax2 = fig.add_subplot(spec[2, i])
-        ax2.imshow(tifffile.imread(center_filenames[index]), cmap='gray', interpolation='None')
+        if center_filenames[index][-3:]=='csv':
+            ax2.imshow(decode(center_filenames[index], center=True), cmap='gray', interpolation='None')
+        else:
+            ax2.imshow(tifffile.imread(center_filenames[index]), cmap='gray', interpolation='None')
         ax2.axes.get_xaxis().set_visible(False)
         ax2.set_yticklabels([])
         ax2.set_yticks([])

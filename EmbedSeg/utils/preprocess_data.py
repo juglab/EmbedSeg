@@ -1,11 +1,10 @@
+import numpy as np
 import os
 import shutil
+import tifffile
 import urllib.request
 import zipfile
 from glob import glob
-
-import numpy as np
-import tifffile
 from tqdm import tqdm
 
 
@@ -117,8 +116,8 @@ def split_train_crops(project_name, center, crops_dir='crops', subset=0.15, by_f
     center_dir = os.path.join(crops_dir, project_name, train_name, 'center-' + center)
 
     image_names = sorted(glob(os.path.join(image_dir, '*.tif')))
-    instance_names = sorted(glob(os.path.join(instance_dir, '*.tif')))
-    center_names = sorted(glob(os.path.join(center_dir, '*.tif')))
+    instance_names = sorted(glob(os.path.join(instance_dir, '*')))  # this could be `tifs` or `csvs`
+    center_names = sorted(glob(os.path.join(center_dir, '*')))  # this could be `tifs` or `csvs`
 
     indices = np.arange(len(image_names))
     np.random.seed(seed)
@@ -368,21 +367,30 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list.append(len(x))
     print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
-    print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name, np.mean(size_list_x)))
-    print("Std. dev object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name, np.std(size_list_x)))
-    print("Average object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name, np.mean(size_list_y)))
-    print("Std. dev object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name, np.std(size_list_y)))
+    print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
+                                                                                        np.mean(size_list_x)))
+    print("Std. dev object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
+                                                                                         np.std(size_list_x)))
+    print("Average object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name,
+                                                                                        np.mean(size_list_y)))
+    print("Std. dev object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name,
+                                                                                         np.std(size_list_y)))
 
-    if mode =='3d':
-        print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name, np.mean(size_list_z)))
-        print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name, np.std(size_list_z)))
-        return np.min(size_list).astype(np.float), np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float), \
-               np.std(size_list_z).astype(np.float), np.std(size_list_y).astype(np.float), np.std(size_list_x).astype(np.float)
+    if mode == '3d':
+        print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
+                                                                                            np.mean(size_list_z)))
+        print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
+                                                                                             np.std(size_list_z)))
+        return np.min(size_list).astype(np.float), np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(
+            np.float), np.mean(size_list_x).astype(np.float), \
+               np.std(size_list_z).astype(np.float), np.std(size_list_y).astype(np.float), np.std(size_list_x).astype(
+            np.float)
 
     else:
         return np.min(size_list).astype(np.float), None, np.mean(size_list_y).astype(
             np.float), np.mean(size_list_x).astype(np.float), None, np.std(size_list_y).astype(
             np.float), np.std(size_list_x).astype(np.float)
+
 
 def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot):
     image_names = []
@@ -418,7 +426,8 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         max_x_y = np.maximum(max_x, max_y)
         max_x = max_x_y
         max_y = max_x_y
-        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
+        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
+                                                                                               max_x))
         return None, max_y.astype(np.float), max_x.astype(np.float)
     elif mode == '3d':
         max_z = np.max(size_z_list)
@@ -472,14 +481,16 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
             ma = tifffile.imread(instance_names[i])
             bg_mask = ma == 0
             im = tifffile.imread(image_names[i])
-            if im.ndim==ma.ndim:
+            if im.ndim == ma.ndim:
                 statistics.append(np.average(im[bg_mask]))
-            elif im.ndim==ma.ndim+1: # multi-channel image
+            elif im.ndim == ma.ndim + 1:  # multi-channel image
                 statistics.append(np.average(im[:, bg_mask], axis=1))
     if im.ndim == ma.ndim:
-        print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics, 0)))
-    elif im.ndim==ma.ndim+1:
-        print("Average background intensity of the `{}` dataset set equal to {}".format(project_name, np.mean(statistics, 0)))
+        print("Average background intensity of the `{}` dataset set equal to {:.3f}".format(project_name,
+                                                                                            np.mean(statistics, 0)))
+    elif im.ndim == ma.ndim + 1:
+        print("Average background intensity of the `{}` dataset set equal to {}".format(project_name,
+                                                                                        np.mean(statistics, 0)))
     return np.mean(statistics, 0).tolist()
 
 
@@ -505,7 +516,8 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
                                                                            one_hot)
-    data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir['avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
+    data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir[
+        'avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
         'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
@@ -513,5 +525,5 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
                                                                                          train_val_name, one_hot)
-    data_properties_dir['project_name']= project_name
+    data_properties_dir['project_name'] = project_name
     return data_properties_dir
