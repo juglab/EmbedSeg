@@ -33,7 +33,7 @@ setup(
           'matplotlib',
           'numpy',
           'scipy',
-          "tifffile==2021.4.8",
+          "tifffile",
           "numba",
           "tqdm",
           "jupyter",
@@ -42,7 +42,8 @@ setup(
           "scikit-image",
           "colorspacious",
           "itkwidgets",
-          "pytest"
+          "pytest",
+          "pycocotools"
         ]
 )
 
