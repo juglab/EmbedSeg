@@ -192,7 +192,7 @@ def encode(filename, img, one_hot=False):
 
 
 def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False, data_type='8-bit',
-            rle_encode=True):
+            rle_encode=False):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -298,7 +298,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
 
 
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
-               one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', rle_encode=True):
+               one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', rle_encode=False):
     """
     :param im: string
             Path to image file
@@ -389,7 +389,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
 
 
 def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile',
-                    data_type='8-bit', rle_encode=True):
+                    data_type='8-bit', rle_encode=False):
     """
         Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -472,7 +472,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 
 def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                       one_hot=False, anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit',
-                      fraction_max_ids=0.10, rle_encode=True):
+                      fraction_max_ids=0.10, rle_encode=False):
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')

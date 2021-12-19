@@ -116,7 +116,10 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
             else:
                 label = invert_one_hot(tifffile.imread(ma_filenames[index]))
         else:
-            label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
+            if (ma_filenames[index][-3:] == 'csv'):
+                label, _, _ = relabel_sequential(decode(ma_filenames[index]))
+            else:
+                label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
         ax1.imshow(label, cmap=new_cmp, interpolation='None')
         ax1.axes.get_xaxis().set_visible(False)
         ax1.set_yticklabels([])
