@@ -73,7 +73,11 @@ class ThreeDimensionalDataset(Dataset):
         sample['image'] = image  # CZYX
         sample['im_name'] = self.image_list[index]
         if (len(self.instance_list) != 0):
-            instance = tifffile.imread(self.instance_list[index])  # ZYX
+            if self.instance_list[index][-3:]=='csv':
+                instance = self.rle_decode(self.instance_list[index], one_hot = self.one_hot) # ZYX
+            else:
+                instance = tifffile.imread(self.instance_list[index])  # ZYX
+
             instance, label = self.decode_instance(instance, self.one_hot, self.bg_id)
             if self.type=='test' and self.sliced_mode:
                 instance = zoom(instance, (self.anisotropy_factor, 1, 1), order=0)
@@ -83,7 +87,10 @@ class ThreeDimensionalDataset(Dataset):
             sample['instance'] = instance
             sample['label'] = label
         if (len(self.center_image_list) != 0):
-            center_image = tifffile.imread(self.center_image_list[index]) # ZYX
+            if self.center_image_list[index][-3:] == 'csv':
+                center_image = self.rle_decode(self.center_image_list[index], center=True)
+            else:
+                center_image = tifffile.imread(self.center_image_list[index])
             if self.type == 'test' and self.sliced_mode:
                 center_image = zoom(center_image, (self.anisotropy_factor, 1, 1), order=0)
             center_image = self.convert_zyx_to_czyx(center_image, key='center_image')  # CZYX
@@ -115,3 +122,30 @@ class ThreeDimensionalDataset(Dataset):
 
         return instance_map, class_map
 
+    @classmethod
+    def rle_decode(cls, filename, one_hot=False, center=False):
+        df = pd.read_csv(filename, header=None)
+        df_numpy = df.to_numpy()
+        d = {}
+
+        if one_hot:
+            mask_decoded = []
+            for row in df_numpy:
+                d['counts'] = ast.literal_eval(row[1])
+                d['size'] = ast.literal_eval(row[2])
+                mask = rletools.decode(d)  # returns binary mask
+                mask_decoded.append(mask)
+        else:
+            if center:
+                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                        dtype=np.bool)  # obtain size by reading first row of csv file
+            else:
+                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                        dtype=np.uint16)  # obtain size by reading first row of csv file
+            for row in df_numpy:
+                d['counts'] = ast.literal_eval(row[1])
+                d['size'] = ast.literal_eval(row[2])
+                mask = rletools.decode(d)  # returns binary mask
+                z, y, x = np.where(mask == 1)
+                mask_decoded[z, y, x] = int(row[0])
+        return np.asarray(mask_decoded)
