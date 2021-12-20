@@ -1,15 +1,13 @@
-import os
-import threading
-
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
+import seaborn as sns
+import threading
 import torch
 from PIL import Image
 from matplotlib.patches import Ellipse
-import seaborn as sns
-
 
 
 class AverageMeter(object):
@@ -51,7 +49,6 @@ class Visualizer:
 
         n_images = len(image) if isinstance(image, (list, tuple)) else 1
 
-
         self.fig.frameon = False
         if key == 'image':
             self.ax1[0].cla()
@@ -70,7 +67,7 @@ class Visualizer:
             self.ax2[0].cla()
             self.ax2[0].imshow(self.prepare_img(image), cmap='gray')
             for i in range(len(color_sample.items())):
-                self.ax2[0].plot(center_x[i + 1], center_y[i + 1], color=color_embedding[i + 1 ], marker='x')
+                self.ax2[0].plot(center_x[i + 1], center_y[i + 1], color=color_embedding[i + 1], marker='x')
                 self.ax2[0].scatter(samples_x[i + 1], samples_y[i + 1], color=color_sample[i + 1], marker='+')
                 self.ax2[0].scatter(sample_spatial_embedding_x[i + 1], sample_spatial_embedding_y[i + 1],
                                     color=color_embedding[i + 1], marker='.')
@@ -107,7 +104,6 @@ class Visualizer:
                     canvas.draw()
                 canvas.start_event_loop(interval)
                 return
-
 
 
 class Cluster_3d:
@@ -147,11 +143,12 @@ class Cluster_3d:
             s = torch.exp(s * 10)  # n_sigma x 1 x 1
             dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
             proposal = (dist > 0.5)
-            instance_map[proposal] = id.item() # TODO
+            instance_map[proposal] = id.item()  # TODO
 
         return instance_map
 
-    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0, min_object_size=36):
+    def cluster(self, prediction, n_sigma=3, seed_thresh=0.5, fg_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0,
+                min_object_size=36):
 
         depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
         xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]
@@ -164,7 +161,7 @@ class Cluster_3d:
         instances = []  # list
 
         count = 1
-        mask = seed_map > 0.5
+        mask = seed_map > fg_thresh
         if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast 128 pixels in foreground!
 
             spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(n_sigma, -1)
@@ -244,13 +241,14 @@ class Cluster:
             dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb - center, 2) * s, 0))
             proposal = (dist > 0.5)
             if (self.one_hot):
-                instance_map[proposal] = id.item() + 1 # TODO
+                instance_map[proposal] = id.item() + 1  # TODO
             else:
-                instance_map[proposal] = id.item() #TODO
+                instance_map[proposal] = id.item()  # TODO
 
         return instance_map
 
-    def cluster(self, prediction, n_sigma=2, seed_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0, min_object_size=36):
+    def cluster(self, prediction, n_sigma=2, seed_thresh=0.5, fg_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0,
+                min_object_size=36):
 
         height, width = prediction.size(1), prediction.size(2)
         xym_s = self.xym[:, 0:height, 0:width]
@@ -264,7 +262,7 @@ class Cluster:
         instances = []  # list
 
         count = 1
-        mask = seed_map > 0.5
+        mask = seed_map > fg_thresh
 
         if mask.sum() > min_mask_sum:
 
@@ -321,8 +319,6 @@ class Logger:
 
     def plot(self, save=False, save_dir=""):
 
-
-
         if self.win is None:
             self.win = plt.subplots()
         fig, ax = self.win
@@ -343,7 +339,6 @@ class Logger:
         plt.close(fig)
         Visualizer.mypause(0.001)
 
-
         if save:
             # save figure
             fig.savefig(os.path.join(save_dir, self.title + '.png'))
@@ -352,16 +347,13 @@ class Logger:
             df = pd.DataFrame.from_dict(self.data)
             df.to_csv(os.path.join(save_dir, self.title + '.csv'))
 
-
-
-
     def add(self, key, value):
         assert key in self.data, "Key not in data"
         self.data[key].append(value)
 
-def degrid(meter, grid_size, pixel_size):
-    return int(meter * (grid_size-1) / pixel_size + 1)
 
+def degrid(meter, grid_size, pixel_size):
+    return int(meter * (grid_size - 1) / pixel_size + 1)
 
 
 def add_samples(samples, ax, n, amax):
@@ -371,7 +363,8 @@ def add_samples(samples, ax, n, amax):
     return samples_list
 
 
-def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y, predictions, instance_ids, center_images, output,
+def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y, predictions, instance_ids,
+                                      center_images, output,
                                       instances, n_sigma):
     xm = torch.linspace(0, pixel_x, grid_x).view(1, 1, -1).expand(1, grid_y, grid_x)
     ym = torch.linspace(0, pixel_y, grid_y).view(1, -1, 1).expand(1, grid_y, grid_x)
@@ -393,11 +386,11 @@ def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y,
     sigma_x = {}
     sigma_y = {}
     if one_hot:
-        instance_ids +=1 # make the ids go from 1 to ...
+        instance_ids += 1  # make the ids go from 1 to ...
 
     for id in instance_ids:
         if (one_hot):
-            in_mask = instances[0, id-1, ...].eq(1) #for one_hot, id goes from 1 to ...
+            in_mask = instances[0, id - 1, ...].eq(1)  # for one_hot, id goes from 1 to ...
         else:
             in_mask = instances[0].eq(id)  # 1 x h x w
 
@@ -417,7 +410,7 @@ def prepare_embedding_for_train_image(one_hot, grid_x, grid_y, pixel_x, pixel_y,
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1,
                                                             pixel_y)
 
-        #center_mask = in_mask & center_images[0].byte()
+        # center_mask = in_mask & center_images[0].byte()
         center_mask = in_mask & center_images[0]
         if (center_mask.sum().eq(1)):
             center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
@@ -483,7 +476,6 @@ def prepare_embedding_for_test_image(instance_map, output, grid_x, grid_y, pixel
         sample_spatial_embedding_y[id.item()] = add_samples(samples_spatial_embeddings, 1, grid_y - 1, pixel_y)
         center_image = predictions[id.item() - 1]['center-image']  # predictions is a list!
         center_mask = in_mask & center_image.byte()
-
 
         if (center_mask.sum().eq(1)):
             center = xym_s[center_mask.expand_as(xym_s)].view(2, 1, 1)
