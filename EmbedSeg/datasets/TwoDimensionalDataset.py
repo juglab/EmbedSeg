@@ -16,7 +16,7 @@ class TwoDimensionalDataset(Dataset):
         TwoDimensionalDataset class
     """
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit'):
+                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit', anisotropy_factor=1.0, sliced_mode = False):
 
         print('2-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
