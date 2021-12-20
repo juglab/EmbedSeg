@@ -457,7 +457,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
 
         total_mem = get_gpu_memory()[0] * 1e6 # Note: get_gpu_memory returns a list
         tile_size_temp = np.asarray((total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3)) # 3D
-        if tile_size_temp < max_x_y or tile_size_temp / anisotropy_factor < max_z:
+        if (tile_size_temp**3)/anisotropy_factor < (max_x_y**2)*max_z:
             max_x = round_up_8(tile_size_temp)
             max_y = round_up_8(tile_size_temp)
             max_z = round_up_8(tile_size_temp / anisotropy_factor)
