@@ -431,8 +431,8 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         max_x = np.clip(round_up_8(max_x), a_min=1024, a_max=None)
         max_x_y = np.maximum(max_x, max_y)
 
-        total_mem = get_gpu_memory() * 1e6
-        tile_size_temp = (total_mem / (2 * 4 * scale_factor)) ** (1 / 2)  # 2D
+        total_mem = get_gpu_memory()[0] * 1e6 # Note: get_gpu_memory returns a list
+        tile_size_temp = np.asarray((total_mem / (2 * 4 * scale_factor)) ** (1 / 2))  # 2D
 
         if tile_size_temp < max_x_y:
             max_x = round_up_8(tile_size_temp)
@@ -441,7 +441,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
             max_x = max_x_y
             max_y = max_x_y
 
-        print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
+        print("Tile size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
                                                                                                max_x))
         return None, max_y.astype(np.float), max_x.astype(np.float)
     elif mode == '3d':
@@ -455,8 +455,8 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
 
         max_x_y = np.maximum(max_x, max_y)
 
-        total_mem = get_gpu_memory() * 1e6
-        tile_size_temp = (total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3)  # 3D
+        total_mem = get_gpu_memory()[0] * 1e6 # Note: get_gpu_memory returns a list
+        tile_size_temp = np.asarray((total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3)) # 3D
         if tile_size_temp < max_x_y or tile_size_temp / anisotropy_factor < max_z:
             max_x = round_up_8(tile_size_temp)
             max_y = round_up_8(tile_size_temp)
@@ -466,7 +466,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
             max_y = max_x_y
             max_z = max_z
 
-        print("Maximum evaluation image size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(
+        print("Tile size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(
             project_name, max_z, max_y, max_x))
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
