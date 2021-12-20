@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import shutil
+import subprocess as sp
 import tifffile
 import urllib.request
 import zipfile
@@ -124,11 +125,11 @@ def split_train_crops(project_name, center, crops_dir='crops', subset=0.15, by_f
     np.random.shuffle(indices)
 
     if (by_fraction):
-        subsetLen = int(subset * len(image_names))
+        subset_len = int(subset * len(image_names))
     else:
-        subsetLen = int(subset)
+        subset_len = int(subset)
 
-    valIndices = indices[:subsetLen]
+    valIndices = indices[:subset_len]
 
     image_path_val = os.path.join(crops_dir, project_name, 'val', 'images/')
     instance_path_val = os.path.join(crops_dir, project_name, 'val', 'masks/')
@@ -188,22 +189,22 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
             Change this if you would like to obtain results with different train-val partitions.
     """
 
-    imageDir = os.path.join(data_dir, project_name, 'download', train_val_name, 'images')
-    instanceDir = os.path.join(data_dir, project_name, 'download', train_val_name, 'masks')
-    image_names = sorted(glob(os.path.join(imageDir, '*.tif')))
-    instance_names = sorted(glob(os.path.join(instanceDir, '*.tif')))
+    image_dir = os.path.join(data_dir, project_name, 'download', train_val_name, 'images')
+    instance_dir = os.path.join(data_dir, project_name, 'download', train_val_name, 'masks')
+    image_names = sorted(glob(os.path.join(image_dir, '*.tif')))
+    instance_names = sorted(glob(os.path.join(instance_dir, '*.tif')))
     indices = np.arange(len(image_names))
     np.random.seed(seed)
     np.random.shuffle(indices)
     if (by_fraction):
-        subsetLen = int(subset * len(image_names))
+        subset_len = int(subset * len(image_names))
     else:
-        subsetLen = int(subset)
-    valIndices = indices[:subsetLen]
-    trainIndices = indices[subsetLen:]
+        subset_len = int(subset)
+    val_indices = indices[:subset_len]
+    trainIndices = indices[subset_len:]
     make_dirs(data_dir=data_dir, project_name=project_name)
 
-    for val_index in valIndices:
+    for val_index in val_indices:
         shutil.copy(image_names[val_index], os.path.join(data_dir, project_name, 'val', 'images'))
         shutil.copy(instance_names[val_index], os.path.join(data_dir, project_name, 'val', 'masks'))
 
@@ -211,14 +212,14 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
         shutil.copy(image_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'images'))
         shutil.copy(instance_names[trainIndex], os.path.join(data_dir, project_name, 'train', 'masks'))
 
-    imageDir = os.path.join(data_dir, project_name, 'download', 'test', 'images')
-    instanceDir = os.path.join(data_dir, project_name, 'download', 'test', 'masks')
-    image_names = sorted(glob(os.path.join(imageDir, '*.tif')))
-    instance_names = sorted(glob(os.path.join(instanceDir, '*.tif')))
-    testIndices = np.arange(len(image_names))
-    for testIndex in testIndices:
-        shutil.copy(image_names[testIndex], os.path.join(data_dir, project_name, 'test', 'images'))
-        shutil.copy(instance_names[testIndex], os.path.join(data_dir, project_name, 'test', 'masks'))
+    image_dir = os.path.join(data_dir, project_name, 'download', 'test', 'images')
+    instance_dir = os.path.join(data_dir, project_name, 'download', 'test', 'masks')
+    image_names = sorted(glob(os.path.join(image_dir, '*.tif')))
+    instance_names = sorted(glob(os.path.join(instance_dir, '*.tif')))
+    test_indices = np.arange(len(image_names))
+    for test_index in test_indices:
+        shutil.copy(image_names[test_index], os.path.join(data_dir, project_name, 'test', 'images'))
+        shutil.copy(instance_names[test_index], os.path.join(data_dir, project_name, 'test', 'masks'))
     print("Train-Val-Test Images/Masks copied to {}".format(os.path.join(data_dir, project_name)))
 
 
@@ -392,7 +393,20 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
             np.float), np.std(size_list_x).astype(np.float)
 
 
-def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot):
+# https://stackoverflow.com/questions/59567226/how-to-programmatically-determine-available-gpu-memory-with-tensorflow/59571639#59571639
+def get_gpu_memory():
+    command = "nvidia-smi --query-gpu=memory.total --format=csv"
+    memory_total_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
+    memory_total_values = [int(x.split()[0]) for i, x in enumerate(memory_total_info)]
+    return memory_total_values
+
+
+def round_up_8(x):
+    return (x.astype(int) + 7) & (-8)
+
+
+def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot, anisotropy_factor=1.0,
+                                  scale_factor=4.0):
     image_names = []
     size_z_list = []
     size_y_list = []
@@ -413,19 +427,20 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
     if mode == '2d':
         max_y = np.max(size_y_list)
         max_x = np.max(size_x_list)
-        if (max_y % 8 != 0):
-            n = max_y // 8
-            max_y = np.clip((n + 1) * 8, a_min=1024, a_max=None)
-        else:
-            max_y = np.clip(max_y, a_min=1024, a_max=None)
-        if (max_x % 8 != 0):
-            n = max_x // 8
-            max_x = np.clip((n + 1) * 8, a_min=1024, a_max=None)
-        else:
-            max_x = np.clip(max_x, a_min=1024, a_max=None)
+        max_y = np.clip(round_up_8(max_y), a_min=1024, a_max=None)
+        max_x = np.clip(round_up_8(max_x), a_min=1024, a_max=None)
         max_x_y = np.maximum(max_x, max_y)
-        max_x = max_x_y
-        max_y = max_x_y
+
+        total_mem = get_gpu_memory() * 1e6
+        tile_size_temp = (total_mem / (2 * 4 * scale_factor)) ** (1 / 2)  # 2D
+
+        if tile_size_temp < max_x_y:
+            max_x = round_up_8(tile_size_temp)
+            max_y = round_up_8(tile_size_temp)
+        else:
+            max_x = max_x_y
+            max_y = max_x_y
+
         print("Maximum evaluation image size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
                                                                                                max_x))
         return None, max_y.astype(np.float), max_x.astype(np.float)
@@ -433,18 +448,24 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         max_z = np.max(size_z_list)
         max_y = np.max(size_y_list)
         max_x = np.max(size_x_list)
-        if (max_z % 8 != 0):
-            n = max_z // 8
-            max_z = (n + 1) * 8
-        if (max_y % 8 != 0):
-            n = max_y // 8
-            max_y = (n + 1) * 8
-        if (max_x % 8 != 0):
-            n = max_x // 8
-            max_x = (n + 1) * 8
+
+        max_z = round_up_8(max_z)
+        max_y = round_up_8(max_y)
+        max_x = round_up_8(max_x)
+
         max_x_y = np.maximum(max_x, max_y)
-        max_x = max_x_y
-        max_y = max_x_y
+
+        total_mem = get_gpu_memory() * 1e6
+        tile_size_temp = (total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3)  # 3D
+        if tile_size_temp < max_x_y or tile_size_temp / anisotropy_factor < max_z:
+            max_x = round_up_8(tile_size_temp)
+            max_y = round_up_8(tile_size_temp)
+            max_z = round_up_8(tile_size_temp / anisotropy_factor)
+        else:
+            max_x = max_x_y
+            max_y = max_x_y
+            max_z = max_z
+
         print("Maximum evaluation image size of the `{}` dataset set equal to  (n_z = {}, n_y = {}, n_x = {})".format(
             project_name, max_z, max_y, max_x))
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
@@ -494,7 +515,8 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
     return np.mean(statistics, 0).tolist()
 
 
-def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None):
+def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None,
+                        anisotropy_factor=1.0):
     """
     :param data_dir: string
             Path to directory containing all data
@@ -521,7 +543,8 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
         'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
-        data_dir, project_name, test_name, mode, one_hot)
+        data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode, one_hot=one_hot,
+        anisotropy_factor=anisotropy_factor)
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
                                                                                          train_val_name, one_hot)
