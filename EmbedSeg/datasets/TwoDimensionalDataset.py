@@ -16,7 +16,7 @@ class TwoDimensionalDataset(Dataset):
         TwoDimensionalDataset class
     """
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit', anisotropy_factor=1.0, sliced_mode = False):
+                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit', normalization = False, anisotropy_factor=1.0, sliced_mode = False):
 
         print('2-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
@@ -45,6 +45,7 @@ class TwoDimensionalDataset(Dataset):
         self.norm = norm
         self.type = type
         self.data_type=data_type
+        self.normalization = normalization
 
     def __len__(self):
 
@@ -66,17 +67,17 @@ class TwoDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # YX or CYX
-        if (self.type=='test' and self.norm == 'min-max-percentile'):
+        if (self.normalization and self.norm == 'min-max-percentile'):
             if image.ndim == 2:  # gray-scale
                 image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1))
             elif image.ndim == 3:  # multi-channel image (C, H, W)
                 image = normalize_min_max_percentile(image, 1, 99.8, axis=(1, 2))
-        elif (self.type=='test' and self.norm == 'mean-std'):
+        elif (self.normalization and self.norm == 'mean-std'):
             if image.ndim == 2:
                 image = normalize_mean_std(image)  # axis == None
             elif image.ndim == 3:
                 image = normalize_mean_std(image, axis=(1, 2))
-        elif (self.type=='test' and self.norm == 'absolute'):
+        elif (self.normalization and self.norm == 'absolute'):
             image = image.astype(np.float32)
             if self.data_type == '8-bit':
                 image /= 255

@@ -126,7 +126,8 @@ def create_test_configs_dict(data_dir,
                              l_x=1,
                              name='2d',
                              input_channels=1,
-                             type='test'
+                             type='test',
+                             normalization = True
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -217,6 +218,7 @@ def create_test_configs_dict(data_dir,
                 'norm': norm,
                 'sliced_mode': sliced_mode,
                 'anisotropy_factor': anisotropy_factor,
+                'normalization': normalization,
                 'transform': my_transforms.get_transform([
                     {
                         'name': 'ToTensorFromNumpy',

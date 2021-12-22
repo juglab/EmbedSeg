@@ -7,12 +7,17 @@ from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
 from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
 from scipy.ndimage import zoom
+import ast
+import pycocotools.mask as rletools
+import pandas as pd
+
+
 class ThreeDimensionalDataset(Dataset):
     """
         ThreeDimensionalDataset class
     """
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit', anisotropy_factor = 1.0, sliced_mode = False):
+                 one_hot=False, norm = 'min-max-percentile', normalization=False, data_type='8-bit', anisotropy_factor = 1.0, sliced_mode = False):
         print('3-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
         # get image and instance list
@@ -42,6 +47,7 @@ class ThreeDimensionalDataset(Dataset):
         self.type=type
         self.anisotropy_factor = anisotropy_factor
         self.sliced_mode = sliced_mode
+        self.normalization = normalization
 
     def convert_zyx_to_czyx(self, im, key):
         im = im[np.newaxis, ...] # CZYX
@@ -57,11 +63,11 @@ class ThreeDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # ZYX
-        if (self.type=='test' and self.norm == 'min-max-percentile'):
+        if (self.normalization and self.norm == 'min-max-percentile'):
             image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
-        elif (self.type=='test' and self.norm == 'mean-std'):
+        elif (self.normalization and self.norm == 'mean-std'):
             image = normalize_mean_std(image)
-        elif (self.type=='test' and self.norm == 'absolute'):
+        elif (self.normalization and self.norm == 'absolute'):
             image = image.astype(np.float32)
             if self.data_type == '8-bit':
                 image /= 255
