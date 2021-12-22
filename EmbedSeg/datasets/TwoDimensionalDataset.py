@@ -1,22 +1,25 @@
+import ast
 import glob
-import os
-import random
 import numpy as np
+import os
+import pandas as pd
+import pycocotools.mask as rletools
+import random
 import tifffile
 from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
+
 from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
-import ast
-import pycocotools.mask as rletools
-import pandas as pd
 
 
 class TwoDimensionalDataset(Dataset):
     """
         TwoDimensionalDataset class
     """
+
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False, norm = 'min-max-percentile', data_type='8-bit', normalization = False, anisotropy_factor=1.0, sliced_mode = False):
+                 one_hot=False, norm='min-max-percentile', data_type='8-bit', normalization=False,
+                 anisotropy_factor=1.0, sliced_mode=False):
 
         print('2-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
@@ -44,7 +47,7 @@ class TwoDimensionalDataset(Dataset):
         self.one_hot = one_hot
         self.norm = norm
         self.type = type
-        self.data_type=data_type
+        self.data_type = data_type
         self.normalization = normalization
 
     def __len__(self):
@@ -88,8 +91,8 @@ class TwoDimensionalDataset(Dataset):
         sample['im_name'] = self.image_list[index]
 
         if (len(self.instance_list) != 0):
-            if self.instance_list[index][-3:]=='csv':
-                instance = self.rle_decode(self.instance_list[index], one_hot = self.one_hot)
+            if self.instance_list[index][-3:] == 'csv':
+                instance = self.rle_decode(self.instance_list[index], one_hot=self.one_hot)
             else:
                 instance = tifffile.imread(self.instance_list[index])  # YX or DYX (one-hot!)
             instance, label = self.decode_instance(instance, self.one_hot, self.bg_id)
@@ -98,7 +101,7 @@ class TwoDimensionalDataset(Dataset):
             sample['instance'] = instance
             sample['label'] = label
         if (len(self.center_image_list) != 0):
-            if self.center_image_list[index][-3:]=='csv':
+            if self.center_image_list[index][-3:] == 'csv':
                 center_image = self.rle_decode(self.center_image_list[index], center=True)
             else:
                 center_image = tifffile.imread(self.center_image_list[index])
@@ -148,7 +151,8 @@ class TwoDimensionalDataset(Dataset):
                 mask_decoded.append(mask)
         else:
             if center:
-                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]), dtype=np.bool)  # obtain size by reading first row of csv file
+                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                        dtype=np.bool)  # obtain size by reading first row of csv file
             else:
                 mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
                                         dtype=np.uint16)  # obtain size by reading first row of csv file

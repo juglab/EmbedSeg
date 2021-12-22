@@ -1,23 +1,26 @@
+import ast
 import glob
-import os
-import random
 import numpy as np
+import os
+import pandas as pd
+import pycocotools.mask as rletools
+import random
 import tifffile
+from scipy.ndimage import zoom
 from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
+
 from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
-from scipy.ndimage import zoom
-import ast
-import pycocotools.mask as rletools
-import pandas as pd
 
 
 class ThreeDimensionalDataset(Dataset):
     """
         ThreeDimensionalDataset class
     """
+
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False, norm = 'min-max-percentile', normalization=False, data_type='8-bit', anisotropy_factor = 1.0, sliced_mode = False):
+                 one_hot=False, norm='min-max-percentile', normalization=False, data_type='8-bit',
+                 anisotropy_factor=1.0, sliced_mode=False):
         print('3-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
         # get image and instance list
@@ -43,16 +46,15 @@ class ThreeDimensionalDataset(Dataset):
         self.transform = transform
         self.one_hot = one_hot
         self.norm = norm
-        self.data_type=data_type
-        self.type=type
+        self.data_type = data_type
+        self.type = type
         self.anisotropy_factor = anisotropy_factor
         self.sliced_mode = sliced_mode
         self.normalization = normalization
 
     def convert_zyx_to_czyx(self, im, key):
-        im = im[np.newaxis, ...] # CZYX
+        im = im[np.newaxis, ...]  # CZYX
         return im
-
 
     def __len__(self):
         return self.real_size if self.size is None else self.size
@@ -73,19 +75,19 @@ class ThreeDimensionalDataset(Dataset):
                 image /= 255
             elif self.data_type == '16-bit':
                 image /= 65535
-        if self.type=='test' and self.sliced_mode:
+        if self.type == 'test' and self.sliced_mode:
             image = zoom(image, (self.anisotropy_factor, 1, 1), order=0)
-        image = self.convert_zyx_to_czyx(image, key='image') # CZYX
+        image = self.convert_zyx_to_czyx(image, key='image')  # CZYX
         sample['image'] = image  # CZYX
         sample['im_name'] = self.image_list[index]
         if (len(self.instance_list) != 0):
-            if self.instance_list[index][-3:]=='csv':
-                instance = self.rle_decode(self.instance_list[index], one_hot = self.one_hot) # ZYX
+            if self.instance_list[index][-3:] == 'csv':
+                instance = self.rle_decode(self.instance_list[index], one_hot=self.one_hot)  # ZYX
             else:
                 instance = tifffile.imread(self.instance_list[index])  # ZYX
 
             instance, label = self.decode_instance(instance, self.one_hot, self.bg_id)
-            if self.type=='test' and self.sliced_mode:
+            if self.type == 'test' and self.sliced_mode:
                 instance = zoom(instance, (self.anisotropy_factor, 1, 1), order=0)
                 label = zoom(label, (self.anisotropy_factor, 1, 1), order=0)
             instance = self.convert_zyx_to_czyx(instance, key='instance')  # CZYX
