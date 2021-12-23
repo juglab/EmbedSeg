@@ -104,15 +104,16 @@ def create_dataset_dict(data_dir,
 
 def create_test_configs_dict(data_dir,
                              checkpoint_path,
-                             save_dir,
-                             normalization_factor,
                              norm,
                              data_type,
+                             save_dir=None,
+                             normalization_factor=1.0,
                              tta=True,
                              one_hot=False,
                              ap_val=0.5,
                              seed_thresh=0.9,
-                             min_object_size=36,
+                             fg_thresh=0.5,
+                             min_object_size=10,
                              save_images=True,
                              save_results=True,
                              min_mask_sum=0,
@@ -127,7 +128,7 @@ def create_test_configs_dict(data_dir,
                              name='2d',
                              input_channels=1,
                              type='test',
-                             normalization = True
+                             normalization=True
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -195,6 +196,7 @@ def create_test_configs_dict(data_dir,
         n_sigma=n_sigma,
         tta=tta,
         seed_thresh=seed_thresh,
+        fg_thresh=fg_thresh,
         cuda=cuda,
         save_results=save_results,
         save_images=save_images,
@@ -245,9 +247,8 @@ def create_test_configs_dict(data_dir,
         "`test_configs` dictionary successfully created with: "
         "\n -- evaluation images accessed from {}, "
         "\n -- trained weights accessed from {}, "
-        "\n -- seediness threshold set at {}, "
         "\n -- output directory chosen as {}".format(
-            data_dir, checkpoint_path, seed_thresh, save_dir))
+            data_dir, checkpoint_path, save_dir))
     return test_configs
 
 
