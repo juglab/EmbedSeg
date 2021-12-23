@@ -15,9 +15,10 @@ from tifffile import imsave
 from matplotlib.patches import Ellipse
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 from scipy.ndimage import zoom
+from scipy.optimize import minimize_scalar
 
 
-def begin_evaluating(test_configs, verbose=True, mask_region=None):
+def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, mask_region=None):
     """
     :param test_configs: dictionary containing keys such as `n_sigma`, `ap_val` etc
     :param verbose: if verbose=True, then average precision for each image is shown
@@ -27,9 +28,6 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
     :param avg_bg: Average background image intensity in the train and val images
     :return:
     """
-    global n_sigma, ap_val, min_mask_sum, min_unclustered_sum, min_object_size
-    global tta, seed_thresh, model, dataset_it, save_images, save_results, save_dir
-
     n_sigma = test_configs['n_sigma']
     ap_val = test_configs['ap_val']
     min_mask_sum = test_configs['min_mask_sum']
@@ -37,10 +35,18 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
     min_object_size = test_configs['min_object_size']
     tta = test_configs['tta']
     seed_thresh = test_configs['seed_thresh']
+    fg_thresh = test_configs['fg_thresh']
     save_images = test_configs['save_images']
     save_results = test_configs['save_results']
     save_dir = test_configs['save_dir']
     anisotropy_factor = test_configs['anisotropy_factor']
+    grid_x = test_configs['grid_x']
+    grid_y = test_configs['grid_y']
+    grid_z = test_configs['grid_z']
+    pixel_x = test_configs['pixel_x']
+    pixel_y = test_configs['pixel_y']
+    pixel_z = test_configs['pixel_z']
+    one_hot = test_configs['dataset']['kwargs']['one_hot']
 
     # set device
     device = torch.device("cuda:0" if test_configs['cuda'] else "cpu")
@@ -62,25 +68,59 @@ def begin_evaluating(test_configs, verbose=True, mask_region=None):
         assert False, 'checkpoint_path {} does not exist!'.format(test_configs['checkpoint_path'])
 
     # test on evaluation images:
+    result_dic= {}
     if (test_configs['name'] == '2d'):
-        test(verbose=verbose, grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'],
-             pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],
-             one_hot=test_configs['dataset']['kwargs']['one_hot'], n_sigma=n_sigma)
+        args = (fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta,
+                model, dataset_it, save_images, save_results, save_dir, verbose, grid_x,
+                grid_y, pixel_x, pixel_y, one_hot, n_sigma)
+        if optimize:
+            result = minimize_scalar(fun=test, bounds=(fg_thresh, 1.0), method='bounded',
+                                     args=args, options={'maxiter': maxiter})
+            result_dic['seed_thresh'] = result.x
+            result_dic['fg_thresh'] = fg_thresh
+            result_dic['AP_dsb_05'] = -result.fun
+            print("Optimal seed thresh parameter calculated equal to {:.05f}".format(result.x))
+            print("AP_dsb at IoU threshold = {} with seed_thresh = {:.05f} equals {:.05f}".format(0.50, result.x, -result.fun))
+        else:
+            result = test(seed_thresh, *args)
+            result_dic['seed_thresh'] = seed_thresh
+            result_dic['AP_dsb_05'] = -result
     elif (test_configs['name'] == '3d'):
-        test_3d(verbose=verbose,
-                grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
-                pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'], pixel_z=test_configs['pixel_z'],
-                one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma=n_sigma)
+        args = (fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, save_images, save_results, save_dir,
+                            verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma)
+
+        if optimize:
+            result = minimize_scalar(fun=test_3d, bounds=(fg_thresh, 1.0), method='bounded', args = args, options={'maxiter': maxiter})
+            result_dic['seed_thresh'] = result.x
+            result_dic['fg_thresh'] = fg_thresh
+            result_dic['AP_dsb_05'] = -result.fun
+            print("Optimal seed thresh parameter calculated equal to {:.05f}".format(result.x))
+            print("AP_dsb at IoU threshold = {} with seed_thresh = {:.05f} equals {:.05f}".format(0.50, result.x, -result.fun))
+        else:
+            result = test_3d(seed_thresh, *args)
+            result_dic['seed_thresh'] = seed_thresh
+            result_dic['AP_dsb_05'] = -result
     elif (test_configs['name'] == '3d_sliced'):
-        test_3d_sliced(verbose=verbose,
-                       grid_x=test_configs['grid_x'], grid_y=test_configs['grid_y'], grid_z=test_configs['grid_z'],
-                       pixel_x=test_configs['pixel_x'], pixel_y=test_configs['pixel_y'],
-                       pixel_z=test_configs['pixel_z'],
-                       one_hot=test_configs['dataset']['kwargs']['one_hot'], mask_region=mask_region, n_sigma=n_sigma,
-                       anisotropy_factor=anisotropy_factor)
+        args = (fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it,
+                save_images, save_results, save_dir, verbose, grid_x, grid_y, grid_z,
+                pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma, anisotropy_factor)
+        if optimize:
+            result = minimize_scalar(fun=test_3d_sliced, bounds =(fg_thresh, 1.0), method= 'bounded', args = args, options={'maxiter': maxiter})
+            result_dic['seed_thresh'] = result.x
+            result_dic['fg_thresh'] = fg_thresh
+            result_dic['AP_dsb_05'] = -result.fun
+        else:
+            result = test_3d_sliced(seed_thresh, *args)
+            result_dic['seed_thresh'] = seed_thresh
+            result_dic['fg_thresh'] = fg_thresh
+            result_dic['AP_dsb_05'] = -result
+    return result_dic
 
 
-def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False, n_sigma=2):
+def test(seed_thresh, *args):
+    fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, save_images, \
+    save_results, save_dir, verbose, grid_x, grid_y, pixel_x, pixel_y, one_hot, n_sigma = args
+
     """
     :param verbose: if True, then average prevision is printed out for each image
     :param grid_y:
@@ -127,6 +167,7 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
 
             instance_map, predictions = cluster.cluster(output[0],
                                                         n_sigma=n_sigma,
+                                                        fg_thresh=fg_thresh,
                                                         seed_thresh=seed_thresh,
                                                         min_mask_sum=min_mask_sum,
                                                         min_unclustered_sum=min_unclustered_sum,
@@ -228,20 +269,22 @@ def test(verbose, grid_y=1024, grid_x=1024, pixel_y=1, pixel_x=1, one_hot=False,
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
+                f.writelines("Average Precision (AP_dsb)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
-                                                                                           np.mean(result_list)))
+                "Mean Average Precision (AP_dsb) at IOU threshold = {} at seediness threshold = {:.05f}, is equal to {:.05f}".format(
+                    ap_val, seed_thresh, np.mean(result_list)))
+        if len(result_list) != 0:
+            return -np.mean(result_list)
+        else:
+            return 0.0
 
 
-def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
-            mask_region=None, n_sigma=3):
-    """
-    mask_region: list of two lists
-                first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
-                second list contains ending coordinates of region which needs to be masked in z, y and x ordering fashion
-    """
+def test_3d(seed_thresh, *args):
+    fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, \
+    save_images, save_results, save_dir, verbose, grid_x, grid_y, grid_z, \
+    pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma = args
+
     model.eval()
     # cluster module
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
@@ -289,6 +332,7 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
 
             instance_map, predictions = cluster.cluster(output[0],
                                                         n_sigma=n_sigma,
+                                                        fg_thresh=fg_thresh,
                                                         seed_thresh=seed_thresh,
                                                         min_mask_sum=min_mask_sum,
                                                         min_unclustered_sum=min_unclustered_sum,
@@ -381,20 +425,23 @@ def test_3d(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, 
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
+                f.writelines("Average Precision (AP_dsb)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
 
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
-                                                                                           np.mean(result_list)))
+                "Mean Average Precision (AP_dsb) at IOU threshold = {} at seediness threshold = {:.05f}, is equal to {:.05f}".format(
+                    ap_val, seed_thresh, np.mean(result_list)))
+
+        if len(result_list) != 0:
+            return -np.mean(result_list)
+        else:
+            return 0.0
 
 
-def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixel_y=1, pixel_z=1, one_hot=False,
-                   mask_region=None, n_sigma=3, anisotropy_factor=1.0):
-    """
-    mask_region: list of two lists
-                first list contains starting coordinates of region which needs to be masked in z, y and x ordering fashion
-                second list contains ending coordinates of region which needs to be masked in z, y and x ordering fashion
-    """
+def test_3d_sliced(seed_thresh, *args):
+    fg_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, save_images, save_results, save_dir, \
+    verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, \
+    one_hot, mask_region, n_sigma, anisotropy_factor = args
+
     model.eval()
     # cluster module
     cluster = Cluster_3d(grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x)
@@ -505,11 +552,11 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
             instance_map, predictions = cluster.cluster(output[0],
                                                         n_sigma=n_sigma,  # 3
                                                         seed_thresh=seed_thresh,
+                                                        fg_thresh=fg_thresh,
                                                         min_mask_sum=min_mask_sum,
                                                         min_unclustered_sum=min_unclustered_sum,
                                                         min_object_size=min_object_size,
                                                         )
-
 
             if (mask_region is not None):
                 # ignore predictions in this region prior to saving the tiffs or prior to comparison with GT masks
@@ -583,8 +630,12 @@ def test_3d_sliced(verbose, grid_x=1024, grid_y=1024, grid_z=32, pixel_x=1, pixe
                                                                                        min_object_size, seed_thresh,
                                                                                        ap_val, score))
                 f.writelines("+++++++++++++++++++++++++++++++++\n")
-                f.writelines("Average Precision (AP)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
-
+                f.writelines("Average Precision (AP_dsb)  {:.02f} {:.05f}\n".format(ap_val, np.mean(result_list)))
             print(
-                "Mean Average Precision at IOU threshold = {}, is equal to {:.05f}".format(ap_val,
-                                                                                           np.mean(result_list)))
+                "Mean Average Precision (AP_dsb) at IOU threshold = {} at seediness threshold = {:.05f}, is equal to {:.05f}".format(
+                    ap_val, seed_thresh, np.mean(result_list)))
+
+        if len(result_list) != 0:
+            return -np.mean(result_list)
+        else:
+            return 0.0
