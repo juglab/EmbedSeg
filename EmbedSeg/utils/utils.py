@@ -294,7 +294,7 @@ class Cluster:
 
                         center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
                         center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
-                        center_image[int(center[1].item()), int(center[0].item())] = True
+                        center_image[np.clip(int(center[1].item()), 0, height-1), np.clip(int(center[0].item()), 0, width-1)] = True
                         instances.append(
                             {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
                              'center-image': center_image})
