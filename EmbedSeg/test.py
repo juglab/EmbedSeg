@@ -180,13 +180,12 @@ def test(seed_thresh, *args):
                                                                                      pixel_y=pixel_y,
                                                                                      predictions=predictions,
                                                                                      n_sigma=n_sigma)
-
             # unpad instance_map, instances and images
-            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
+            if (diff_y - diff_y // 2) is not 0:
                 instance_map = instance_map[diff_y // 2:-(diff_y - diff_y // 2), ...]
                 instances = instances[diff_y // 2:-(diff_y - diff_y // 2), ...]
                 im = im[:, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
-            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
+            if (diff_x - diff_x // 2) is not 0:
                 instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
@@ -211,6 +210,7 @@ def test(seed_thresh, *args):
                     result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
+
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
                     os.makedirs(os.path.join(save_dir, 'predictions/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'predictions/')))
@@ -340,15 +340,15 @@ def test_3d(seed_thresh, *args):
                                                         )
 
             # unpad instance_map, instances and images
-            if diff_z // 2 is not 0 and (diff_z - diff_z // 2) is not 0:
+            if (diff_z - diff_z // 2) is not 0:
                 instance_map = instance_map[diff_z // 2:-(diff_z - diff_z // 2), ...]
                 instances = instances[diff_z // 2:-(diff_z - diff_z // 2), ...]
                 im = im[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
-            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
+            if (diff_y - diff_y // 2) is not 0:
                 instance_map = instance_map[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
                 instances = instances[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
                 im = im[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
-            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
+            if (diff_x - diff_x // 2) is not 0:
                 instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
@@ -529,15 +529,15 @@ def test_3d_sliced(seed_thresh, *args):
             output[:, 5, ...] = 1 / 2 * (output_ZX_3d[:, 3, ...] + output_ZY_3d[:, 3, ...])
 
             # unpad output, instances and image
-            if diff_z // 2 is not 0 and (diff_z - diff_z // 2) is not 0:
+            if (diff_z - diff_z // 2) is not 0:
                 output = output[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
                 instances = instances[diff_z // 2:-(diff_z - diff_z // 2), ...]
                 im = im[:, :, diff_z // 2:-(diff_z - diff_z // 2), ...]
-            if diff_y // 2 is not 0 and (diff_y - diff_y // 2) is not 0:
+            if (diff_y - diff_y // 2) is not 0:
                 output = output[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
                 instances = instances[:, diff_y // 2:-(diff_y - diff_y // 2), ...]
                 im = im[:, :, :, diff_y // 2:-(diff_y - diff_y // 2), ...]
-            if diff_x // 2 is not 0 and (diff_x - diff_x // 2) is not 0:
+            if (diff_x - diff_x // 2) is not 0:
                 output = output[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 instances = instances[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 im = im[..., diff_x // 2:-(diff_x - diff_x // 2)]
