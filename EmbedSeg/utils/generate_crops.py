@@ -191,7 +191,7 @@ def encode(filename, img, one_hot=False):
     df.to_csv(filename, index=False, header=None)
 
 
-def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one_hot=False, data_type='8-bit',
+def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-percentile', one_hot=False, data_type='8-bit',
             rle_encode=False, fraction_max_ids = 1.0):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
@@ -297,7 +297,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm=False, one
                                     center_image_crop)
 
 
-def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm=False,
+def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm='min-max-percentile',
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', rle_encode=False, fraction_max_ids = 1.0):
     """
     :param im: string
