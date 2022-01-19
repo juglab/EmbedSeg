@@ -249,10 +249,10 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
     np.random.seed(seed)
     np.random.shuffle(indices)
     if (by_fraction):
-        subsetLen = int(subset * len(image_names))
+        subset_len = int(subset * len(image_names))
     else:
-        subsetLen = int(subset)
-    test_indices = indices[:subsetLen]
+        subset_len = int(subset)
+    test_indices = indices[:subset_len]
     # make_dirs(data_dir=data_dir, project_name=project_name)
     test_images_exist = False
     test_masks_exist = False
@@ -276,7 +276,7 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
             "Train-Test Images/Masks already available at {}".format(os.path.join(data_dir, project_name, 'download')))
 
 
-def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, one_hot):
+def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, one_hot, background_id=0):
     """
     :param data_dir: string
             Name of directroy containing data
@@ -301,16 +301,16 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, on
         if (mode == '2d'):
             statistics.append(10.0)
         elif (mode == '3d'):
-            z, y, x = np.where(ma == 0)
+            z, y, x = np.where(ma == background_id)
             len_bg = len(z)
-            z, y, x = np.where(ma > 0)
+            z, y, x = np.where(ma > background_id)
             len_fg = len(z)
             statistics.append(len_bg / len_fg)
     print("Foreground weight of the `{}` dataset set equal to {:.3f}".format(project_name, np.mean(statistics)))
     return np.mean(statistics)
 
 
-def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k):
+def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=0):
     """
     :param data_dir: string
             Name of directory storing the data. For example, 'data'
@@ -347,7 +347,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list.append(len(x))
         elif (not one_hot and mode == '2d'):
             ids = np.unique(ma)
-            ids = ids[ids != 0]
+            ids = ids[ids != background_id]
             for id in ids:
                 y, x = np.where(ma == id)
                 size_list_x.append(np.max(x) - np.min(x))
@@ -355,13 +355,13 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list.append(len(x))
         elif (not one_hot and mode == '3d'):
             ids = np.unique(ma)
-            ids = ids[ids != 0]
+            ids = ids[ids != background_id]
             if process_k is not None:
                 n_ids = process_k[1]
             else:
                 n_ids = len(ids)
-            # for id in tqdm(ids[:n_ids], position=0, leave=True):
-            for id in ids:
+            for id in tqdm(ids[:n_ids], position=0, leave=True):
+            #for id in ids:
                 z, y, x = np.where(ma == id)
                 size_list_z.append(np.max(z) - np.min(z))
                 size_list_y.append(np.max(y) - np.min(y))
@@ -471,7 +471,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
 
-def calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot):
+def calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot, background_id = 0):
     """
     :param data_dir: string
             Path to directory containing all data
@@ -500,7 +500,7 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
     else:
         for i in tqdm(range(len(instance_names))):
             ma = tifffile.imread(instance_names[i])
-            bg_mask = ma == 0
+            bg_mask = ma == background_id
             im = tifffile.imread(image_names[i])
             if im.ndim == ma.ndim:
                 statistics.append(np.average(im[bg_mask]))
@@ -516,7 +516,7 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
 
 
 def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None,
-                        anisotropy_factor=1.0):
+                        anisotropy_factor=1.0, background_id = 0):
     """
     :param data_dir: string
             Path to directory containing all data
@@ -537,16 +537,16 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     """
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
-                                                                           one_hot)
+                                                                           one_hot, background_id=background_id)
     data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir[
         'avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
-        'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k)
+        'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=background_id)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
         data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode, one_hot=one_hot,
         anisotropy_factor=anisotropy_factor)
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
-                                                                                         train_val_name, one_hot)
+                                                                                         train_val_name, one_hot, background_id=background_id)
     data_properties_dir['project_name'] = project_name
     return data_properties_dir
