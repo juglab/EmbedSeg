@@ -164,6 +164,14 @@ def stitch_3d(instance_map_tile, instance_map_current, z_tile=None, y_tile=None,
             elif x_tile != 0 and y_tile != 0 and z_tile == 0:
                 mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
                 mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
+            elif x_tile ==0 and y_tile == 0 and z_tile !=0:
+                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+            elif x_tile != 0 and y_tile == 0 and z_tile != 0:
+                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
+            elif x_tile == 0 and y_tile !=0 and z_tile !=0:
+                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
             elif x_tile != 0 and y_tile != 0 and z_tile != 0:
                 mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
                 mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
