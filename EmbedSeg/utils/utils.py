@@ -158,11 +158,11 @@ class Cluster_3d:
         sigma = prediction[3:3 + n_sigma]  # n_sigma x d x h x w
         seed_map = torch.sigmoid(prediction[3 + n_sigma:3 + n_sigma + 1])  # 1 x d x h x w
         instance_map = torch.zeros(depth, height, width).short()
-        instances = []  # list
+
 
         count = 1
         mask = seed_map > fg_thresh
-        if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast 128 pixels in foreground!
+        if mask.sum() > min_mask_sum:  # top level decision: only start creating instances, if there are atleast min_mask_sum pixels in foreground!
 
             spatial_emb_masked = spatial_emb[mask.expand_as(spatial_emb)].view(n_sigma, -1)
             sigma_masked = sigma[mask.expand_as(sigma)].view(n_sigma, -1)
@@ -170,8 +170,8 @@ class Cluster_3d:
 
             unclustered = torch.ones(mask.sum()).short().cuda()
             instance_map_masked = torch.zeros(mask.sum()).short().cuda()
-
-            while (unclustered.sum() > min_unclustered_sum):  # stop when the seed candidates are less than 128
+            
+            while (unclustered.sum() > min_unclustered_sum):  # stop when the seed candidates are less than min_unclustered_sum
                 seed = (seed_map_masked * unclustered.float()).argmax().item()
                 seed_score = (seed_map_masked * unclustered.float()).max().item()
                 if seed_score < seed_thresh:
@@ -192,8 +192,8 @@ class Cluster_3d:
                 unclustered[proposal] = 0
 
             instance_map[mask.squeeze().cpu()] = instance_map_masked.cpu()
-
-        return instance_map, instances
+            
+        return instance_map
 
 
 class Cluster:

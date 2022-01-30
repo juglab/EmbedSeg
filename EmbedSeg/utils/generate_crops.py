@@ -8,6 +8,7 @@ from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
 import pandas as pd
 
+
 def _fill_label_holes(lbl_img, **kwargs):
     lbl_img_filled = np.zeros_like(lbl_img)
     for l in (set(np.unique(lbl_img)) - set([0])):
@@ -336,6 +337,8 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             for faster medoid evaluation, the x and y dimensions are sub-sampled by this factor
     :return:
     """
+
+
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
