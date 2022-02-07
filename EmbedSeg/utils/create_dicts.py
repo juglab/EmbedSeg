@@ -183,11 +183,16 @@ def create_test_configs_dict(data_dir,
         n_sigma = 3
         num_classes = [4, 1]
         model_name = 'branched_erfnet'
+    elif name =='3d_ilp':
+        n_sigma = 2
+        num_classes = [4, 1]
+        model_name = 'branched_erfnet'
 
-    if name == '3d_sliced':
+    if name in ['3d_sliced']:
         sliced_mode = True
     else:
         sliced_mode = False
+
     test_configs = dict(
         ap_val=ap_val,
         min_mask_sum=min_mask_sum,
@@ -209,7 +214,6 @@ def create_test_configs_dict(data_dir,
         pixel_y=l_y,
         pixel_z=l_z,
         name=name,
-
         anisotropy_factor=anisotropy_factor,
         dataset={
             'name': name,

@@ -353,7 +353,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list_y.append(np.max(y) - np.min(y))
                 size_list.append(len(x))
-        elif (not one_hot and mode in ['3d', '3d_sliced', '3d_ilp']):
+        elif (not one_hot and mode in ['3d', '3d_sliced']):
             ids = np.unique(ma)
             ids = ids[ids != background_id]
             if process_k is not None:
@@ -367,7 +367,19 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list_y.append(np.max(y) - np.min(y))
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list.append(len(x))
+        elif (not one_hot and mode =='3d_ilp'):
+            for z in range(ma.shape[0]):
+                ids = np.unique(ma[z])
+                ids = ids[ids!=background_id]
+                for id in ids:
+                    y, x = np.where(ma[z] == id)
+                    size_list_y.append(np.max(y) - np.min(y))
+                    size_list_x.append(np.max(x) - np.min(x))
+                    size_list.append(len(x))
+
     print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
+    print("Mean object size of the `{}` dataset is equal to {}".format(project_name, np.mean(size_list)))
+    print("Maximum object size of the `{}` dataset is equal to {}".format(project_name, np.max(size_list)))
     print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
                                                                                         np.mean(size_list_x)))
     print("Std. dev object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
@@ -377,19 +389,20 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
     print("Std. dev object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name,
                                                                                          np.std(size_list_y)))
 
-    if mode in ['3d', '3d_sliced', '3d_ilp']:
+    if mode in ['3d', '3d_sliced']:
         print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
                                                                                             np.mean(size_list_z)))
         print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
                                                                                              np.std(size_list_z)))
-        return np.min(size_list).astype(np.float), np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
+               np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(
             np.float), np.mean(size_list_x).astype(np.float), \
                np.std(size_list_z).astype(np.float), np.std(size_list_y).astype(np.float), np.std(size_list_x).astype(
             np.float)
 
     else:
-        return np.min(size_list).astype(np.float), None, np.mean(size_list_y).astype(
-            np.float), np.mean(size_list_x).astype(np.float), None, np.std(size_list_y).astype(
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
+               None, np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float), None, np.std(size_list_y).astype(
             np.float), np.std(size_list_x).astype(np.float)
 
 
@@ -538,7 +551,8 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
                                                                            background_id=background_id)
-    data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir[
+    data_properties_dir['min_object_size'], data_properties_dir['mean_object_size'], data_properties_dir['max_object_size'], \
+    data_properties_dir['avg_object_size_z'], data_properties_dir[
         'avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
         'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=background_id)
