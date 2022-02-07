@@ -276,7 +276,7 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
             "Train-Test Images/Masks already available at {}".format(os.path.join(data_dir, project_name, 'download')))
 
 
-def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, one_hot, background_id=0):
+def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, background_id=0):
     """
     :param data_dir: string
             Name of directroy containing data
@@ -537,7 +537,7 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     """
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
-                                                                           one_hot, background_id=background_id)
+                                                                           background_id=background_id)
     data_properties_dir['min_object_size'], data_properties_dir['avg_object_size_z'], data_properties_dir[
         'avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
