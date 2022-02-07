@@ -298,7 +298,7 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, ba
     statistics = []
     for i in tqdm(range(len(instance_names))):
         ma = tifffile.imread(instance_names[i])
-        if (mode == '2d'):
+        if (mode in ['2d', '3d_sliced', '3d_ilp']):
             statistics.append(10.0)
         elif (mode == '3d'):
             z, y, x = np.where(ma == background_id)
@@ -319,7 +319,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
     :param train_val_name: string
             Name of directory containing 'train' and 'val' images and instance masks
     :param mode: string
-            One of '2d' or '3d'
+            One of '2d', '3d', '3d_sliced', '3d_ilp'
     :param one_hot: boolean
             set to True, if instances are encoded as one-hot
     :return:
@@ -353,7 +353,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list_y.append(np.max(y) - np.min(y))
                 size_list.append(len(x))
-        elif (not one_hot and mode == '3d'):
+        elif (not one_hot and mode in ['3d', '3d_sliced', '3d_ilp']):
             ids = np.unique(ma)
             ids = ids[ids != background_id]
             if process_k is not None:
@@ -377,7 +377,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
     print("Std. dev object size of the `{}` dataset along `y` is equal to {:.3f}".format(project_name,
                                                                                          np.std(size_list_y)))
 
-    if mode == '3d':
+    if mode in ['3d', '3d_sliced', '3d_ilp']:
         print("Average object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
                                                                                             np.mean(size_list_z)))
         print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
@@ -405,7 +405,7 @@ def round_up_8(x):
     return (x.astype(int) + 7) & (-8)
 
 
-def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_hot, anisotropy_factor=1.0,
+def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, anisotropy_factor=1.0,
                                   scale_factor=4.0):
     image_names = []
     size_z_list = []
@@ -420,11 +420,11 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, one_h
         if (mode == '2d'):
             size_y_list.append(im.shape[0])
             size_x_list.append(im.shape[1])
-        elif (not one_hot and mode == '3d'):
+        elif (mode in ['3d', '3d_sliced', '3d_ilp']):
             size_z_list.append(im.shape[0])
             size_y_list.append(im.shape[1])
             size_x_list.append(im.shape[2])
-    if mode == '2d':
+    if mode in ['2d', '3d_ilp', '3d_sliced']:
         max_y = np.max(size_y_list)
         max_x = np.max(size_x_list)
         max_y = np.clip(round_up_8(max_y), a_min=1024, a_max=None)
@@ -527,7 +527,7 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     :param test_name: string
             Name of test directory.
     :param mode: string
-            One of '2d' or '3d'
+            One of '2d', '3d', '3d_sliced', '3d_ilp'
     :param one_hot: boolean
             set to True, if instances are encoded in a one-hot fashion
     :param process_k (int, int)
@@ -543,8 +543,7 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
         'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=background_id)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
-        data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode, one_hot=one_hot,
-        anisotropy_factor=anisotropy_factor)
+        data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode, anisotropy_factor=anisotropy_factor)
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
                                                                                          train_val_name, one_hot, background_id=background_id)
