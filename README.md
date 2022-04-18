@@ -81,7 +81,7 @@ $data_dir
 ### Animated Figures
 
 <p align="center">
-  <img src="https://mlbyml.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
+  <img src="https://lmanan.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
 </p>
 
 
