@@ -43,6 +43,7 @@ setup(
           "colorspacious",
           "itkwidgets",
           "pytest",
+          "imagecodecs",
           "pycocotools"
         ]
 )
