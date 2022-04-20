@@ -42,7 +42,8 @@ setup(
           "scikit-image",
           "colorspacious",
           "itkwidgets",
-          "pytest"
+          "pytest",
+          "imagecodecs"
         ]
 )
 
