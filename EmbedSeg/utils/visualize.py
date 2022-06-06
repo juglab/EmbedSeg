@@ -1,16 +1,17 @@
+import ast
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas as pd
+import pycocotools.mask as rletools
 import tifffile
 from glob import glob
-from skimage.segmentation import relabel_sequential
-from EmbedSeg.utils.glasbey import Glasbey
-from EmbedSeg.train import invert_one_hot
 from scipy.ndimage import zoom
-import pandas as pd
-import ast
-import pycocotools.mask as rletools
+from skimage.segmentation import relabel_sequential
+
+from EmbedSeg.train import invert_one_hot
+from EmbedSeg.utils.glasbey import Glasbey
 
 
 def create_color_map(n_colors=10):
@@ -27,7 +28,7 @@ def create_color_map(n_colors=10):
     return p_
 
 
-def visualize(image, prediction, ground_truth, embedding, new_cmp):
+def visualize(image, prediction, ground_truth, seed, new_cmp):
     font = {'family': 'serif',
             'color': 'white',
             'weight': 'bold',
@@ -48,7 +49,7 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
         plt.xlabel('Ground Truth')
     plt.subplot(223);
     plt.axis('off')
-    plt.imshow(embedding, interpolation='None')
+    plt.imshow(seed, interpolation='None')
     plt.subplot(224);
     plt.axis('off')
     plt.imshow(prediction, cmap=new_cmp, interpolation='None')
@@ -57,8 +58,8 @@ def visualize(image, prediction, ground_truth, embedding, new_cmp):
     plt.tight_layout()
     plt.show()
 
-# TODO --> code repetition in datasets directory!
-def decode(filename, one_hot = False, center=False):
+
+def decode(filename, one_hot=False, center=False):
     df = pd.read_csv(filename, header=None)
     df_numpy = df.to_numpy()
     d = {}
@@ -85,34 +86,36 @@ def decode(filename, one_hot = False, center=False):
             mask_decoded[y, x] = int(row[0])
     return np.asarray(mask_decoded)
 
+
 def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images, new_cmp, one_hot=False):
     font = {'family': 'serif',
-            'color':  'black',
+            'color': 'black',
             'weight': 'bold',
             'size': 16,
             }
-    im_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+'/images/*.tif'))
-    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/masks/*')) # `tifs` or `csvs`
-    center_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/center-'+center+'/*')) # `tifs` or `csvs`
+    im_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/images/*.tif'))
+    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/masks/*'))  # `tifs` or `csvs`
+    center_filenames = sorted(
+        glob(os.path.join(data_dir, project_name, train_val_dir) + '/center-' + center + '/*'))  # `tifs` or `csvs`
     indices = np.random.randint(0, len(im_filenames), n_images)
     fig = plt.figure(constrained_layout=False, figsize=(16, 10))
     spec = gridspec.GridSpec(ncols=n_images, nrows=3, figure=fig)
     for i, index in enumerate(indices):
         ax0 = fig.add_subplot(spec[0, i])
         im = tifffile.imread(im_filenames[index])
-        if im.ndim==2:
+        if im.ndim == 2:
             ax0.imshow(im, cmap='magma', interpolation='None')
         else:
             ax0.imshow(im[0], cmap='magma', interpolation='None')
         ax0.axes.get_xaxis().set_visible(False)
         ax0.set_yticklabels([])
         ax0.set_yticks([])
-        if i==0:
+        if i == 0:
             ax0.set_ylabel('IM', fontdict=font)
         ax1 = fig.add_subplot(spec[1, i])
         if one_hot:
-            if(ma_filenames[index][-3:]=='csv'):
-                label = invert_one_hot(decode(ma_filenames[index], one_hot = True))
+            if (ma_filenames[index][-3:] == 'csv'):
+                label = invert_one_hot(decode(ma_filenames[index], one_hot=True))
             else:
                 label = invert_one_hot(tifffile.imread(ma_filenames[index]))
         else:
@@ -124,41 +127,39 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
         ax1.axes.get_xaxis().set_visible(False)
         ax1.set_yticklabels([])
         ax1.set_yticks([])
-        if i==0:
+        if i == 0:
             ax1.set_ylabel('MASK', fontdict=font)
         ax2 = fig.add_subplot(spec[2, i])
-        if center_filenames[index][-3:]=='csv':
+        if center_filenames[index][-3:] == 'csv':
             ax2.imshow(decode(center_filenames[index], center=True), cmap='gray', interpolation='None')
         else:
             ax2.imshow(tifffile.imread(center_filenames[index]), cmap='gray', interpolation='None')
         ax2.axes.get_xaxis().set_visible(False)
         ax2.set_yticklabels([])
         ax2.set_yticks([])
-        if i==0:
+        if i == 0:
             ax2.set_ylabel('CENTER', fontdict=font)
         plt.tight_layout(pad=0, h_pad=0)
     plt.show()
 
 
-
-
 def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, anisotropy):
     font = {'family': 'serif',
-            'color':  'black',
+            'color': 'black',
             'weight': 'bold',
             'size': 16,
             }
-    im_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+'/images/*.tif'))
-    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir)+ '/masks/*.tif'))
-    center_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/center-' + center + '/*.tif'))
+    im_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/images/*.tif'))
+    ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/masks/*.tif'))
+    center_filenames = sorted(
+        glob(os.path.join(data_dir, project_name, train_val_dir) + '/center-' + center + '/*.tif'))
     index = np.random.randint(0, len(im_filenames), 1)[0]
     fig = plt.figure(constrained_layout=False, figsize=(12, 10))
+    # rows represent three views of the sstack. cols represent the image, center and label
     spec = gridspec.GridSpec(ncols=3, nrows=3, figure=fig)
-
     im = tifffile.imread(im_filenames[index])
     label, _, _ = relabel_sequential(tifffile.imread(ma_filenames[index]))
     center_im = tifffile.imread(center_filenames[index])
-
 
     im = zoom(im, (anisotropy, 1, 1), order=0)
     # print(np.unique(label))
@@ -166,9 +167,9 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     # print(np.unique(label))
     center_im = zoom(center_im, (anisotropy, 1, 1), order=0)
 
-    z_mid = im.shape[0]//2
-    y_mid = im.shape[1]//2
-    x_mid = im.shape[2]//2
+    z_mid = im.shape[0] // 2
+    y_mid = im.shape[1] // 2
+    x_mid = im.shape[2] // 2
 
     ax0 = fig.add_subplot(spec[0, 0])
     ax0.imshow(im[z_mid, ...], cmap='magma', interpolation='None')
@@ -215,8 +216,6 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     ax8.set_yticklabels([])
     ax8.set_yticks([])
 
-
-
     ax3 = fig.add_subplot(spec[0, 2])
     ax3.imshow(np.transpose(im[:, y_mid, ...]), cmap='magma', interpolation='None')
     ax3.set_yticklabels([])
@@ -238,6 +237,4 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     ax5.set_yticks([])
 
     plt.tight_layout(pad=0, h_pad=0)
-
-
-plt.show()
+    plt.show()
