@@ -143,7 +143,7 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
     plt.show()
 
 
-def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, anisotropy):
+def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, anisotropy, index = None):
     font = {'family': 'serif',
             'color': 'black',
             'weight': 'bold',
@@ -153,7 +153,8 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     ma_filenames = sorted(glob(os.path.join(data_dir, project_name, train_val_dir) + '/masks/*.tif'))
     center_filenames = sorted(
         glob(os.path.join(data_dir, project_name, train_val_dir) + '/center-' + center + '/*.tif'))
-    index = np.random.randint(0, len(im_filenames), 1)[0]
+    if index is None:
+        index = np.random.randint(0, len(im_filenames), 1)[0]
     fig = plt.figure(constrained_layout=False, figsize=(12, 10))
     # rows represent three views of the sstack. cols represent the image, center and label
     spec = gridspec.GridSpec(ncols=3, nrows=3, figure=fig)
@@ -187,6 +188,7 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     ax1.set_yticklabels([])
     ax1.set_yticks([])
     ax1.set_ylabel('MASK', fontdict=font)
+
     ax2 = fig.add_subplot(spec[2, 0])
     ax2.imshow(center_im[z_mid, ...], cmap='gray', interpolation='None')
     ax2.axes.get_xaxis().set_visible(False)
@@ -235,6 +237,122 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
     ax5.axes.get_xaxis().set_visible(False)
     ax5.set_yticklabels([])
     ax5.set_yticks([])
+
+    plt.tight_layout(pad=0, h_pad=0)
+    plt.show()
+
+
+def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp, anisotropy):
+    font = {'family': 'serif',
+            'color': 'black',
+            'weight': 'bold',
+            'size': 16,
+            }
+    fig = plt.figure(constrained_layout=False, figsize=(12, 10))
+    # rows represent three views of the sstack. cols represent the image, center and label
+    spec = gridspec.GridSpec(ncols=3, nrows=4, figure=fig)
+    im = tifffile.imread(im_filename)
+    gt_label, _, _ = relabel_sequential(tifffile.imread(gt_filename))
+    pred_label, _, _ = relabel_sequential(tifffile.imread(pred_filename))
+    seed = tifffile.imread(seed_filename)
+
+    im = zoom(im, (anisotropy, 1, 1), order=0)
+    gt_label = zoom(gt_label, (anisotropy, 1, 1), order=0)
+    pred_label = zoom(pred_label, (anisotropy, 1, 1), order=0)
+    seed = zoom(seed, (anisotropy, 1, 1), order=0)
+
+    z_mid = im.shape[0] // 2
+    y_mid = im.shape[1] // 2
+    x_mid = im.shape[2] // 2
+
+    ax0 = fig.add_subplot(spec[0, 0])
+    ax0.imshow(im[z_mid, ...], cmap='magma', interpolation='None')
+    ax0.set_yticklabels([])
+    ax0.set_yticks([])
+    ax0.set_xticklabels([])
+    ax0.set_xticks([])
+    ax0.set_ylabel('IM', fontdict=font)
+    ax0.set_xlabel('xy', fontdict=font)
+    ax0.xaxis.set_label_position('top')
+
+    ax1 = fig.add_subplot(spec[1, 0])
+    ax1.imshow(gt_label[z_mid, ...], cmap=new_cmp, interpolation='None')
+    ax1.axes.get_xaxis().set_visible(False)
+    ax1.set_yticklabels([])
+    ax1.set_yticks([])
+    ax1.set_ylabel('GT', fontdict=font)
+
+    ax2 = fig.add_subplot(spec[2, 0])
+    ax2.imshow(pred_label[z_mid, ...], cmap=new_cmp, interpolation='None')
+    ax2.axes.get_xaxis().set_visible(False)
+    ax2.set_yticklabels([])
+    ax2.set_yticks([])
+    ax2.set_ylabel('PRED', fontdict=font)
+
+    ax3 = fig.add_subplot(spec[3, 0])
+    ax3.imshow(seed[z_mid, ...], cmap='magma', interpolation='None')
+    ax3.axes.get_xaxis().set_visible(False)
+    ax3.set_yticklabels([])
+    ax3.set_yticks([])
+    ax3.set_ylabel('SEED', fontdict=font)
+
+
+
+    # use interpolation
+    ax8 = fig.add_subplot(spec[0, 1])
+    ax8.imshow(im[..., x_mid], cmap='magma', interpolation='None')
+    ax8.set_yticklabels([])
+    ax8.set_yticks([])
+    ax8.set_xticklabels([])
+    ax8.set_xticks([])
+    ax8.set_xlabel('yz', fontdict=font)
+    ax8.xaxis.set_label_position('top')
+
+    ax9 = fig.add_subplot(spec[1, 1])
+    ax9.imshow(gt_label[..., x_mid], cmap=new_cmp, interpolation='None')
+    ax9.axes.get_xaxis().set_visible(False)
+    ax9.set_yticklabels([])
+    ax9.set_yticks([])
+
+    ax10 = fig.add_subplot(spec[2, 1])
+    ax10.imshow(pred_label[..., x_mid], cmap=new_cmp, interpolation='None')
+    ax10.axes.get_xaxis().set_visible(False)
+    ax10.set_yticklabels([])
+    ax10.set_yticks([])
+
+    ax11 = fig.add_subplot(spec[3, 1])
+    ax11.imshow(seed[..., x_mid], cmap='magma', interpolation='None')
+    ax11.axes.get_xaxis().set_visible(False)
+    ax11.set_yticklabels([])
+    ax11.set_yticks([])
+
+    ax4 = fig.add_subplot(spec[0, 2])
+    ax4.imshow(np.transpose(im[:, y_mid, ...]), cmap='magma', interpolation='None')
+    ax4.set_yticklabels([])
+    ax4.set_yticks([])
+    ax4.set_xticklabels([])
+    ax4.set_xticks([])
+    ax4.set_xlabel('zx', fontdict=font)
+    ax4.xaxis.set_label_position('top')
+
+    ax5 = fig.add_subplot(spec[1, 2])
+    ax5.imshow(np.transpose(gt_label[:, y_mid, ...]), cmap=new_cmp, interpolation='None')
+    ax5.axes.get_xaxis().set_visible(False)
+    ax5.set_yticklabels([])
+    ax5.set_yticks([])
+
+    ax6 = fig.add_subplot(spec[2, 2])
+    ax6.imshow(np.transpose(pred_label[:, y_mid, ...]), cmap=new_cmp, interpolation='None')
+    ax6.axes.get_xaxis().set_visible(False)
+    ax6.set_yticklabels([])
+    ax6.set_yticks([])
+
+    ax7 = fig.add_subplot(spec[3, 2])
+    ax7.imshow(np.transpose(seed[:, y_mid, ...]), cmap='magma', interpolation='None')
+    ax7.axes.get_xaxis().set_visible(False)
+    ax7.set_yticklabels([])
+    ax7.set_yticks([])
+
 
     plt.tight_layout(pad=0, h_pad=0)
     plt.show()
