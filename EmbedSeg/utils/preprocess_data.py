@@ -296,7 +296,7 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, ba
         instance_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
     statistics = []
-    for i in tqdm(range(len(instance_names))):
+    for i in tqdm(range(len(instance_names)), position=0, leave=True):
         ma = tifffile.imread(instance_names[i])
         if (mode in ['2d', '3d_sliced', '3d_ilp']):
             statistics.append(10.0)
@@ -428,7 +428,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
         instance_dir = os.path.join(data_dir, project_name, name, 'images')
         image_names += sorted(glob(os.path.join(instance_dir, '*.tif')))
 
-    for i in tqdm(range(len(image_names))):
+    for i in tqdm(range(len(image_names)), position=0, leave=True):
         im = tifffile.imread(image_names[i])
         if (mode == '2d'):
             size_y_list.append(im.shape[0])
@@ -440,23 +440,21 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
     if mode in ['2d', '3d_ilp', '3d_sliced']:
         max_y = np.max(size_y_list)
         max_x = np.max(size_x_list)
-        max_y = np.clip(round_up_8(max_y), a_min=1024, a_max=None)
-        max_x = np.clip(round_up_8(max_x), a_min=1024, a_max=None)
+        max_y, max_x = round_up_8(max_y), round_up_8(max_x)
         max_x_y = np.maximum(max_x, max_y)
 
-        total_mem = get_gpu_memory()[0] * 1e6 # Note: get_gpu_memory returns a list
+        total_mem = get_gpu_memory()[0] * 1e6  # Note: get_gpu_memory returns a list
         tile_size_temp = np.asarray((total_mem / (2 * 4 * scale_factor)) ** (1 / 2))  # 2D
 
         if tile_size_temp < max_x_y:
-            max_x = round_up_8(tile_size_temp)
-            max_y = round_up_8(tile_size_temp)
+            max_x, max_y = round_up_8(tile_size_temp), round_up_8(tile_size_temp)
         else:
-            max_x = max_x_y
-            max_y = max_x_y
-
-        print("Tile size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y,
-                                                                                               max_x))
-        return None, max_y.astype(np.float), max_x.astype(np.float)
+            max_x, max_y = max_x_y, max_x_y
+        print("Tile size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
+        if mode =='3d_sliced':
+            return max_y.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
+        else:
+            return None, max_y.astype(np.float), max_x.astype(np.float)
     elif mode == '3d':
         max_z = np.max(size_z_list)
         max_y = np.max(size_y_list)
@@ -505,13 +503,13 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
         image_names += sorted(glob(os.path.join(image_dir, '*.tif')))
     statistics = []
     if one_hot:
-        for i in tqdm(range(len(instance_names))):
+        for i in tqdm(range(len(instance_names)), position=0, leave=True):
             ma = tifffile.imread(instance_names[i])
             bg_mask = ma == 0
             im = tifffile.imread(image_names[i])
             statistics.append(np.average(im[np.min(bg_mask, 0)]))
     else:
-        for i in tqdm(range(len(instance_names))):
+        for i in tqdm(range(len(instance_names)), position=0, leave=True):
             ma = tifffile.imread(instance_names[i])
             bg_mask = ma == background_id
             im = tifffile.imread(image_names[i])
@@ -528,7 +526,7 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
     return np.mean(statistics, 0).tolist()
 
 
-def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot, process_k=None,
+def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot=False, process_k=None,
                         anisotropy_factor=1.0, background_id = 0):
     """
     :param data_dir: string
