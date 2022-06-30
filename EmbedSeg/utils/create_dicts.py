@@ -114,6 +114,7 @@ def create_test_configs_dict(data_dir,
                              seed_thresh=0.9,
                              fg_thresh=0.5,
                              min_object_size=10,
+                             mean_object_size=None,
                              save_images=True,
                              save_results=True,
                              min_mask_sum=0,
@@ -128,7 +129,9 @@ def create_test_configs_dict(data_dir,
                              name='2d',
                              input_channels=1,
                              type='test',
-                             normalization=True
+                             normalization=True,
+                             cluster_fast = True,
+                             expand_grid=True
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -198,6 +201,7 @@ def create_test_configs_dict(data_dir,
         min_mask_sum=min_mask_sum,
         min_unclustered_sum=min_unclustered_sum,
         min_object_size=min_object_size,
+        mean_object_size=mean_object_size,
         n_sigma=n_sigma,
         tta=tta,
         seed_thresh=seed_thresh,
@@ -215,6 +219,8 @@ def create_test_configs_dict(data_dir,
         pixel_z=l_z,
         name=name,
         anisotropy_factor=anisotropy_factor,
+        cluster_fast = cluster_fast,
+        expand_grid=expand_grid,
         dataset={
             'name': name,
             'kwargs': {
