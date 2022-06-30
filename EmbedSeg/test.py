@@ -661,7 +661,7 @@ def test_3d_sliced(fg_thresh, *args):
             if ('instance' in sample):
                 gt_image = zoom(instances.cpu().detach().numpy(), (1 / anisotropy_factor, 1, 1), order=0)
 
-            instance_map, predictions = cluster.cluster(output[0],
+            instance_map = cluster.cluster(output[0],
                                                         n_sigma=n_sigma,  # 3
                                                         seed_thresh=seed_thresh,
                                                         fg_thresh=fg_thresh,
@@ -693,7 +693,10 @@ def test_3d_sliced(fg_thresh, *args):
                 if not os.path.exists(os.path.join(save_dir, 'seeds/')):
                     os.makedirs(os.path.join(save_dir, 'seeds/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'seeds/')))
-
+                if not os.path.exists(os.path.join(save_dir, 'ground-truth/')):
+                    os.makedirs(os.path.join(save_dir, 'ground-truth/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'ground-truth/')))
+                    
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
                 image_file_names.append(base)
 
@@ -702,6 +705,12 @@ def test_3d_sliced(fg_thresh, *args):
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
                 imsave(seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
+
+                if ('instance' in sample):
+                    gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
+                    imsave(gt_file, sample['instance'].squeeze().cpu().detach().numpy())
+            
+            
 
         if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):
