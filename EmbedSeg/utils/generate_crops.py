@@ -499,7 +499,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 
 def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                       one_hot=False, anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit',
-                      normalization_factor=None, fraction_max_ids = 0.10, rle_encode=False, background_id=0):
+                      normalization_factor=None, fraction_max_ids = 0.01, rle_encode=False, background_id=0):
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -550,7 +550,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
 
 
     # loop over instances
-    ids_subset = np.random.choice(ids, int(fraction_max_ids * len(ids)), replace=False)
+    ids_subset = np.random.choice(ids, int(np.ceil(fraction_max_ids * len(ids))), replace=False)
     for id in ids_subset:
         z, y, x = np.where(instance_np == id)
         zm, ym, xm = np.mean(z), np.mean(y), np.mean(x)
