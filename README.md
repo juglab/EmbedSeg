@@ -13,7 +13,6 @@
 - **[Getting Started](#getting-started)**
 - **[Datasets](#datasets)**
 - **[Training & Inference on your data](#training-and-inference-on-your-data)**
-- **[Animated figures](#animated-figures)**
 - **[Contributing](#contributing)**
 - **[Issues](#issues)**
 - **[Citation](#citation)**
