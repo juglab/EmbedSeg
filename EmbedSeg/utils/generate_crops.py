@@ -559,7 +559,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
         ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
 
         # ZY
-        for x in range(ii, ii + crop_size_x):
+        for x in range(ii, ii + crop_size_x, int(np.ceil(anisotropy_factor))):
             if (image[kk:kk + crop_size_z, jj:jj + crop_size_y, x].shape == (crop_size_z, crop_size_y)):
                 im_crop = image[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
                 instance_crop = instance_np[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
@@ -583,7 +583,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                                 x) + "_ZY.tif", center_image_crop)
 
         # YX
-        for z in range(kk, kk + crop_size_z):
+        for z in range(kk, kk + crop_size_z, int(np.ceil(anisotropy_factor))):
             if (image[z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (crop_size_y, crop_size_x)):
                 im_crop = image[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
                 instance_crop = instance_np[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
@@ -607,7 +607,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                                 z) + "_YX.tif", center_image_crop)
 
         # XZ
-        for y in range(jj, jj + crop_size_y):
+        for y in range(jj, jj + crop_size_y, int(np.ceil(anisotropy_factor))):
             if (image[kk:kk + crop_size_z, y, ii:ii + crop_size_x].shape == (crop_size_z, crop_size_x)):
                 im_crop = np.transpose(image[kk:kk + crop_size_z, y, ii:ii + crop_size_x])
                 instance_crop = np.transpose(instance_np[kk:kk + crop_size_z, y, ii:ii + crop_size_x])

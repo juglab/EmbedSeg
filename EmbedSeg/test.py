@@ -498,7 +498,7 @@ def test_3d(fg_thresh, *args):
                 if (verbose):
                     print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
                 result_list.append(all_results.accuracy)
-
+            
             if save_images and ap_val == 0.5:
                 if not os.path.exists(os.path.join(save_dir, 'predictions/')):
                     os.makedirs(os.path.join(save_dir, 'predictions/'))
@@ -708,7 +708,7 @@ def test_3d_sliced(fg_thresh, *args):
 
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
-                    imsave(gt_file, sample['instance'].squeeze().cpu().detach().numpy())
+                    imsave(gt_file, gt_image)
             
             
 
