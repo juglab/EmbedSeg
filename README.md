@@ -81,15 +81,13 @@ $data_dir
 
 ### Contributing
 
-Contributions are very welcome. Tests can be run with **[tox]**.
+Contributions are very welcome. Please open a pull request.
 
 ### Issues
 
 If you encounter any problems, please **[file an issue]** along with a detailed description.
 
 [file an issue]: https://github.com/juglab/EmbedSeg/issues
-[tox]: https://tox.readthedocs.io/en/latest/
-[pip]: https://pypi.org/project/EmbedSeg/
 
 
 ### Citation
