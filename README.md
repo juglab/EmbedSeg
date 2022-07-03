@@ -79,13 +79,6 @@ $data_dir
             └───...
 ```
 
-### Animated Figures
-
-<p align="center">
-  <img src="https://lmanan.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
-</p>
-
-
 ### Contributing
 
 Contributions are very welcome. Tests can be run with **[tox]**.
