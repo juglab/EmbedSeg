@@ -411,7 +411,8 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
         print('Resuming model from {}'.format(configs['resume_path']))
         state = torch.load(configs['resume_path'])
         if configs['finetuning'] is True:
-            start_epoch = 100
+            print("Previous best epoch was: {}".format(state['epoch']))
+            start_epoch = 150
         else:
             start_epoch = state['epoch'] + 1
         best_iou = state['best_iou']
