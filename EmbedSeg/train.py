@@ -410,13 +410,16 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     if configs['resume_path'] is not None and os.path.exists(configs['resume_path']):
         print('Resuming model from {}'.format(configs['resume_path']))
         state = torch.load(configs['resume_path'])
-        start_epoch = state['epoch'] + 1
+        if configs['finetuning'] is True:
+            start_epoch = 100
+        else:
+            start_epoch = state['epoch'] + 1
         best_iou = state['best_iou']
         model.load_state_dict(state['model_state_dict'], strict=True)
         optimizer.load_state_dict(state['optim_state_dict'])
         logger.data = state['logger_data']
 
-    for epoch in range(start_epoch, configs['n_epochs']):
+    for epoch in range(start_epoch, start_epoch + configs['n_epochs']): # TODO --> should the end be like this or absolute!
 
         print('Starting epoch {}'.format(epoch))
         # scheduler.step(epoch)

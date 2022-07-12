@@ -222,7 +222,26 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
         shutil.copy(instance_names[test_index], os.path.join(data_dir, project_name, 'test', 'masks'))
     print("Train-Val-Test Images/Masks copied to {}".format(os.path.join(data_dir, project_name)))
 
-
+def keep_subset_train(data_dir, project_name, train_name='train', subset=0.10, by_fraction=True, seed=1000):
+    image_dir = os.path.join(data_dir, project_name, train_name, 'images')
+    instance_dir = os.path.join(data_dir, project_name, train_name, 'masks')
+    image_names = sorted(glob(os.path.join(image_dir, '*.tif')))
+    instance_names = sorted(glob(os.path.join(instance_dir, '*.tif')))
+    indices = np.arange(len(image_names))
+    np.random.seed(seed)
+    np.random.shuffle(indices)
+    if (by_fraction):
+        subset_keep = 1 - subset
+        subset_len = int(subset_keep * len(image_names))
+    else:
+        subset_keep = len(image_names) - subset
+        subset_len = int(subset_keep)
+    del_indices = indices[:subset_len]
+    
+    for del_index in del_indices:
+        os.remove(image_names[del_index])
+        os.remove(instance_names[del_index])
+    
 def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fraction=True, seed=1000):
     """
         Splits the `train` directory into `test` directory using the partition percentage of `subset`.

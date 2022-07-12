@@ -330,7 +330,8 @@ def create_configs(save_dir,
                    l_y=1,
                    l_x=1,
                    save_checkpoint_frequency=None,
-                   display_zslice=None
+                   display_zslice=None,
+                   finetuning= False
                    ):
     """
         Creates `configs` dictionary from parameters.
@@ -391,7 +392,8 @@ def create_configs(save_dir,
                    pixel_x=l_x,
                    one_hot=one_hot,
                    save_checkpoint_frequency=save_checkpoint_frequency,
-                   display_zslice=display_zslice
+                   display_zslice=display_zslice, 
+                   finetuning=finetuning
                    )
     print(
         "`configs` dictionary successfully created with: "
