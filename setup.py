@@ -43,7 +43,8 @@ setup(
           "colorspacious",
           "pytest",
           "imagecodecs",
-          "pycocotools"
+          "pycocotools",
+          "gurobipy"
         ]
 )
 
