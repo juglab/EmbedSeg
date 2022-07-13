@@ -24,6 +24,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
     min_unclustered_sum = test_configs['min_unclustered_sum']
     min_object_size = test_configs['min_object_size']
     mean_object_size = test_configs['mean_object_size']
+    max_object_size = test_configs['max_object_size']
     tta = test_configs['tta']
     seed_thresh = test_configs['seed_thresh']
     fg_thresh = test_configs['fg_thresh']
@@ -116,7 +117,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
             result_dic['AP_dsb_05'] = -result
     elif (test_configs['name'] == '3d_ilp'):
         args = (
-            seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, mean_object_size, tta, model,
+            seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, mean_object_size, max_object_size, tta, model,
             dataset_it,
             save_images, save_results, save_dir, verbose, grid_x, grid_y, grid_z,
             pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma, anisotropy_factor)
@@ -742,7 +743,7 @@ def test_3d_sliced(fg_thresh, *args):
             return 0.0
 
 
-def perform_ilp(instance_map_z, min_depth=3, mean_object_size=3363):
+def perform_ilp(instance_map_z, min_depth=3, max_object_size=3363):
     """
     instance_map_z is a list of numpy tensors (YX) on the cpu
     """
@@ -779,8 +780,8 @@ def perform_ilp(instance_map_z, min_depth=3, mean_object_size=3363):
         for id in ids1:
             y, x = np.where(instance_map[z1] == id)
             G.add_node(str(z1) + '_' + str(id), cost_node=1.0,
-                       cost_appearance=len(y) / mean_object_size,
-                       cost_disappearance=len(y) / mean_object_size)  # we just set it to a constant value for now
+                       cost_appearance=len(y) / max_object_size,
+                       cost_disappearance=len(y) / max_object_size)  # we just set it to a constant value for now
             if z1 == 0:
                 X_nodes_appearance[z1][id] = 1.0
             else:
@@ -901,7 +902,7 @@ def perform_ilp(instance_map_z, min_depth=3, mean_object_size=3363):
 
 
 def test_3d_ilp(fg_thresh, *args):
-    seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, mean_object_size, tta, model, dataset_it, save_images, save_results, save_dir, \
+    seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, mean_object_size, max_object_size, tta, model, dataset_it, save_images, save_results, save_dir, \
     verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, \
     one_hot, mask_region, n_sigma, anisotropy_factor = args
 
@@ -946,17 +947,18 @@ def test_3d_ilp(fg_thresh, *args):
                                                             min_unclustered_sum=min_unclustered_sum,
                                                             min_object_size=min_object_size)
 
+                seed_map = torch.sigmoid(output[0, -1, ...])
                 # unpad instance_map, instances and images
                 if (diff_y - diff_y // 2) is not 0:
                     instance_map = instance_map[diff_y // 2:-(diff_y - diff_y // 2), ...]
+                    seed_map = seed_map[diff_y // 2:-(diff_y - diff_y // 2), ...]
                 if (diff_x - diff_x // 2) is not 0:
                     instance_map = instance_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
+                    seed_map = seed_map[..., diff_x // 2:-(diff_x - diff_x // 2)]
                 instance_map_z.append(instance_map.cpu().detach().numpy())
-                seed_z.append(torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy())
-            # correct predictions with gurobi
-            # imsave(save_dir+'/temp_pred.tif', np.asarray(instance_map_z).astype(np.uint16))
-            # imsave(save_dir + '/temp_seed.tif', np.asarray(seed_z).astype(np.float32))
-            instance_map = perform_ilp(instance_map_z, mean_object_size=mean_object_size)
+                seed_z.append(seed_map.cpu().detach().numpy())
+            
+            instance_map = perform_ilp(instance_map_z, max_object_size=max_object_size)
 
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()  # Z Y X  (squeeze takes away first two dimensions) or DYX
@@ -980,6 +982,9 @@ def test_3d_ilp(fg_thresh, *args):
                 if not os.path.exists(os.path.join(save_dir, 'seeds/')):
                     os.makedirs(os.path.join(save_dir, 'seeds/'))
                     print("Created new directory {}".format(os.path.join(save_dir, 'seeds/')))
+                if not os.path.exists(os.path.join(save_dir, 'ground-truth/')):
+                    os.makedirs(os.path.join(save_dir, 'ground-truth/'))
+                    print("Created new directory {}".format(os.path.join(save_dir, 'ground-truth/')))
 
                 # save predictions
                 base, _ = os.path.splitext(os.path.basename(sample['im_name'][0]))
@@ -988,6 +993,10 @@ def test_3d_ilp(fg_thresh, *args):
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
                 imsave(seeds_file, np.asarray(seed_z).astype(np.float32))
+                
+                if ('instance' in sample):
+                    gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
+                    imsave(gt_file, sample['instance'].squeeze().cpu().detach().numpy())
 
         if save_results and 'instance' in sample:
             if not os.path.exists(os.path.join(save_dir, 'results/')):

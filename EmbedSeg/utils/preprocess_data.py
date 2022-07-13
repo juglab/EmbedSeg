@@ -398,7 +398,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
 
     print("Minimum object size of the `{}` dataset is equal to {}".format(project_name, np.min(size_list)))
     print("Mean object size of the `{}` dataset is equal to {}".format(project_name, np.mean(size_list)))
-    print("Maximum object size of the `{}` dataset is equal to {}".format(project_name, np.max(size_list)))
+    print("Maximum object size of the `{}` dataset is equal to {}".format(project_name, np.percentile(size_list, 99.8)))
     print("Average object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
                                                                                         np.mean(size_list_x)))
     print("Std. dev object size of the `{}` dataset along `x` is equal to {:.3f}".format(project_name,
@@ -413,14 +413,14 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                                                                                             np.mean(size_list_z)))
         print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
                                                                                              np.std(size_list_z)))
-        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.percentile(size_list, 99.8).astype(np.float), \
                np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(
             np.float), np.mean(size_list_x).astype(np.float), \
                np.std(size_list_z).astype(np.float), np.std(size_list_y).astype(np.float), np.std(size_list_x).astype(
             np.float)
 
     else:
-        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.percentile(size_list, 99.8).astype(np.float), \
                None, np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float), None, np.std(size_list_y).astype(
             np.float), np.std(size_list_x).astype(np.float)
 
