@@ -13,7 +13,7 @@ def create_dataset_dict(data_dir,
                         name='2d',
                         batch_size=16,
                         virtual_batch_multiplier=1,
-                        workers=8,
+                        workers=4,
                         ):
     """
         Creates `dataset_dict` dictionary from parameters.
