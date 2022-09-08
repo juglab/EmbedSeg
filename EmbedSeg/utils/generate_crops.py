@@ -1,5 +1,6 @@
-import numpy as np
 import os
+
+import numpy as np
 import pandas as pd
 import pycocotools.mask as rletools
 import tifffile
@@ -11,6 +12,9 @@ from tqdm import tqdm
 
 
 def _fill_label_holes(lbl_img, **kwargs):
+    """
+        Function taken from Stardist repository: https://github.com/stardist/stardist
+    """
     lbl_img_filled = np.zeros_like(lbl_img)
     for l in (set(np.unique(lbl_img)) - set([0])):
         mask = lbl_img == l
@@ -22,6 +26,7 @@ def _fill_label_holes(lbl_img, **kwargs):
 def fill_label_holes(lbl_img, **kwargs):
     """
         Fill small holes in label image.
+        Function taken from Stardist repository: https://github.com/stardist/stardist
     """
 
     def grow(sl, interior):
@@ -45,6 +50,7 @@ def fill_label_holes(lbl_img, **kwargs):
 def normalize_min_max_percentile(x, pmin=3, pmax=99.8, axis=None, clip=False, eps=1e-20, dtype=np.float32):
     """
         Percentile-based image normalization.
+        Function taken from StarDist repository  https://github.com/stardist/stardist
     """
     mi = np.percentile(x, pmin, axis=axis, keepdims=True)
     ma = np.percentile(x, pmax, axis=axis, keepdims=True)
@@ -52,6 +58,10 @@ def normalize_min_max_percentile(x, pmin=3, pmax=99.8, axis=None, clip=False, ep
 
 
 def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
+    """
+        Percentile-based image normalization.
+        Function taken from StarDist repository  https://github.com/stardist/stardist
+    """
     if dtype is not None:
         x = x.astype(dtype, copy=False)
         mi = dtype(mi) if np.isscalar(mi) else mi.astype(dtype, copy=False)
