@@ -1,9 +1,9 @@
+import os
 import threading
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import pandas as pd
 import seaborn as sns
 import torch
@@ -110,7 +110,6 @@ class Visualizer:
 
 class Cluster_3d:
     def __init__(self, grid_z, grid_y, grid_x, pixel_z, pixel_y, pixel_x, one_hot=False):
-
         xm = torch.linspace(0, pixel_x, grid_x).view(1, 1, 1, -1).expand(1, grid_z, grid_y, grid_x)
         ym = torch.linspace(0, pixel_y, grid_y).view(1, 1, -1, 1).expand(1, grid_z, grid_y, grid_x)
         zm = torch.linspace(0, pixel_z, grid_z).view(1, -1, 1, 1).expand(1, grid_z, grid_y, grid_x)
@@ -126,7 +125,6 @@ class Cluster_3d:
         self.pixel_z = pixel_z
 
     def cluster_with_gt(self, prediction, instance, n_sigma=1, ):
-
         depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
         xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]  # 3 x d x h x w
         spatial_emb = torch.tanh(prediction[0:3]) + xyzm_s  # 3 x d x h x w
@@ -197,8 +195,64 @@ class Cluster_3d:
 
         return instance_map
 
+    def cluster_local_maxima(self, prediction, n_sigma=3, fg_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0,
+                             min_object_size=36):
+        from scipy.ndimage import gaussian_filter
+        depth, height, width = prediction.size(1), prediction.size(2), prediction.size(3)
+        xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width]
+        spatial_emb = torch.tanh(prediction[0:3]) + xyzm_s  # 3 x d x h x w
+        sigma = prediction[3:3 + n_sigma]  # n_sigma x d x h x w
+        seed_map = torch.sigmoid(prediction[3 + n_sigma:3 + n_sigma + 1])  # 1 x h x w
+        instance_map = torch.zeros(depth, height, width).short()
+        # instances = []  # list
+        count = 1
+        mask_fg = seed_map > fg_thresh
+
+        seed_map_cpu = seed_map.cpu().detach().numpy()
+        seed_map_cpu_smooth = gaussian_filter(seed_map_cpu[0], sigma=(1, 2, 2))  # TODO
+        coords = peak_local_max(seed_map_cpu_smooth)
+        zeros = np.zeros((coords.shape[0], 1), dtype=np.uint8)
+        coords = np.hstack((zeros, coords))
+
+        mask_local_max_cpu = np.zeros(seed_map_cpu.shape, dtype=np.bool)
+        mask_local_max_cpu[tuple(coords.T)] = True
+        mask_local_max = torch.from_numpy(mask_local_max_cpu).bool().cuda()
+
+        mask_seed = mask_fg * mask_local_max
+        if mask_fg.sum() > min_mask_sum:
+            spatial_emb_fg_masked = spatial_emb[mask_fg.expand_as(spatial_emb)].view(n_sigma, -1)  # fg candidate pixels
+            spatial_emb_seed_masked = spatial_emb[mask_seed.expand_as(spatial_emb)].view(n_sigma,
+                                                                                         -1)  # seed candidate pixels
+
+            sigma_seed_masked = sigma[mask_seed.expand_as(sigma)].view(n_sigma, -1)  # sigma for seed candidate pixels
+            seed_map_seed_masked = seed_map[mask_seed].view(1, -1)  # seediness for seed candidate pixels
+
+            unprocessed = torch.ones(mask_seed.sum()).short().cuda()  # unprocessed seed candidate pixels
+            unclustered = torch.ones(mask_fg.sum()).short().cuda()  # unclustered fg candidate pixels
+            instance_map_masked = torch.zeros(mask_fg.sum()).short().cuda()
+            while (unprocessed.sum() > min_unclustered_sum):
+                seed = (seed_map_seed_masked * unprocessed.float()).argmax().item()
+                center = spatial_emb_seed_masked[:, seed:seed + 1]
+                unprocessed[seed] = 0
+                s = torch.exp(sigma_seed_masked[:, seed:seed + 1] * 10)
+                dist = torch.exp(-1 * torch.sum(torch.pow(spatial_emb_fg_masked - center, 2) * s, 0))
+                proposal = (dist > 0.5).squeeze()
+                if proposal.sum() > min_object_size:
+                    if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:
+                        instance_map_masked[proposal.squeeze()] = count
+                        count += 1
+                        unclustered[proposal] = 0
+                        # note the line above increases false positives, tab back twice to show less objects!
+                        # The reason I leave it like so is because the penalty on false-negative nodes is `10` while
+                        # penalty on false-positive nodes is `1`.
+            instance_map[mask_fg.squeeze().cpu()] = instance_map_masked.cpu()
+        return instance_map
+
 
 class Cluster:
+    """
+
+    """
 
     def __init__(self, grid_y, grid_x, pixel_y, pixel_x, one_hot=False):
 
@@ -249,19 +303,21 @@ class Cluster:
 
         return instance_map
 
-    def cluster_local_maxima(self, prediction, n_sigma=2, fg_thresh=0.5, min_mask_sum=0, min_unclustered_sum=0,
+    def cluster_local_maxima(self, prediction, n_sigma=2, fg_thresh=0.5, min_mask_sum=128, min_unclustered_sum=0,
                              min_object_size=36):
+        from scipy.ndimage import gaussian_filter
         height, width = prediction.size(1), prediction.size(2)
         xym_s = self.xym[:, 0:height, 0:width]
         spatial_emb = torch.tanh(prediction[0:2]) + xym_s  # 2 x h x w
         sigma = prediction[2:2 + n_sigma]  # n_sigma x h x w
         seed_map = torch.sigmoid(prediction[2 + n_sigma:2 + n_sigma + 1])  # 1 x h x w
         instance_map = torch.zeros(height, width).short()
-        instances = []  # list
+        # instances = []  # list
         count = 1
         mask_fg = seed_map > fg_thresh
         seed_map_cpu = seed_map.cpu().detach().numpy()
-        coords = peak_local_max(seed_map_cpu[0])
+        seed_map_cpu_smooth = gaussian_filter(seed_map_cpu[0], sigma=1)
+        coords = peak_local_max(seed_map_cpu_smooth)
         zeros = np.zeros((coords.shape[0], 1), dtype=np.uint8)
         coords = np.hstack((zeros, coords))
 
@@ -283,7 +339,6 @@ class Cluster:
             instance_map_masked = torch.zeros(mask_fg.sum()).short().cuda()
             while (unprocessed.sum() > min_unclustered_sum):
                 seed = (seed_map_seed_masked * unprocessed.float()).argmax().item()
-                seed_score = (seed_map_seed_masked * unprocessed.float()).max().item()
                 center = spatial_emb_seed_masked[:, seed:seed + 1]
                 unprocessed[seed] = 0
                 s = torch.exp(sigma_seed_masked[:, seed:seed + 1] * 10)
@@ -293,10 +348,12 @@ class Cluster:
                     if unclustered[proposal].sum().float() / proposal.sum().float() > 0.5:
                         instance_map_masked[proposal.squeeze()] = count
                         count += 1
-                unclustered[proposal] = 0
-
+                        unclustered[proposal] = 0
+                        # note the line above increases false positives, tab back twice to show less objects!
+                        # The reason I leave it like so is because the penalty on false-negative nodes is `10` while
+                        # penalty on false-positive nodes is `1`.
             instance_map[mask_fg.squeeze().cpu()] = instance_map_masked.cpu()
-        return instance_map, instances
+        return instance_map
 
     def cluster(self, prediction, n_sigma=2, seed_thresh=0.9, fg_thresh=0.5, min_mask_sum=0, min_unclustered_sum=0,
                 min_object_size=36):
@@ -310,7 +367,7 @@ class Cluster:
         seed_map = torch.sigmoid(prediction[2 + n_sigma:2 + n_sigma + 1])  # 1 x h x w
 
         instance_map = torch.zeros(height, width).short()
-        instances = []  # list
+        # instances = []  # list
 
         count = 1
         mask = seed_map > fg_thresh
@@ -341,22 +398,22 @@ class Cluster:
                         instance_map_masked[proposal.squeeze()] = count
                         instance_mask = torch.zeros(height, width).short()
                         instance_mask[mask.squeeze().cpu()] = proposal.short().cpu()
-                        center_image = torch.zeros(height, width).short()
-
-                        center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
-                        center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
-                        center_image[np.clip(int(center[1].item()), 0, height - 1), np.clip(int(center[0].item()), 0,
-                                                                                            width - 1)] = True
-                        instances.append(
-                            {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
-                             'center-image': center_image})
+                        # center_image = torch.zeros(height, width).short()
+                        #
+                        # center[0] = int(degrid(center[0].cpu().detach().numpy(), self.grid_x, self.pixel_x))
+                        # center[1] = int(degrid(center[1].cpu().detach().numpy(), self.grid_y, self.pixel_y))
+                        # center_image[np.clip(int(center[1].item()), 0, height - 1), np.clip(int(center[0].item()), 0,
+                        #                                                                     width - 1)] = True
+                        # instances.append(
+                        #     {'mask': instance_mask.squeeze() * 255, 'score': seed_score,
+                        #      'center-image': center_image})
                         count += 1
 
                 unclustered[proposal] = 0
 
             instance_map[mask.squeeze().cpu()] = instance_map_masked.cpu()
 
-        return instance_map, instances
+        return instance_map
 
 
 class Logger:
