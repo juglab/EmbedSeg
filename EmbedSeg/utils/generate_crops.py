@@ -1,12 +1,12 @@
 import numpy as np
 import os
+import pandas as pd
 import pycocotools.mask as rletools
 import tifffile
 from numba import jit
 from scipy.ndimage import zoom
 from scipy.ndimage.measurements import find_objects
 from scipy.ndimage.morphology import binary_fill_holes
-import pandas as pd
 from tqdm import tqdm
 
 
@@ -193,8 +193,9 @@ def encode(filename, img, one_hot=False):
     df.to_csv(filename, index=False, header=None)
 
 
-def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-percentile', one_hot=False, data_type='8-bit', normalization_factor=None,
-            rle_encode=False, fraction_max_ids = 1.0, background_id=0):
+def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-percentile', one_hot=False,
+            data_type='8-bit', normalization_factor=None,
+            rle_encode=False, fraction_max_ids=1.0, background_id=0):
     """
         Processes the actual images and instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -308,9 +309,10 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-p
                                     center_image_crop)
 
 
-def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center, norm='min-max-percentile',
+def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
+               norm='min-max-percentile',
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', normalization_factor=None,
-               rle_encode=False, fraction_max_ids = 1.0, background_id = 0):
+               rle_encode=False, fraction_max_ids=1.0, background_id=0):
     """
     :param im: string
             Path to image file
@@ -338,7 +340,6 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             for faster medoid evaluation, the x and y dimensions are sub-sampled by this factor
     :return:
     """
-
 
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
@@ -371,14 +372,14 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             if normalization_factor is None:
                 image /= 65535
             else:
-                image /=normalization_factor
+                image /= normalization_factor
     instance = fill_label_holes(instance)
 
     d, h, w = image.shape
     instance_np = np.array(instance, copy=False)
     object_mask = instance_np > background_id
     # ensure that background is mapped to 0
-    instance_np[instance_np==background_id] = 0
+    instance_np[instance_np == background_id] = 0
     ids = np.unique(instance_np[object_mask])
     ids = ids[ids != 0]
     ids_subset = np.random.choice(ids, int(fraction_max_ids * len(ids)), replace=False)
@@ -409,7 +410,7 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
 
 
 def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile',
-                    data_type='8-bit', normalization_factor=None, fraction_max_ids = 1.0, rle_encode=False):
+                    data_type='8-bit', normalization_factor=None, fraction_max_ids=1.0, rle_encode=False):
     """
         Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
         Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
@@ -499,7 +500,7 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 
 def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                       one_hot=False, anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit',
-                      normalization_factor=None, fraction_max_ids = 0.01, rle_encode=False, background_id=0):
+                      normalization_factor=None, fraction_max_ids=0.01, rle_encode=False, background_id=0):
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -546,9 +547,6 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
     ids = np.unique(instance_np[object_mask])
     ids = ids[ids != 0]
 
-
-
-
     # loop over instances
     ids_subset = np.random.choice(ids, int(np.ceil(fraction_max_ids * len(ids))), replace=False)
     for id in ids_subset:
@@ -559,7 +557,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
         ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
 
         # ZY
-        for x in range(ii, ii + crop_size_x):
+        for x in range(ii, ii + crop_size_x, int(np.ceil(anisotropy_factor))):
             if (image[kk:kk + crop_size_z, jj:jj + crop_size_y, x].shape == (crop_size_z, crop_size_y)):
                 im_crop = image[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
                 instance_crop = instance_np[kk:kk + crop_size_z, jj:jj + crop_size_y, x]
@@ -583,7 +581,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                                 x) + "_ZY.tif", center_image_crop)
 
         # YX
-        for z in range(kk, kk + crop_size_z):
+        for z in range(kk, kk + crop_size_z, int(np.ceil(anisotropy_factor))):
             if (image[z, jj:jj + crop_size_y, ii:ii + crop_size_x].shape == (crop_size_y, crop_size_x)):
                 im_crop = image[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
                 instance_crop = instance_np[z, jj:jj + crop_size_y, ii:ii + crop_size_x]
@@ -595,9 +593,9 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                         im_crop)
                     if rle_encode:
                         encode(instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                                z) + "_YX.csv", instance_crop.astype(np.uint16))
+                            z) + "_YX.csv", instance_crop.astype(np.uint16))
                         encode(center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                                z) + "_YX.csv", center_image_crop)
+                            z) + "_YX.csv", center_image_crop)
                     else:
                         tifffile.imsave(
                             instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
@@ -607,7 +605,7 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                                 z) + "_YX.tif", center_image_crop)
 
         # XZ
-        for y in range(jj, jj + crop_size_y):
+        for y in range(jj, jj + crop_size_y, int(np.ceil(anisotropy_factor))):
             if (image[kk:kk + crop_size_z, y, ii:ii + crop_size_x].shape == (crop_size_z, crop_size_x)):
                 im_crop = np.transpose(image[kk:kk + crop_size_z, y, ii:ii + crop_size_x])
                 instance_crop = np.transpose(instance_np[kk:kk + crop_size_z, y, ii:ii + crop_size_x])
@@ -625,15 +623,15 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
                     else:
                         tifffile.imsave(
                             instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                            y) + "_XZ.tif", instance_crop.astype(np.uint16))
+                                y) + "_XZ.tif", instance_crop.astype(np.uint16))
                         tifffile.imsave(
                             center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                            y) + "_XZ.tif", center_image_crop)
+                                y) + "_XZ.tif", center_image_crop)
 
 
 def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, center,
-                      one_hot=False, norm='min-max-percentile', data_type='8-bit',
-                      normalization_factor=None, fraction_max_ids = 0.10, rle_encode=False, background_id=0):
+                   one_hot=False, norm='min-max-percentile', data_type='8-bit',
+                   normalization_factor=None, fraction_max_ids=0.10, rle_encode=False, background_id=0):
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -670,7 +668,6 @@ def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, c
     d, h, w = image.shape
     instance_np = np.array(instance, copy=False)
 
-
     for z in tqdm(range(image.shape[0]), position=0, leave=True):
         object_mask = instance_np[z] > background_id
         # ensure that background is mapped to 0
@@ -679,7 +676,7 @@ def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, c
         ids = ids[ids != 0]
         ids_subset = np.random.choice(ids, int(fraction_max_ids * len(ids)), replace=False)
         for id in ids_subset:
-            y, x = np.where(instance_np[z]==id)
+            y, x = np.where(instance_np[z] == id)
             ym, xm = np.mean(y), np.mean(x)
             jj = int(np.clip(ym - crop_size_y / 2, 0, h - crop_size_y))
             ii = int(np.clip(xm - crop_size_x / 2, 0, w - crop_size_x))
@@ -694,9 +691,9 @@ def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, c
                         im_crop)
                     if rle_encode:
                         encode(instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                                z) + "_YX.csv", instance_crop.astype(np.uint16))
+                            z) + "_YX.csv", instance_crop.astype(np.uint16))
                         encode(center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
-                                z) + "_YX.csv", center_image_crop)
+                            z) + "_YX.csv", center_image_crop)
                     else:
                         tifffile.imsave(
                             instance_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
@@ -704,5 +701,3 @@ def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, c
                         tifffile.imsave(
                             center_image_path + os.path.basename(im)[:-4] + "_{:03d}".format(id) + "_{:03d}".format(
                                 z) + "_YX.tif", center_image_crop)
-
-
