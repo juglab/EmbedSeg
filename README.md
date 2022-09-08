@@ -76,7 +76,6 @@ $data_dir
             └───...
 ```
 
-
 ### Issues
 
 If you encounter any problems, please **[file an issue]** along with a detailed description.
@@ -110,4 +109,4 @@ If you find our work useful in your research, please consider citing:
 
 The authors would like to thank the Scientific Computing Facility at MPI-CBG, thank Matthias Arzt,  Joran  Deschamps  and  Nuno  Pimpao  Martins  for  feedback  and  testing.    Alf  Honigmann and  Anna  Goncharova  provided  the  `Mouse-Organoid-Cells-CBG`  data  and  annotations.   Jacqueline Tabler and Diana Afonso provided the `Mouse-Skull-Nuclei-CBG` dataset and annotations.  This work was supported by the German Federal Ministry of Research and Education (BMBF) under the codes 031L0102 (de.NBI) and 01IS18026C (ScaDS2), and the German Research Foundation (DFG) under the code JU3110/1-1(FiSS) and TO563/8-1 (FiSS). P.T. was supported by the European Regional Development Fund in the IT4Innovations national supercomputing center,  project number CZ.02.1.01/0.0/0.0/16013/0001791 within the Program Research, Development and Education.
 
-The authors would also like to thank the [StarDist](https://github.com/stardist/stardist) repository for several useful functions.
+The authors would also like to thank the **[StarDist](https://github.com/stardist/stardist)** repository for several useful, helper functions.
