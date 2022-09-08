@@ -7,7 +7,7 @@ class BranchedERFNet_3d(nn.Module):
     def __init__(self, num_classes, input_channels =1, encoder=None):
         super().__init__()
 
-        print('Creating branched erfnet 3d with {} classes'.format(num_classes))
+        print('Creating Branched Erfnet 3D with {} outputs'.format(num_classes))
         if (encoder is None):
             self.encoder = erfnet.Encoder(sum(num_classes), input_channels)
         else:

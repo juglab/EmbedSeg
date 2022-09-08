@@ -13,15 +13,13 @@
 - **[Getting Started](#getting-started)**
 - **[Datasets](#datasets)**
 - **[Training & Inference on your data](#training-and-inference-on-your-data)**
-- **[Animated figures](#animated-figures)**
-- **[Contributing](#contributing)**
 - **[Issues](#issues)**
 - **[Citation](#citation)**
 - **[Acknowledgements](#acknowledgements)**
 
 
 ### Introduction
-This repository hosts the version of the code used for the **[preprint](https://arxiv.org/abs/2101.10033)** **Embedding-based Instance Segmentation of Microscopy Images**. 
+This repository hosts the version of the code used for the **[publication](https://proceedings.mlr.press/v143/lalit21a.html)** **Embedding-based Instance Segmentation of Microscopy Images**. 
 
 We refer to the techniques elaborated in the publication, here as **EmbedSeg**. `EmbedSeg` is a method to perform instance-segmentation of objects in microscopy images, based on the ideas by **[Neven et al, 2019](https://arxiv.org/abs/1906.11109)**. 
 
@@ -78,38 +76,37 @@ $data_dir
             └───...
 ```
 
-### Animated Figures
-
-<p align="center">
-  <img src="https://lmanan.github.io/EmbedSeg_RC/images/teaser/train_images_painted.gif" alt="teaser" width="500"/>
-</p>
-
-
-### Contributing
-
-Contributions are very welcome. Tests can be run with **[tox]**.
-
 ### Issues
 
 If you encounter any problems, please **[file an issue]** along with a detailed description.
 
 [file an issue]: https://github.com/juglab/EmbedSeg/issues
-[tox]: https://tox.readthedocs.io/en/latest/
-[pip]: https://pypi.org/project/EmbedSeg/
 
 
 ### Citation
+
 If you find our work useful in your research, please consider citing:
 
 ```bibtex
-@misc{lalit2021embeddingbased,
-      title={Embedding-based Instance Segmentation of Microscopy Images}, 
-      author={Manan Lalit and Pavel Tomancak and Florian Jug},
-      year={2021},
-      eprint={2101.10033},
-      archivePrefix={arXiv},
-      primaryClass={eess.IV}
+@InProceedings{lalit2021embedseg,
+  title = 	 {Embedding-based Instance Segmentation in Microscopy},
+  author =       {Lalit, Manan and Tomancak, Pavel and Jug, Florian},
+  booktitle = 	 {Proceedings of the Fourth Conference on Medical Imaging with Deep Learning},
+  pages = 	 {399--415},
+  year = 	 {2021},
+  editor = 	 {Heinrich, Mattias and Dou, Qi and de Bruijne, Marleen and Lellmann, Jan and Schläfer, Alexander and Ernst, Floris},
+  volume = 	 {143},
+  series = 	 {Proceedings of Machine Learning Research},
+  month = 	 {07--09 Jul},
+  publisher =    {PMLR},
+  pdf = 	 {https://proceedings.mlr.press/v143/lalit21a/lalit21a.pdf},
+  url = 	 {https://proceedings.mlr.press/v143/lalit21a.html},
 }
 ```
+
+
 ### Acknowledgements
+
 The authors would like to thank the Scientific Computing Facility at MPI-CBG, thank Matthias Arzt,  Joran  Deschamps  and  Nuno  Pimpao  Martins  for  feedback  and  testing.    Alf  Honigmann and  Anna  Goncharova  provided  the  `Mouse-Organoid-Cells-CBG`  data  and  annotations.   Jacqueline Tabler and Diana Afonso provided the `Mouse-Skull-Nuclei-CBG` dataset and annotations.  This work was supported by the German Federal Ministry of Research and Education (BMBF) under the codes 031L0102 (de.NBI) and 01IS18026C (ScaDS2), and the German Research Foundation (DFG) under the code JU3110/1-1(FiSS) and TO563/8-1 (FiSS). P.T. was supported by the European Regional Development Fund in the IT4Innovations national supercomputing center,  project number CZ.02.1.01/0.0/0.0/16013/0001791 within the Program Research, Development and Education.
+
+The authors would also like to thank the **[StarDist](https://github.com/stardist/stardist)** repository for several useful, helper functions.

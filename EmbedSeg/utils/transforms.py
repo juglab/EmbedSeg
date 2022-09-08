@@ -74,7 +74,7 @@ class RandomRotationsAndFlips_3d(T.RandomRotation):
 
 
 class ToTensorFromNumpy(object):
-    def __init__(self, keys=[], type="float", normalization_factor=255):
+    def __init__(self, keys=[], type="float", normalization_factor = 1.0):
 
         if isinstance(type, collections.Iterable):
             assert (len(keys) == len(type))

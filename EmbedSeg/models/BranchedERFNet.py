@@ -11,7 +11,7 @@ class BranchedERFNet(nn.Module):
     def __init__(self, num_classes, input_channels = 1, encoder=None):
         super().__init__()
 
-        print('Creating branched erfnet with {} classes'.format(num_classes))
+        print('Creating Branched Erfnet with {} outputs'.format(num_classes))
         
         if (encoder is None):
             self.encoder = erfnet.Encoder(sum(num_classes), input_channels)

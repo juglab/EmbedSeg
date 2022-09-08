@@ -1,18 +1,26 @@
+import ast
 import glob
-import os
-import random
 import numpy as np
+import os
+import pandas as pd
+import pycocotools.mask as rletools
+import random
 import tifffile
+from scipy.ndimage import zoom
 from skimage.segmentation import relabel_sequential
 from torch.utils.data import Dataset
+
+from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normalize_mean_std
+
 
 class ThreeDimensionalDataset(Dataset):
     """
         ThreeDimensionalDataset class
-        This class is not functional currently for one-hot instances!
     """
+
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
-                 one_hot=False):
+                 one_hot=False, norm='min-max-percentile', normalization=False, data_type='8-bit',
+                 anisotropy_factor=1.0, sliced_mode=False):
         print('3-D `{}` dataloader created! Accessing data from {}/{}/'.format(type, data_dir, type))
 
         # get image and instance list
@@ -37,11 +45,16 @@ class ThreeDimensionalDataset(Dataset):
         self.real_size = len(self.image_list)
         self.transform = transform
         self.one_hot = one_hot
+        self.norm = norm
+        self.data_type = data_type
+        self.type = type
+        self.anisotropy_factor = anisotropy_factor
+        self.sliced_mode = sliced_mode
+        self.normalization = normalization
 
     def convert_zyx_to_czyx(self, im, key):
-        im = im[np.newaxis, ...] # CZYX
+        im = im[np.newaxis, ...]  # CZYX
         return im
-
 
     def __len__(self):
         return self.real_size if self.size is None else self.size
@@ -52,18 +65,42 @@ class ThreeDimensionalDataset(Dataset):
 
         # load image
         image = tifffile.imread(self.image_list[index])  # ZYX
-        image = self.convert_zyx_to_czyx(image, key='image') # CZYX
+        if (self.normalization and self.norm == 'min-max-percentile'):
+            image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
+        elif (self.normalization and self.norm == 'mean-std'):
+            image = normalize_mean_std(image)
+        elif (self.normalization and self.norm == 'absolute'):
+            image = image.astype(np.float32)
+            if self.data_type == '8-bit':
+                image /= 255
+            elif self.data_type == '16-bit':
+                image /= 65535
+        if self.type == 'test' and self.sliced_mode:
+            image = zoom(image, (self.anisotropy_factor, 1, 1), order=0)
+        image = self.convert_zyx_to_czyx(image, key='image')  # CZYX
         sample['image'] = image  # CZYX
         sample['im_name'] = self.image_list[index]
         if (len(self.instance_list) != 0):
-            instance = tifffile.imread(self.instance_list[index])  # ZYX
+            if self.instance_list[index][-3:] == 'csv':
+                instance = self.rle_decode(self.instance_list[index], one_hot=self.one_hot)  # ZYX
+            else:
+                instance = tifffile.imread(self.instance_list[index])  # ZYX
+
             instance, label = self.decode_instance(instance, self.one_hot, self.bg_id)
+            if self.type == 'test' and self.sliced_mode:
+                instance = zoom(instance, (self.anisotropy_factor, 1, 1), order=0)
+                label = zoom(label, (self.anisotropy_factor, 1, 1), order=0)
             instance = self.convert_zyx_to_czyx(instance, key='instance')  # CZYX
             label = self.convert_zyx_to_czyx(label, key='label')  # CZYX
             sample['instance'] = instance
             sample['label'] = label
         if (len(self.center_image_list) != 0):
-            center_image = tifffile.imread(self.center_image_list[index]) # ZYX
+            if self.center_image_list[index][-3:] == 'csv':
+                center_image = self.rle_decode(self.center_image_list[index], center=True)
+            else:
+                center_image = tifffile.imread(self.center_image_list[index])
+            if self.type == 'test' and self.sliced_mode:
+                center_image = zoom(center_image, (self.anisotropy_factor, 1, 1), order=0)
             center_image = self.convert_zyx_to_czyx(center_image, key='center_image')  # CZYX
             sample['center_image'] = center_image
 
@@ -93,3 +130,30 @@ class ThreeDimensionalDataset(Dataset):
 
         return instance_map, class_map
 
+    @classmethod
+    def rle_decode(cls, filename, one_hot=False, center=False):
+        df = pd.read_csv(filename, header=None)
+        df_numpy = df.to_numpy()
+        d = {}
+
+        if one_hot:
+            mask_decoded = []
+            for row in df_numpy:
+                d['counts'] = ast.literal_eval(row[1])
+                d['size'] = ast.literal_eval(row[2])
+                mask = rletools.decode(d)  # returns binary mask
+                mask_decoded.append(mask)
+        else:
+            if center:
+                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                        dtype=np.bool)  # obtain size by reading first row of csv file
+            else:
+                mask_decoded = np.zeros(ast.literal_eval(df_numpy[0][2]),
+                                        dtype=np.uint16)  # obtain size by reading first row of csv file
+            for row in df_numpy:
+                d['counts'] = ast.literal_eval(row[1])
+                d['size'] = ast.literal_eval(row[2])
+                mask = rletools.decode(d)  # returns binary mask
+                z, y, x = np.where(mask == 1)
+                mask_decoded[z, y, x] = int(row[0])
+        return np.asarray(mask_decoded)

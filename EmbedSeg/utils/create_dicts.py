@@ -1,5 +1,6 @@
-import torch
 import os
+import torch
+
 import EmbedSeg.utils.transforms as my_transforms
 
 
@@ -8,8 +9,7 @@ def create_dataset_dict(data_dir,
                         size,
                         center,
                         type,
-                        normalization_factor,
-                        one_hot= False,
+                        one_hot=False,
                         name='2d',
                         batch_size=16,
                         virtual_batch_multiplier=1,
@@ -29,8 +29,6 @@ def create_dataset_dict(data_dir,
             One of 'centroid', 'approximate-medoid', 'medoid'
         type: string
             One of 'train', 'val'
-        normalization_factor: int/float
-            For 8-bit image, normalization_factor = 255. For 16-bit image, normalization_factor = 65535.
         one_hot: boolean
             If 'True', instance images are perceived as DYX (here each object is encoded as 1 in its individual slice)
             If 'False', instance image is perceived as YX and has the same dimensionality as raw image
@@ -43,8 +41,8 @@ def create_dataset_dict(data_dir,
         workers: int
             Number of data-loader workers
     """
-    if name =='2d':
-        set_transforms =my_transforms.get_transform([
+    if name == '2d':
+        set_transforms = my_transforms.get_transform([
             {
                 'name': 'RandomRotationsAndFlips',
                 'opts': {
@@ -58,11 +56,10 @@ def create_dataset_dict(data_dir,
                 'opts': {
                     'keys': ('image', 'instance', 'label', 'center_image'),
                     'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
-                    'normalization_factor': normalization_factor
                 }
             },
         ])
-    elif name =='3d':
+    elif name == '3d':
         set_transforms = my_transforms.get_transform([
             {
                 'name': 'RandomRotationsAndFlips_3d',
@@ -77,7 +74,6 @@ def create_dataset_dict(data_dir,
                 'opts': {
                     'keys': ('image', 'instance', 'label', 'center_image'),
                     'type': (torch.FloatTensor, torch.ShortTensor, torch.ShortTensor, torch.BoolTensor),
-                    'normalization_factor': normalization_factor
                 }
             },
         ])
@@ -85,7 +81,7 @@ def create_dataset_dict(data_dir,
         'name': name,
         'kwargs': {
             'center': 'center-' + center,
-            'data_dir': os.path.join(data_dir,project_name),
+            'data_dir': os.path.join(data_dir, project_name),
             'type': type,
             'size': size,
             'transform': set_transforms,
@@ -99,36 +95,41 @@ def create_dataset_dict(data_dir,
     print("`{}_dataset_dict` dictionary successfully created with: \n -- {} images accessed from {}, "
           "\n -- number of images per epoch equal to {}, "
           "\n -- batch size set at {}, "
-          "\n -- virtual batch multiplier set as {}, "
-          "\n -- normalization_factor set as {}, "
-          "\n -- one_hot set as {}, "
-          .format(type, type, os.path.join(data_dir, project_name, type, 'images'), size, batch_size, virtual_batch_multiplier,
-                  normalization_factor, one_hot))
+          .format(type, type, os.path.join(data_dir, project_name, type, 'images'), size, batch_size,
+                  ))
     return dataset_dict
 
 
 def create_test_configs_dict(data_dir,
                              checkpoint_path,
-                             save_dir,
-                             normalization_factor,
-                             tta = True,
-                             one_hot= False,
-                             ap_val = 0.5,
+                             norm,
+                             data_type,
+                             save_dir=None,
+                             normalization_factor=1.0,
+                             tta=True,
+                             one_hot=False,
+                             ap_val=0.5,
                              seed_thresh=0.9,
-                             min_object_size=36,
+                             fg_thresh=0.5,
+                             min_object_size=10,
+                             mean_object_size=None,
                              save_images=True,
                              save_results=True,
                              min_mask_sum=0,
                              min_unclustered_sum=0,
                              cuda=True,
-                             n_z = None,
-                             n_y = 1024,
-                             n_x = 1024,
-                             anisotropy_factor = None,
-                             l_y = 1,
-                             l_x = 1,
-                             name = '2d',
-                             input_channels=1
+                             n_z=None,
+                             n_y=1024,
+                             n_x=1024,
+                             anisotropy_factor=None,
+                             l_y=1,
+                             l_x=1,
+                             name='2d',
+                             input_channels=1,
+                             type='test',
+                             normalization=True,
+                             cluster_fast = True,
+                             expand_grid=True
                              ):
     """
         Creates `test_configs` dictionary from parameters.
@@ -169,42 +170,65 @@ def create_test_configs_dict(data_dir,
     if (n_z is None):
         l_z = None
     else:
-        l_z = (n_z - 1)/(n_x - 1) * anisotropy_factor
+        l_z = (n_z - 1) / (n_x - 1) * anisotropy_factor
 
-    if name =='2d':
+    if name == '2d':
         n_sigma = 2
         num_classes = [4, 1]
         model_name = 'branched_erfnet'
-    elif name=='3d':
+    elif name == '3d':
         n_sigma = 3
-        num_classes= [6, 1]
+        num_classes = [6, 1]
         model_name = 'branched_erfnet_3d'
+    elif name == '3d_sliced':
+        n_sigma = 3
+        num_classes = [4, 1]
+        model_name = 'branched_erfnet'
+    elif name =='3d_ilp':
+        n_sigma = 2
+        num_classes = [4, 1]
+        model_name = 'branched_erfnet'
+
+    if name in ['3d_sliced']:
+        sliced_mode = True
+    else:
+        sliced_mode = False
 
     test_configs = dict(
         ap_val=ap_val,
         min_mask_sum=min_mask_sum,
         min_unclustered_sum=min_unclustered_sum,
         min_object_size=min_object_size,
+        mean_object_size=mean_object_size,
         n_sigma=n_sigma,
         tta=tta,
         seed_thresh=seed_thresh,
+        fg_thresh=fg_thresh,
         cuda=cuda,
         save_results=save_results,
         save_images=save_images,
         save_dir=save_dir,
         checkpoint_path=checkpoint_path,
-        grid_x = n_x,
-        grid_y = n_y,
-        grid_z = n_z,
-        pixel_x = l_x,
-        pixel_y = l_y,
-        pixel_z = l_z,
-        name = name,
+        grid_x=n_x,
+        grid_y=n_y,
+        grid_z=n_z,
+        pixel_x=l_x,
+        pixel_y=l_y,
+        pixel_z=l_z,
+        name=name,
+        anisotropy_factor=anisotropy_factor,
+        cluster_fast = cluster_fast,
+        expand_grid=expand_grid,
         dataset={
             'name': name,
             'kwargs': {
                 'data_dir': data_dir,
-                'type': 'test',
+                'type': type,
+                'data_type': data_type,
+                'norm': norm,
+                'sliced_mode': sliced_mode,
+                'anisotropy_factor': anisotropy_factor,
+                'normalization': normalization,
                 'transform': my_transforms.get_transform([
                     {
                         'name': 'ToTensorFromNumpy',
@@ -231,9 +255,8 @@ def create_test_configs_dict(data_dir,
         "`test_configs` dictionary successfully created with: "
         "\n -- evaluation images accessed from {}, "
         "\n -- trained weights accessed from {}, "
-        "\n -- seediness threshold set at {}, "
         "\n -- output directory chosen as {}".format(
-            data_dir, checkpoint_path, seed_thresh, save_dir))
+            data_dir, checkpoint_path, save_dir))
     return test_configs
 
 
@@ -249,7 +272,7 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='2d'):
         name: string
     """
     model_dict = {
-        'name': 'branched_erfnet' if name=='2d' else 'branched_erfnet_3d',
+        'name': 'branched_erfnet' if name == '2d' else 'branched_erfnet_3d',
         'kwargs': {
             'num_classes': num_classes,
             'input_channels': input_channels,
@@ -261,7 +284,7 @@ def create_model_dict(input_channels, num_classes=[4, 1], name='2d'):
     return model_dict
 
 
-def create_loss_dict(foreground_weight = 10, n_sigma = 2, w_inst = 1, w_var = 10, w_seed = 1):
+def create_loss_dict(foreground_weight=10, n_sigma=2, w_inst=1, w_var=10, w_seed=1):
     """
         Creates `loss_dict` dictionary from parameters.
         Parameters
@@ -290,22 +313,22 @@ def create_loss_dict(foreground_weight = 10, n_sigma = 2, w_inst = 1, w_var = 10
 
 def create_configs(save_dir,
                    resume_path,
-                   one_hot = False,
+                   one_hot=False,
                    display=False,
-                   display_embedding = False,
+                   display_embedding=False,
                    display_it=5,
                    n_epochs=200,
                    train_lr=5e-4,
                    cuda=True,
                    save=True,
-                   n_z = None,
-                   n_y = 1024,
-                   n_x = 1024,
-                   anisotropy_factor = None,
-                   l_y = 1,
-                   l_x = 1,
-                   save_checkpoint_frequency = None,
-                   display_zslice = None
+                   n_z=None,
+                   n_y=1024,
+                   n_x=1024,
+                   anisotropy_factor=None,
+                   l_y=1,
+                   l_x=1,
+                   save_checkpoint_frequency=None,
+                   display_zslice=None
                    ):
     """
         Creates `configs` dictionary from parameters.
@@ -347,35 +370,33 @@ def create_configs(save_dir,
     if (n_z is None):
         l_z = None
     else:
-        l_z = (n_z - 1)/(n_x - 1) * anisotropy_factor
+        l_z = (n_z - 1) / (n_x - 1) * anisotropy_factor
 
-    configs = dict(train_lr = train_lr,
-                   n_epochs = n_epochs,
-                   cuda = cuda,
-                   display = display,
-                   display_embedding = display_embedding,
-                   display_it = display_it,
-                   save = save,
-                   save_dir = save_dir,
-                   resume_path = resume_path,
-                   grid_z = n_z,
-                   grid_y = n_y,
-                   grid_x = n_x,
-                   pixel_z = l_z,
-                   pixel_y = l_y,
-                   pixel_x = l_x,
+    configs = dict(train_lr=train_lr,
+                   n_epochs=n_epochs,
+                   cuda=cuda,
+                   display=display,
+                   display_embedding=display_embedding,
+                   display_it=display_it,
+                   save=save,
+                   save_dir=save_dir,
+                   resume_path=resume_path,
+                   grid_z=n_z,
+                   grid_y=n_y,
+                   grid_x=n_x,
+                   pixel_z=l_z,
+                   pixel_y=l_y,
+                   pixel_x=l_x,
                    one_hot=one_hot,
                    save_checkpoint_frequency=save_checkpoint_frequency,
-                   display_zslice = display_zslice
-                  )
+                   display_zslice=display_zslice
+                   )
     print(
         "`configs` dictionary successfully created with: "
         "\n -- n_epochs equal to {}, "
-        "\n -- display equal to {}, "
         "\n -- save_dir equal to {}, "
         "\n -- n_z equal to {}, "
         "\n -- n_y equal to {}, "
         "\n -- n_x equal to {}, "
-        "\n -- one_hot equal to {}, "
-        .format(n_epochs, display, save_dir, n_z, n_y, n_x, one_hot))
+        .format(n_epochs, save_dir, n_z, n_y, n_x))
     return configs
