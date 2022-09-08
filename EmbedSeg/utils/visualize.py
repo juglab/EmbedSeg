@@ -252,12 +252,14 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     # rows represent three views of the sstack. cols represent the image, center and label
     spec = gridspec.GridSpec(ncols=3, nrows=4, figure=fig)
     im = tifffile.imread(im_filename)
-    gt_label, _, _ = relabel_sequential(tifffile.imread(gt_filename))
+    if gt_filename is not None:
+        gt_label, _, _ = relabel_sequential(tifffile.imread(gt_filename))
     pred_label, _, _ = relabel_sequential(tifffile.imread(pred_filename))
     seed = tifffile.imread(seed_filename)
 
     im = zoom(im, (anisotropy, 1, 1), order=0)
-    gt_label = zoom(gt_label, (anisotropy, 1, 1), order=0)
+    if gt_filename is not None:
+        gt_label = zoom(gt_label, (anisotropy, 1, 1), order=0)
     pred_label = zoom(pred_label, (anisotropy, 1, 1), order=0)
     seed = zoom(seed, (anisotropy, 1, 1), order=0)
 
@@ -276,7 +278,8 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     ax0.xaxis.set_label_position('top')
 
     ax1 = fig.add_subplot(spec[1, 0])
-    ax1.imshow(gt_label[z_mid, ...], cmap=new_cmp, interpolation='None')
+    if gt_filename is not None:
+        ax1.imshow(gt_label[z_mid, ...], cmap=new_cmp, interpolation='None')
     ax1.axes.get_xaxis().set_visible(False)
     ax1.set_yticklabels([])
     ax1.set_yticks([])
@@ -309,7 +312,8 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     ax8.xaxis.set_label_position('top')
 
     ax9 = fig.add_subplot(spec[1, 1])
-    ax9.imshow(gt_label[..., x_mid], cmap=new_cmp, interpolation='None')
+    if gt_filename is not None:
+        ax9.imshow(gt_label[..., x_mid], cmap=new_cmp, interpolation='None')
     ax9.axes.get_xaxis().set_visible(False)
     ax9.set_yticklabels([])
     ax9.set_yticks([])
@@ -336,7 +340,8 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     ax4.xaxis.set_label_position('top')
 
     ax5 = fig.add_subplot(spec[1, 2])
-    ax5.imshow(np.transpose(gt_label[:, y_mid, ...]), cmap=new_cmp, interpolation='None')
+    if gt_filename is not None:
+        ax5.imshow(np.transpose(gt_label[:, y_mid, ...]), cmap=new_cmp, interpolation='None')
     ax5.axes.get_xaxis().set_visible(False)
     ax5.set_yticklabels([])
     ax5.set_yticks([])
