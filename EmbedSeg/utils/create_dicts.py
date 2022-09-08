@@ -95,10 +95,8 @@ def create_dataset_dict(data_dir,
     print("`{}_dataset_dict` dictionary successfully created with: \n -- {} images accessed from {}, "
           "\n -- number of images per epoch equal to {}, "
           "\n -- batch size set at {}, "
-          "\n -- virtual batch multiplier set as {}, "
-          "\n -- one_hot set as {}, "
           .format(type, type, os.path.join(data_dir, project_name, type, 'images'), size, batch_size,
-                  virtual_batch_multiplier, one_hot))
+                  ))
     return dataset_dict
 
 
@@ -396,11 +394,9 @@ def create_configs(save_dir,
     print(
         "`configs` dictionary successfully created with: "
         "\n -- n_epochs equal to {}, "
-        "\n -- display equal to {}, "
         "\n -- save_dir equal to {}, "
         "\n -- n_z equal to {}, "
         "\n -- n_y equal to {}, "
         "\n -- n_x equal to {}, "
-        "\n -- one_hot equal to {}, "
-            .format(n_epochs, display, save_dir, n_z, n_y, n_x, one_hot))
+        .format(n_epochs, save_dir, n_z, n_y, n_x))
     return configs
