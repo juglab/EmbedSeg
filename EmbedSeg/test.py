@@ -19,6 +19,28 @@ from skimage.segmentation import relabel_sequential
 
 
 def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, mask_region=None):
+    """Entry function for inferring on test images
+
+        Parameters
+        ----------
+        test_configs : dictionary
+            Dictionary containing testing-specific parameters (for e.g. the `seed_thresh`  to use)
+        optimize : bool, optional
+            It is possible to determine the best performing `fg_thresh` by optimizing over different values on the validation sub-set
+            By default and in the absence of optimization (i.e. `optimize=False`), the fg_thresh  is set equal to 0.5
+        maxiter: int
+            Number of iterations of optimization.
+            Comes into play, only if `optimize=True`
+        verbose: bool, optional
+            If set equal to True, prints the AP_dsb for each image individually
+        mask_region: list of lists, optional
+            If a certain region of the image is not labelled in the GT label mask, that can be specified here.
+            This enables comparison of the model prediction only with the area which is labeled in the GT label mask
+        Returns
+        -------
+        result_dic: Dictionary
+            Keys include the employed `fg_thresh` and the corresponding `AP_dsb` at IoU threshold = 0.5
+        """
     n_sigma = test_configs['n_sigma']
     ap_val = test_configs['ap_val']
     min_mask_sum = test_configs['min_mask_sum']
@@ -135,7 +157,40 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
 
 
 def stitch_3d(instance_map_tile, instance_map_current, z_tile=None, y_tile=None, x_tile=None, last=1,
-              num_overlap_slices=4):
+              num_overlap_pixels=4):
+    """Stitching instance segmentations together in case the full 3D image doesn't fit in one go, on the GPU
+
+                Parameters
+                ----------
+                instance_map_tile : numpy array
+                    instance segmentation over a tiled view of the image
+
+                instance_map_current: numpy array
+                    instance segmentation over the complete, large image
+
+                z_tile: int
+                    z position of the top left corner of the tile wrt the complete image
+
+                y_tile: int
+                    y position of the top left corner of the tile wrt the complete image
+
+                x_tile: int
+                    x position of the top left corner of the tile wrt the complete image
+
+                last: int
+                    number of objects currently present in the `instance_map_current`
+
+                num_overlap_pixels: int
+                    number of overlapping pixels while considering the next tile
+
+                Returns
+                -------
+                tuple (int, numpy array)
+                    (updated number of objects currently present in the `instance_map_current`,
+                    updated instance segmentation over the full image)
+
+                """
+
     mask = instance_map_tile > 0
 
     D = instance_map_tile.shape[0]
@@ -171,24 +226,24 @@ def stitch_3d(instance_map_tile, instance_map_current, z_tile=None, y_tile=None,
             last = len(ids_tile) + 1
         else:
             if x_tile != 0 and y_tile == 0 and z_tile == 0:
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_pixels] = 1
             elif x_tile == 0 and y_tile != 0 and z_tile == 0:
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_pixels, x_tile:x_tile + W] = 1
             elif x_tile != 0 and y_tile != 0 and z_tile == 0:
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_pixels] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_pixels, x_tile:x_tile + W] = 1
             elif x_tile == 0 and y_tile == 0 and z_tile != 0:
-                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + num_overlap_pixels, y_tile:y_tile + H, x_tile:x_tile + W] = 1
             elif x_tile != 0 and y_tile == 0 and z_tile != 0:
-                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
+                mask_overlap[z_tile:z_tile + num_overlap_pixels, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_pixels] = 1
             elif x_tile == 0 and y_tile != 0 and z_tile != 0:
-                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + num_overlap_pixels, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_pixels, x_tile:x_tile + W] = 1
             elif x_tile != 0 and y_tile != 0 and z_tile != 0:
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_slices] = 1
-                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_slices, x_tile:x_tile + W] = 1
-                mask_overlap[z_tile:z_tile + num_overlap_slices, y_tile:y_tile + H, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + H, x_tile:x_tile + num_overlap_pixels] = 1
+                mask_overlap[z_tile:z_tile + D, y_tile:y_tile + num_overlap_pixels, x_tile:x_tile + W] = 1
+                mask_overlap[z_tile:z_tile + num_overlap_pixels, y_tile:y_tile + H, x_tile:x_tile + W] = 1
 
             # identify ids in the complete tile, not just the overlap region,
             ids_tile_all = np.unique(instance_map_tile)
@@ -250,6 +305,19 @@ def stitch_3d(instance_map_tile, instance_map_current, z_tile=None, y_tile=None,
 
 
 def test(fg_thresh, *args):
+    """Infer the trained 2D model on 2D images
+
+            Parameters
+            ----------
+            fg_thresh : float
+                foreground threshold decides which pixels are considered for clustering, based on the predicted seediness scores at these pixels.
+            args: dictionary
+                Contains other paremeters such as `ap_val`, `seed_thresh` etc
+            Returns
+            -------
+            float
+                Average `AP_dsb` over all test images
+            """
     seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, save_images, \
     save_results, save_dir, verbose, grid_x, grid_y, pixel_x, pixel_y, one_hot, n_sigma, cluster_fast, expand_grid = args
 
@@ -393,11 +461,36 @@ def test(fg_thresh, *args):
 
 
 def round_up_8(x):
+    """Helper function for rounding integer to next multiple of 8
+
+        e.g:
+        round_up_8(10) = 16
+
+            Parameters
+            ----------
+            x : int
+                Integer
+            Returns
+            -------
+            int
+            """
     return (int(x) + 7) & (-8)
 
 
 def pad_3d(im_tile):
-    # pad this tile to be a multiple of 8
+    """Pad a 3D  image so that its dimensions are all multiples of 8
+
+                Parameters
+                ----------
+                im_tile : numpy array (D x H x W)
+                   3D Image which needs to be padded!
+                Returns
+                -------
+                (numpy array, int, int, int)
+                (Padded 3D image, diff in x, diff in y, diff in z)
+                The last three values are the amount of padding needed in the x, y and z dimensions
+                """
+
     multiple_z = im_tile.shape[2] // 8
     multiple_y = im_tile.shape[3] // 8
     multiple_x = im_tile.shape[4] // 8
@@ -421,6 +514,19 @@ def pad_3d(im_tile):
 
 
 def test_3d(fg_thresh, *args):
+    """Infer the trained 3D model on 3D images
+
+            Parameters
+            ----------
+            fg_thresh : float
+                foreground threshold decides which pixels are considered for clustering, based on the predicted seediness scores at these pixels.
+            args: dictionary
+                Contains other paremeters such as `ap_val`, `seed_thresh` etc
+            Returns
+            -------
+            float
+                Average `AP_dsb` over all test images
+            """
     seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, \
     save_images, save_results, save_dir, verbose, grid_x, grid_y, grid_z, \
     pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma, cluster_fast, expand_grid = args
@@ -562,6 +668,19 @@ def test_3d(fg_thresh, *args):
 
 
 def test_3d_sliced(fg_thresh, *args):
+    """Infer the trained 2D model on 3D images in a `sliced` fashion
+
+                Parameters
+                ----------
+                fg_thresh : float
+                    foreground threshold decides which pixels are considered for clustering, based on the predicted seediness scores at these pixels.
+                args: dictionary
+                    Contains other paremeters such as `ap_val`, `seed_thresh` etc
+                Returns
+                -------
+                float
+                    Average `AP_dsb` over all test images
+                """
     seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, save_images, save_results, save_dir, \
     verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, \
     one_hot, mask_region, n_sigma, anisotropy_factor = args
@@ -749,9 +868,24 @@ def test_3d_sliced(fg_thresh, *args):
 
 
 def perform_ilp(instance_map_z, min_depth=3, mean_object_size=3363):
-    """
-    instance_map_z is a list of numpy tensors (YX) on the cpu
-    """
+    """Perform integer linear programming to minimize a cost function
+
+                Parameters
+                ----------
+                instance_map_z : list
+                                List of instance segmentations (numpy arrays) for all z slices
+                min_depth: int, optional
+                    Allows building edges to slices which are `min_depth` slices away.
+                    This is useful in case for one of the slices, an object is not segmented.
+                mean_object_size: int, optional
+                    The mean object size as calculated from the GT masks available for the training data.
+                    This is useful to compute the cost of appearance and disappearance.
+                    For example, a large segmented object should have a high cost appearance and disappearance cost.
+                Returns
+                -------
+                numpy array (D x H x W)
+                    The instance segmentation for the entire 3D image
+                """
 
     import gurobipy as gp
     import networkx as nx
@@ -907,6 +1041,19 @@ def perform_ilp(instance_map_z, min_depth=3, mean_object_size=3363):
 
 
 def test_3d_ilp(fg_thresh, *args):
+    """Infer the trained 2D model on 3D images and then stitch the independent predictions on 2D z-slices by solving a global optimization task
+
+                Parameters
+                ----------
+                fg_thresh : float
+                    foreground threshold decides which pixels are considered for clustering, based on the predicted seediness scores at these pixels.
+                args: dictionary
+                    Contains other paremeters such as `ap_val`, `seed_thresh` etc
+                Returns
+                -------
+                float
+                    Average `AP_dsb` over all test images
+                """
     seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, mean_object_size, tta, model, dataset_it, save_images, save_results, save_dir, \
     verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, \
     one_hot, mask_region, n_sigma, anisotropy_factor = args
