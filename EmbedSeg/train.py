@@ -1,6 +1,6 @@
+import os
 import shutil
 
-import os
 import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
@@ -15,8 +15,28 @@ torch.backends.cudnn.benchmark = True
 import numpy as np
 
 
-# https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
 def train(virtual_batch_multiplier, one_hot, n_sigma, args):
+    """Trains 2D Model with virtual multiplier
+
+    Virtual batching code inspired from:
+    https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
+
+    Parameters
+    ----------
+    virtual_batch_multiplier : int
+        Set to 1 by default. Effective batch size is product of virtual_batch_multiplier and batch-size
+    one_hot : bool
+        In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+    n_sigma: int
+        Should be equal to 2 for a 2D model
+    args: dictionary
+
+    Returns
+    -------
+    float
+        Average loss
+    """
+
     # define meters
     loss_meter = AverageMeter()
     # put model into training mode
@@ -43,8 +63,40 @@ def train(virtual_batch_multiplier, one_hot, n_sigma, args):
 
 
 def train_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y, pixel_x, pixel_y, n_sigma,
-                  args):  # this is without virtual batches!
+                  args):
+    """Trains 2D Model without virtual multiplier.
 
+        Parameters
+        ----------
+        display : bool
+            Displays input, GT, model predictions during training
+        display_embedding : bool
+            Displays embeddings for train (crop) images
+        display_it: int
+                Displays a new training image, the corresponding GT and model prediction every `display_it` crop images
+        one_hot: bool
+            In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+        grid_x: int
+            Number of pixels along x dimension which constitute a tile
+        grid_y: int
+            Number of pixels along y dimension which constitute a tile
+        pixel_x: float
+            The grid length along x is mapped to `pixel_x`.
+            For example, if grid_x = 1024 and pixel_x = 1.0, then each dX or the spacing between consecutive pixels
+            along the x dimension is set equal to pixel_x/grid_x = 1.0/1024
+        pixel_y: float
+            The grid length along y is mapped to `pixel_y`.
+            For example, if grid_y = 1024 and pixel_y = 1.0, then each dY or the spacing between consecutive pixels
+            along the y dimension is set equal to pixel_y/grid_y = 1.0/1024
+        n_sigma: int
+            Should be set equal to 2 for a 2D model
+        args: dictionary
+
+        Returns
+        -------
+        float
+            Average loss
+        """
     # define meters
     loss_meter = AverageMeter()
     # put model into training mode
@@ -108,8 +160,29 @@ def train_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_
     return loss_meter.avg
 
 
-# https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
 def train_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
+    """Trains 3D Model with virtual multiplier
+
+        Virtual batching code inspired from:
+        https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
+
+        Parameters
+        ----------
+        virtual_batch_multiplier : int
+            Set to 1 by default. Effective batch size is product of virtual_batch_multiplier and batch-size
+        one_hot : bool
+            In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+            This parameter is not relevant for 3D data, and will be deprecated in a future code update
+        n_sigma: int
+            Should be equal to 3 for a 3D model
+        args: dictionary
+
+        Returns
+        -------
+        float
+            Average loss
+        """
+
     # define meters
     loss_meter = AverageMeter()
     # put model into training mode
@@ -137,9 +210,49 @@ def train_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
 
 
 def train_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z,
-                     n_sigma,
-                     zslice, args):  # this is without virtual batches!
+                     n_sigma, zslice, args):
+    """Trains 3D Model without virtual multiplier.
 
+            Parameters
+            ----------
+            display : bool
+                Displays input, GT, model predictions during training
+            display_embedding : bool
+                Displays embeddings for train (crop) images
+            display_it: int
+                Displays a new training image, the corresponding GT and model prediction every `display_it` crop images
+            one_hot: bool
+                In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+                This parameter is not relevant for 3D data and will be deprecated in a future code update
+            grid_x: int
+                Number of pixels along x dimension which constitute a tile
+            grid_y: int
+                Number of pixels along y dimension which constitute a tile
+            grid_z: int
+                Number of pixels along z dimension which constitute a tile
+            pixel_x: float
+                The grid length along x is mapped to `pixel_x`.
+                For example, if grid_x = 1024 and pixel_x = 1.0, then each dX or the spacing between consecutive pixels
+                along the x dimension is set equal to pixel_x/grid_x = 1.0/1024
+            pixel_y: float
+                The grid length along y is mapped to `pixel_y`.
+                For example, if grid_y = 1024 and pixel_y = 1.0, then each dY or the spacing between consecutive pixels
+                along the y dimension is set equal to pixel_y/grid_y = 1.0/1024
+            pixel_z: float
+                The grid length along z is mapped to `pixel_z`.
+                For example, if grid_z = 1024 and pixel_z = 1.0, then each dY or the spacing between consecutive pixels
+                along the z dimension is set equal to pixel_z/grid_z = 1.0/1024
+            n_sigma: int
+                Should be set equal to 3 for a 3D model
+            zslice: int
+                If `display` = True, then the the raw image at z = z_slice is displayed during training
+            args: dictionary
+
+            Returns
+            -------
+            float
+                Average loss
+            """
     # define meters
     loss_meter = AverageMeter()
     # put model into training mode
@@ -180,6 +293,27 @@ def train_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, gr
 
 
 def val(virtual_batch_multiplier, one_hot, n_sigma, args):
+    """Validates a 2D Model with virtual multiplier
+
+        Virtual batching code inspired from:
+        https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
+
+        Parameters
+        ----------
+        virtual_batch_multiplier : int
+            Set to 1 by default. Effective batch size is product of virtual_batch_multiplier and batch_size
+        one_hot : bool
+            In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+        n_sigma: int
+            Should be equal to 2 for a 2D model
+        args: dictionary
+
+        Returns
+        -------
+        tuple: (float, float)
+            Average loss, Average IoU
+        """
+
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
     # put model into eval mode
@@ -200,6 +334,40 @@ def val(virtual_batch_multiplier, one_hot, n_sigma, args):
 
 
 def val_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y, pixel_x, pixel_y, n_sigma, args):
+    """Validates a 2D Model without virtual multiplier.
+
+            Parameters
+            ----------
+            display : bool
+                Displays input, GT, model predictions during training
+            display_embedding : bool
+                Displays embeddings for train (crop) images
+            display_it: int
+                Displays a new validation image, the corresponding GT and model prediction every `display_it` crop images
+            one_hot: bool
+                In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+            grid_x: int
+                Number of pixels along x dimension which constitute a tile
+            grid_y: int
+                Number of pixels along y dimension which constitute a tile
+            pixel_x: float
+                The grid length along x is mapped to `pixel_x`.
+                For example, if grid_x = 1024 and pixel_x = 1.0, then each dX or the spacing between consecutive pixels
+                along the x dimension is set equal to pixel_x/grid_x = 1.0/1024
+            pixel_y: float
+                The grid length along y is mapped to `pixel_y`.
+                For example, if grid_y = 1024 and pixel_y = 1.0, then each dY or the spacing between consecutive pixels
+                along the y dimension is set equal to pixel_y/grid_y = 1.0/1024
+            n_sigma: int
+                Should be set equal to 2 for a 2D model
+            args: dictionary
+
+            Returns
+            -------
+            tuple: (float, float)
+                Average loss, Average IoU
+            """
+
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
     # put model into eval mode
@@ -260,6 +428,27 @@ def val_vanilla(display, display_embedding, display_it, one_hot, grid_x, grid_y,
 
 
 def val_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
+    """Validates a 3D Model with virtual multiplier
+
+            Virtual batching code inspired from:
+            https://medium.com/huggingface/training-larger-batches-practical-tips-on-1-gpu-multi-gpu-distributed-setups-ec88c3e51255
+
+            Parameters
+            ----------
+            virtual_batch_multiplier : int
+                Set to 1 by default. Effective batch size is product of virtual_batch_multiplier and batch-size
+            one_hot : bool
+                In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+                This parameter is not relevant for 3D data, and will be deprecated in a future code update
+            n_sigma: int
+                Should be equal to 3 for a 3D model
+            args: dictionary
+
+            Returns
+            -------
+            tuple: (float, float)
+                Average loss, Average IoU
+            """
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
     # put model into eval mode
@@ -281,6 +470,48 @@ def val_3d(virtual_batch_multiplier, one_hot, n_sigma, args):
 
 def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z,
                    n_sigma, zslice, args):
+    """Validates a 3D Model without virtual multiplier.
+
+                Parameters
+                ----------
+                display : bool
+                    Displays input, GT, model predictions during training
+                display_embedding : bool
+                    Displays embeddings for train (crop) images
+                display_it: int
+                    Displays a new training image, the corresponding GT and model prediction every `display_it` crop images
+                one_hot: bool
+                    In case the GT labels are available in one-hot fashion, this parameter is set equal to True
+                    This parameter is not relevant for 3D data and will be deprecated in a future code update
+                grid_x: int
+                    Number of pixels along x dimension which constitute a tile
+                grid_y: int
+                    Number of pixels along y dimension which constitute a tile
+                grid_z: int
+                    Number of pixels along z dimension which constitute a tile
+                pixel_x: float
+                    The grid length along x is mapped to `pixel_x`.
+                    For example, if grid_x = 1024 and pixel_x = 1.0, then each dX or the spacing between consecutive pixels
+                    along the x dimension is set equal to pixel_x/grid_x = 1.0/1024
+                pixel_y: float
+                    The grid length along y is mapped to `pixel_y`.
+                    For example, if grid_y = 1024 and pixel_y = 1.0, then each dY or the spacing between consecutive pixels
+                    along the y dimension is set equal to pixel_y/grid_y = 1.0/1024
+                pixel_z: float
+                    The grid length along z is mapped to `pixel_z`.
+                    For example, if grid_z = 1024 and pixel_z = 1.0, then each dY or the spacing between consecutive pixels
+                    along the z dimension is set equal to pixel_z/grid_z = 1.0/1024
+                n_sigma: int
+                    Should be set equal to 3 for a 3D model
+                zslice: int
+                    If `display` = True, then the the raw image at z = z_slice is displayed during training
+                args: dictionary
+
+                Returns
+                -------
+                tuple: (float, float)
+                    Average loss, Average IoU
+                """
     # define meters
     loss_meter, iou_meter = AverageMeter(), AverageMeter()
     # put model into eval mode
@@ -315,13 +546,46 @@ def val_vanilla_3d(display, display_embedding, display_it, one_hot, grid_x, grid
 
 
 def invert_one_hot(image):
+    """Inverts a one-hot label mask.
+
+                Parameters
+                ----------
+                image : numpy array (I x H x W)
+                    Label mask present in one-hot fashion (i.e. with 0s and 1s and multiple z slices)
+                    here `I` is the number of GT or predicted objects
+
+                Returns
+                -------
+                numpy array (H x W)
+                    A flattened label mask with objects labelled from 1 ... I
+                """
     instance = np.zeros((image.shape[1], image.shape[2]), dtype="uint16")
     for z in range(image.shape[0]):
-        instance = np.where(image[z] > 0, instance + z + 1, instance)  # TODO - not completely accurate!
+        instance = np.where(image[z] > 0, instance + z + 1, instance)
+        # TODO - Alternate ways of inverting one-hot label masks would exist !!
     return instance
 
 
 def save_checkpoint(state, is_best, epoch, save_dir, save_checkpoint_frequency, name='checkpoint.pth'):
+    """Trains 3D Model without virtual multiplier.
+
+                Parameters
+                ----------
+                state : dictionary
+                    The state of the model weights
+                is_best : bool
+                    In case the validation IoU is higher at the end of a certain epoch than previously recorded, `is_best` is set equal to True
+                epoch: int
+                    The current epoch
+                save_checkpoint_frequency: int
+                    The model weights are saved every `save_checkpoint_frequency` epochs
+                name: str, optional
+                    The model weights are saved under the name `name`
+
+                Returns
+                -------
+
+                """
     print('=> saving checkpoint')
     file_name = os.path.join(save_dir, name)
     torch.save(state, file_name)
@@ -335,6 +599,27 @@ def save_checkpoint(state, is_best, epoch, save_dir, save_checkpoint_frequency, 
 
 
 def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, configs, color_map='magma'):
+    """Entry function for beginning the model training procedure.
+
+                Parameters
+                ----------
+                train_dataset_dict : dictionary
+                    Dictionary containing training data loader-specific parameters (for e.g. train_batch_size etc)
+                val_dataset_dict : dictionary
+                    Dictionary containing validation data loader-specific parameters (for e.g. val_batch_size etc)
+                model_dict: dictionary
+                    Dictionary containing model specific parameters (for e.g. number of outputs)
+                loss_dict: dictionary
+                    Dictionary containing loss specific parameters (for e.g. convex weights of different loss terms - w_iou, w_var etc)
+                configs: dictionary
+                    Dictionary containing general training parameters (for e.g. num_epochs, learning_rate etc)
+                color_map: str, optional
+                   Name of color map. Used in case configs['display'] is set equal to True
+
+                Returns
+                -------
+                """
+
     if configs['save']:
         if not os.path.exists(configs['save_dir']):
             os.makedirs(configs['save_dir'])
