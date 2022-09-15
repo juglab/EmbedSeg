@@ -4,11 +4,18 @@ import numpy as np
 
 def to_cuda(im_numpy):
     """
+    Converts 2D Numpy Image on CPU to PyTorch Tensor on GPU, with an extra dimension
 
-    :param im_numpy: numpy array
-            C x Y x X
-    :return: torch tensor
-            B x C x Y x X
+    Parameters
+    -------
+
+    im_numpy: numpy array (YX)
+
+
+    Returns
+    -------
+        Pytorch Tensor (1YX)
+
     """
     im_numpy = im_numpy[np.newaxis, ...]
     return torch.from_numpy(im_numpy).float().cuda()
@@ -16,30 +23,56 @@ def to_cuda(im_numpy):
 
 def to_numpy(im_cuda):
     """
-    :param im_cuda: torch tensor
-            B x C x Y x X
-    :return: numpy array
-            B x C x Y x X
+    Converts PyTorch Tensor on GPU to Numpy Array on CPU
+
+    Parameters
+    -------
+
+    im_cuda: PyTorch tensor
+
+
+    Returns
+    -------
+        numpy array
+
     """
     return im_cuda.cpu().detach().numpy()
 
 
 def process_flips(im_numpy):
     """
-    :param im_numpy: numpy array
+    Converts the model output (5YX) so that y-offset is correctly handled
+    (x-offset, y-offset, x-margin bandwidth, y-margin bandwidth, seediness score)
 
-    :return: numpy array
+    Parameters
+    -------
+
+    im_numpy: Numpy Array (5YX)
+
+
+    Returns
+    -------
+    im_numpy_correct: Numpy Array (5YX)
+
     """
     im_numpy_correct = im_numpy
-    im_numpy_correct[0, 1, ...] = -1 * im_numpy[
-        0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
+    im_numpy_correct[0, 1, ...] = -1 * im_numpy[0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
     return im_numpy_correct
 
 def to_cuda_3d(im_numpy):
     """
-    :param im_numpy: numpy array
-            B x C x Z x Y x X
-    :return:
+    Converts 3D Numpy Image on CPU to PyTorch Tensor on GPU, with an extra dimension
+
+    Parameters
+    -------
+
+    im_numpy: numpy array (ZYX)
+
+
+    Returns
+    -------
+        Pytorch Tensor (CZYX)
+
     """
     im_numpy = im_numpy[np.newaxis, ...]
     return torch.from_numpy(im_numpy).float().cuda()
@@ -47,10 +80,18 @@ def to_cuda_3d(im_numpy):
 
 def apply_tta_2d(im, model):
     """
+    Apply Test Time Augmentation for 2D Images
 
-    :param im:
-    :param model:
-    :return:
+    Parameters
+    -------
+
+    im: Numpy Array (1CYX)
+    model: PyTorch Model
+
+    Returns
+    -------
+    PyTorch Tensor on GPU (15YX)
+
     """
     im_numpy = im.cpu().detach().numpy() # BCYX
     im0 = im_numpy[0, ...]  # remove batch dimension, now CYX
@@ -80,7 +121,7 @@ def apply_tta_2d(im, model):
     output6 = model(im6_cuda)
     output7 = model(im7_cuda)
 
-    # detransform outputs
+    # de-transform outputs
     output0_numpy = to_numpy(output0)
     output1_numpy = to_numpy(output1)
     output2_numpy = to_numpy(output2)
@@ -163,11 +204,19 @@ def apply_tta_2d(im, model):
 
 def apply_tta_3d(im, model, index):
     """
+    Apply Test Time Augmentation for 3D Images
 
-    :param im:
-    :param model:
-    :param index:
-    :return:
+    Parameters
+    -------
+
+    im: Numpy Array (1CYX)
+    model: PyTorch Model
+    index: int (0 to 15)
+
+    Returns
+    -------
+    Numpy Array on CPU (17ZYX)
+
     """
     im_numpy = im.cpu().detach().numpy()  # BCZYX
     im_transformed = im_numpy[0, ...]  # remove batch dimension, now CZYX
