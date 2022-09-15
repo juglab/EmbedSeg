@@ -81,6 +81,20 @@ def normalize_mi_ma(x, mi, ma, clip=False, eps=1e-20, dtype=np.float32):
 
 
 def normalize_mean_std(x, axis=None):
+    """Normalize image based on mean and standard deviation of intensity
+
+    Parameters
+    ----------
+    x : numpy array
+        Input Image
+    axis: int
+        Set equal to 0, 1, 2 ... in case you normalize based on dimension
+        Can be useful if the image contains multiple channels and each channel should be independently normalized
+    Returns
+    -------
+    numpy array: float
+        Normalized image with mean equal to 0 and standard deviation equal to 1
+    """
     x = x.astype(np.float32)
     if axis is None:
         mean = np.mean(x)
@@ -95,6 +109,17 @@ def normalize_mean_std(x, axis=None):
 
 @jit(nopython=True)
 def pairwise_python(X):
+    """Helper function to compute pairwise Euclidean distance for a matrix of size M x N containing M,  N-dimensional row entries
+
+        Parameters
+        ----------
+        x : numpy array
+            Input Image
+        Returns
+        -------
+        D : numpy array, M x M
+            D[i, j] corresponds to the Euclidean Distance between the i th and j th rows of X
+        """
     M = X.shape[0]
     N = X.shape[1]
     D = np.empty((M, M), dtype=np.float32)
@@ -111,6 +136,7 @@ def pairwise_python(X):
 def generate_center_image(instance, center, ids, one_hot):
     """
         Generates a `center_image` which is one (True) for all center locations and zero (False) otherwise.
+
         Parameters
         ----------
         instance: numpy array
@@ -123,6 +149,10 @@ def generate_center_image(instance, center, ids, one_hot):
         one_hot: boolean
             True (in this case, `instance` has shape DYX) or False (in this case, `instance` has shape YX).
 
+        Returns
+        -------
+        numpy array: bool
+        Center image with center locations set to True
     """
 
     if (not one_hot):
@@ -150,6 +180,28 @@ def generate_center_image(instance, center, ids, one_hot):
 
 
 def generate_center_image_3d(instance, center, ids, one_hot, anisotropy_factor, speed_up):
+    """
+        Generates a `center_image` for 3D image crops which is one (True) for all center locations and zero (False) otherwise.
+
+        Parameters
+        ----------
+        instance: numpy array
+            `instance` image containing unique `ids` for each object (ZYX)
+        center: string
+            One of 'centroid', 'approximate-medoid' or 'medoid'.
+        ids: list
+            Unique ids corresponding to the objects present in the instance image.
+        one_hot: boolean
+            This parameter is not used in the 3D setting and will be deprecated.
+        speed_up: int
+            This computes the centers of crops faster by down-sampling crops along x and y dimensions.
+
+        Returns
+        -------
+        numpy array: bool
+        Center image with center locations set to True
+        """
+
     center_image = np.zeros(instance.shape, dtype=bool)
     instance_downsampled = instance[:, ::int(speed_up), ::int(speed_up)]  # down sample in x and y
     for j, id in enumerate(ids):
@@ -173,10 +225,16 @@ def generate_center_image_3d(instance, center, ids, one_hot, anisotropy_factor, 
 def sparsify(instance):
     """
         Ensures that no slice in the `instance` image crop is empty (completely zero)
+
         Parameters
         ----------
         instance: numpy array,
             `instance` image present in a one-hot encoded style where each object is one in it own slice and zero elsewhere.
+
+        Returns
+        ----------
+        numpy array
+        Numpy array with number of slices which are fewer or equal to the number of slices in `instance`
     """
     instance_sparse = []
     for z in range(instance.shape[0]):
@@ -186,6 +244,19 @@ def sparsify(instance):
 
 
 def encode(filename, img, one_hot=False):
+    """Convert label mask (img) in a run-length encoded fashion and save to a csv file
+
+        Parameters
+        ----------
+        filename : str
+            Name of csv file
+        img: numpy array
+            Label mask image containing instance segmentations
+        one_hot: boolean, optional
+            If the Label mask is present in a one-hot encoded fashion, set this equal to True
+        Returns
+        -------
+        """
     data = []
 
     if one_hot:
@@ -206,27 +277,41 @@ def encode(filename, img, one_hot=False):
 def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-percentile', one_hot=False,
             data_type='8-bit', normalization_factor=None,
             rle_encode=False, fraction_max_ids=1.0, background_id=0):
-    """
-        Processes the actual images and instances to generate crops of size `crop-size`.
-        Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
-        Parameters
-        ----------
-        im: numpy array
-            Raw image which must be processed (segmented)
-        inst: numpy array
-            Corresponding instance mask which contains objects identified by their unique ids (YX)
-        crops_dir: string
-            Indicates the path where the crops should be saved
-        center: string
-            One of `centroid`, `approximate-medoid` or `medoid`
-        norm: boolean
-            Setting this to True would perfom min-max normalization on the raw image prior to cropping them
-            False by default
-        one_hot: boolean
-            If True,  each object is encoded as one in it own individual slice in the `inst` image and zero elsewhere.
-            False, by default
+    """Entry function which generates 2D crops from 2D images (one_hot is False)
 
-    """
+            Parameters
+            ----------
+            im: numpy array
+                raw image
+            inst: numpy array
+                label mask
+            crops_dir: str
+                Path to where the crops are saved
+            data_subset: str
+                Set equal to one of `train` or `val`
+            crop_size: int
+                Height and Width of crop
+            center: str
+                Set equal to one of `centroid`, `medoid` or `approximate-medoid`
+            norm: str
+                Set equal to one of `min-max-percentile` or `absolute` or `mean-std`
+            one_hot: bool
+                If label masks are available in one-hot encoded fashion, set `one_hot` equal to True
+            data_type: str
+                Set equal to `8-bit` or `16-bit`
+            normalization_factor: int
+                In case, norm is set equal to `absolute`, then the image intensities are divided by the `normalization_factor`
+            rle_encode: bool
+                If set equal to True, the label masks are saved as csv files
+            fraction_max_ids: float, between 0 and 1.0
+                If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
+            background_id: int, optional
+                Id of the background in the label mask
+
+            Returns
+            -------
+            """
+
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -323,33 +408,49 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
                norm='min-max-percentile',
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', normalization_factor=None,
                rle_encode=False, fraction_max_ids=1.0, background_id=0):
-    """
-    :param im: string
-            Path to image file
-    :param inst: string
-            Path to instance file
-    :param crops_dir: string
-            Path to crops directory
-    :param data_subset: string
-            One of 'train' or 'val'
-    :param crop_size_x: int
-            Size of image along x dimension
-    :param crop_size_y: int
-            Size of image along y dimension
-    :param crop_size_z: int
-            Size of image along z dimension
-    :param center: string
-            One of 'medoid' or 'centroid'
-    :param norm: boolean
-            if True, then images are min-max normalized and then cropped
-    :param one_hot: boolean
-            set to True, if the instances are encoded in a one-hot fashion
-    :param anisotropy_factor: float
-            ratio of size of voxel in z dimension to size of voxel in x or y dimension
-    :param speed_up: int
-            for faster medoid evaluation, the x and y dimensions are sub-sampled by this factor
-    :return:
-    """
+    """Entry function which generates 3D crops from 3D images
+
+                Parameters
+                ----------
+                im: numpy array
+                    raw image
+                inst: numpy array
+                    label mask
+                crops_dir: str
+                    Path to where the crops are saved
+                data_subset: str
+                    Set equal to one of `train` or `val`
+                crop_size_x: int
+                    Width of crop
+                crop_size_y: int
+                    Height of crop
+                crop_size_z: int
+                    Depth of crop
+                center: str
+                    Set equal to one of `centroid`, `medoid` or `approximate-medoid`
+                norm: str
+                    Set equal to one of `min-max-percentile` or `absolute` or `mean-std`
+                one_hot: bool
+                    If label masks are available in one-hot encoded fashion, set `one_hot` equal to True
+                    This parameter should be always set equal to False for 3D processing and will be deprecated in a later release
+                anisotropy_factor: float
+                    This parameter should be set equal to the ratio of the z pixel size to the x or y pixel size
+                    Here, we assume that the x or y pixel size is the same
+                    (If the imaging is down-sampled in the z dimension, `anisotropy_factor` is greater than 1.0)
+                data_type: str
+                    Set equal to `8-bit` or `16-bit`
+                normalization_factor: int
+                    In case, norm is set equal to `absolute`, then the image intensities are divided by the `normalization_factor`
+                rle_encode: bool
+                    If set equal to True, the label masks are saved as csv files
+                fraction_max_ids: float, between 0 and 1.0
+                    If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
+                background_id: int, optional
+                    Id of the background in the label mask
+
+                Returns
+                -------
+                """
 
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
@@ -421,27 +522,37 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
 
 def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot=True, norm='min-max-percentile',
                     data_type='8-bit', normalization_factor=None, fraction_max_ids=1.0, rle_encode=False):
-    """
-        Processes the actual images and the one-hot encoded instances to generate crops of size `crop-size`.
-        Additionally, one could perform min-max normalization of the crops at this stage (False, by default)
-        Parameters
-        ----------
-        im: numpy array
-            Raw image which must be processed (segmented)
-        inst: numpy array
-            Corresponding instance mask which contains objects present in a one-hot encoded style (DYX)
-        crops_dir: string
-            Indicates the path where the crops should be saved
-        center: string,
-            One of `centroid`, `approximate-medoid` or `medoid`
-        norm: boolean
-            Setting this to True would perfom min-max normalization on the raw image prior to cropping them
-            False by default
-        one_hot: boolean
-            If True,  each object is encoded as one in it own individual slice in the `inst` image and zero elsewhere.
-            False, by default
+    """Entry function which generates 2D crops from 2D images (one_hot is True)
 
-    """
+                Parameters
+                ----------
+                im: numpy array
+                    raw image
+                inst: numpy array
+                    label mask
+                crops_dir: str
+                    Path to where the crops are saved
+                data_subset: str
+                    Set equal to one of `train` or `val`
+                crop_size: int
+                    Height and Width of crop
+                center: str
+                    Set equal to one of `centroid`, `medoid` or `approximate-medoid`
+                one_hot: bool
+                    If label masks are available in one-hot encoded fashion, set `one_hot` equal to True
+                norm: str
+                    Set equal to one of `min-max-percentile` or `absolute` or `mean-std`
+                data_type: str
+                    Set equal to `8-bit` or `16-bit`
+                normalization_factor: int
+                    In case, norm is set equal to `absolute`, then the image intensities are divided by the `normalization_factor`
+                fraction_max_ids: float, between 0 and 1.0
+                    If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
+                rle_encode: bool
+                    If set equal to True, the label masks are saved as csv files
+                Returns
+                -------
+                """
 
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
@@ -511,6 +622,55 @@ def process_one_hot(im, inst, crops_dir, data_subset, crop_size, center, one_hot
 def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                       one_hot=False, anisotropy_factor=1.0, norm='min-max-percentile', data_type='8-bit',
                       normalization_factor=None, fraction_max_ids=0.01, rle_encode=False, background_id=0):
+    """
+            Processes the actual images and corresponding GT label masks to generate crops of size `crop-size`.
+            Here each volumetric (3D) image is processed sliced-wise to generate 2D crops in XY, YZ and ZX dimensions.
+
+            Parameters
+            ----------
+            im: numpy array
+                Raw image which must be processed (segmented)
+            inst: numpy array
+                Corresponding instance mask which contains objects present in a one-hot encoded style (DYX)
+            crops_dir: string
+                Indicates the path where the crops should be saved
+            crop_size_x: int
+                Length of the crop along the x dimension
+            crop_size_y: int
+                Length of the crop along the y dimension
+            crop_size_z: int
+                Length of the crop along the z dimension
+            center: string,
+                One of `centroid`, `approximate-medoid` or `medoid`
+            one_hot: boolean
+                If True,  each object is encoded as one in it own individual slice in the `inst` image and zero elsewhere.
+                False, by default
+            anisotropy_factor: float
+                    This parameter should be set equal to the ratio of the z pixel size to the x or y pixel size
+                    Here, we assume that the x or y pixel size is the same
+                    (If the imaging is downsampled in the z dimension, `anisotropy_factor` is greater than 1.0)
+            norm: str
+                This should be set equal to one of 'min-max-percentile', 'mean-std' or 'absolute'
+            data_type: str
+                This should be set equal to one of '8-bit' or '16-bit'
+                This only comes into play if norm is set equal to 'absolute'
+            normalization_factor: int, None by default
+                This can be set equal to any arbitrary value
+                If not set, then for '8-bit' images, it is taken as 255
+                and for '16-bit' images, it is taken as 65535
+                This only comes into play if norm is set equal to 'absolute'
+            fraction_max_ids: float, between 0 and 1.0
+                This can be set to a small value in case one doesn't wish to produce 2D object centred crops from all objects
+                but only a fraction of objects
+            rle_encode: bool
+                If true, then label masks for crops are not saved as tiffs but as csv files (in a run-length encoded fashion)
+            background_id: int
+                The label id which corresponds to the background
+                This is sset equal to 0 by default
+            Returns
+                -------
+        """
+
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
@@ -642,6 +802,50 @@ def process_3d_sliced(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y
 def process_3d_ilp(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, center,
                    one_hot=False, norm='min-max-percentile', data_type='8-bit',
                    normalization_factor=None, fraction_max_ids=0.10, rle_encode=False, background_id=0):
+    """
+            Processes the actual images and corresponding GT label masks to generate crops of size `crop-size`.
+            Here each volumetric (3D) image is processed sliced-wise to generate 2D crops in XY dimensions.
+
+            Parameters
+            ----------
+            im: numpy array
+                Raw image which must be processed (segmented)
+            inst: numpy array
+                Corresponding instance mask which contains objects present in a one-hot encoded style (DYX)
+            crops_dir: string
+                Indicates the path where the crops should be saved
+            crop_size_y: int
+                Height of the crop in the y dimension
+            crop_size_x: int
+                Width of the crop in the x dimension
+            center: string,
+                One of `centroid`, `approximate-medoid` or `medoid`
+            norm: boolean
+                Setting this to True would perfom min-max normalization on the raw image prior to cropping them
+                False by default
+            one_hot: boolean
+                If True,  each object is encoded as one in it own individual slice in the `inst` image and zero elsewhere.
+                False, by default
+            data_type: str
+                This should be set equal to one of '8-bit' or '16-bit'
+                This only comes into play if norm is set equal to 'absolute'
+            normalization_factor: int, None by default
+                This can be set equal to any arbitrary value
+                If not set, then for '8-bit' images, it is taken as 255
+                and for '16-bit' images, it is taken as 65535
+                This only comes into play if norm is set equal to 'absolute'
+            fraction_max_ids: float, between 0 and 1.0
+                This can be set to a small value in case one doesn't wish to produce 2D object centred crops from all objects
+                but only a fraction of objects
+            rle_encode: bool
+                If true, then label masks for crops are not saved as tiffs but as csv files (in a run-length encoded fashion)
+            background_id: int
+                The label id which corresponds to the background
+                This is sset equal to 0 by default
+            Returns
+                -------
+        """
+
     image_path = os.path.join(crops_dir, data_subset, 'images/')
     instance_path = os.path.join(crops_dir, data_subset, 'masks/')
     center_image_path = os.path.join(crops_dir, data_subset, 'center-' + center + '/')
