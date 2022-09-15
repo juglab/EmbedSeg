@@ -307,7 +307,7 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, ba
     -------
 
     data_dir: string
-        Name of directroy containing data
+        Name of directory containing data
     project_name: string
         Name of directory containing images and instances
     train_val_name: string
@@ -353,7 +353,7 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
     data_dir: string
         Name of directory storing the data. For example, 'data'
     project_name: string
-        Name of directroy containing data specific to this project. For example, 'dsb-2018'
+        Name of directory containing data specific to this project. For example, 'dsb-2018'
     train_val_name: string
         Name of directory containing 'train' and 'val' images and instance masks
     mode: string
@@ -508,7 +508,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
         data_dir: string
             Name of directory storing the data. For example, 'data'
         project_name: string
-            Name of directroy containing data specific to this project. For example, 'dsb-2018'
+            Name of directory containing data specific to this project. For example, 'dsb-2018'
         train_val_name: string
             Name of directory containing 'train' and 'val' images and instance masks
         mode: string
@@ -670,7 +670,7 @@ def get_data_properties(data_dir, project_name, train_val_name, test_name, mode,
             second `int` argument in tuple specifies number of ids which must be processed
     anisotropy_factor: float
             Ratio of the real-world size of the z-dimension to the x or y dimension in the raw images
-            If the image is downsampled along the z-dimension, then `anisotropy_factor` is greater than 1.0
+            If the image is down-sampled along the z-dimension, then `anisotropy_factor` is greater than 1.0
     background_id: int
             Label id corresponding to the background
 
