@@ -1,25 +1,29 @@
-import numpy as np
 import os
 import shutil
 import subprocess as sp
-import tifffile
 import urllib.request
 import zipfile
 from glob import glob
+
+import numpy as np
+import tifffile
 from tqdm import tqdm
 
 
 def extract_data(zip_url, project_name, data_dir='../../../data/'):
     """
         Extracts data from `zip_url` to the location identified by `data_dir` and `project_name` parameters.
+
         Parameters
         ----------
         zip_url: string
-            Indicates the url
+            Indicates the external url
         project_name: string
             Indicates the path to the sub-directory at the location identified by the parameter `data_dir`
         data_dir: string
             Indicates the path to the directory where the data should be saved.
+        Returns
+        -------
 
     """
     zip_path = os.path.join(data_dir, project_name + '.zip')
@@ -54,12 +58,16 @@ def extract_data(zip_url, project_name, data_dir='../../../data/'):
 def make_dirs(data_dir, project_name):
     """
         Makes directories - `train`, `val, `test` and subdirectories under each `images` and `masks`
+
         Parameters
         ----------
         data_dir: string
             Indicates the path where the `project` lives.
         project_name: string
             Indicates the name of the sub-folder under the location identified by `data_dir`.
+
+        Returns
+        -------
     """
     image_path_train = os.path.join(data_dir, project_name, 'train', 'images/')
     instance_path_train = os.path.join(data_dir, project_name, 'train', 'masks/')
@@ -96,22 +104,30 @@ def make_dirs(data_dir, project_name):
 def split_train_crops(project_name, center, crops_dir='crops', subset=0.15, by_fraction=True, train_name='train',
                       seed=1000):
     """
-    :param project_name: string
+    Moves a fraction of crops (specified by `subset`) extracted from train images into a separate directory
+
+    Parameters
+    ----------
+    project_name: string
            Name of dataset. for example, set this to 'dsb-2018', or 'bbbc010-2012'
-    :param center: string
+    center: string
             Set this to 'medoid' or 'centroid'
-    :param crops_dir: string
+    crops_dir: string
             Name of the crops directory. Default value = 'crops'
-    :param subset: int/float
+    subset: int/float
             if by_fraction is True, then subset should be set equal to the percentage of image crops reserved for validation.
             if by_fraction is False, then subset should be set equal to the number of image crops reserved for validation.
-    :param by_fraction: boolean
+    by_fraction: boolean
             if True, then reserve a fraction <1 of image crops for validation
-    :param train_name: string
+            if False, then reserve the absolute number of image crops as specified by `subset` for validation
+    train_name: string
             name of directory containing train image and instance crops
-    :param seed: int
-    :return:
+    seed: int
+
+    Returns
+    -------
     """
+
     image_dir = os.path.join(crops_dir, project_name, train_name, 'images')
     instance_dir = os.path.join(crops_dir, project_name, train_name, 'masks')
     center_dir = os.path.join(crops_dir, project_name, train_name, 'center-' + center)
@@ -174,6 +190,7 @@ def split_train_crops(project_name, center, crops_dir='crops', subset=0.15, by_f
 def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_fraction=True, seed=1000):
     """
         Splits the `train` directory into `val` directory using the partition percentage of `subset`.
+
         Parameters
         ----------
         data_dir: string
@@ -187,6 +204,9 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
         seed: integer
             Allows for the same partition to be used in each experiment.
             Change this if you would like to obtain results with different train-val partitions.
+        Returns
+        -------
+
     """
 
     image_dir = os.path.join(data_dir, project_name, 'download', train_val_name, 'images')
@@ -226,6 +246,7 @@ def split_train_val(data_dir, project_name, train_val_name, subset=0.15, by_frac
 def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fraction=True, seed=1000):
     """
         Splits the `train` directory into `test` directory using the partition percentage of `subset`.
+
         Parameters
         ----------
         data_dir: string
@@ -239,6 +260,9 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
         seed: integer
             Allows for the same partition to be used in each experiment.
             Change this if you would like to obtain results with different train-test partitions.
+
+        Returns
+        -------
     """
 
     image_dir = os.path.join(data_dir, project_name, 'download', train_test_name, 'images')
@@ -278,17 +302,26 @@ def split_train_test(data_dir, project_name, train_test_name, subset=0.5, by_fra
 
 def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, background_id=0):
     """
-    :param data_dir: string
-            Name of directroy containing data
-    :param project_name: string
-            Name of directory containing images and instances
-    :param train_val_name: string
-            one of 'train' or 'val'
-    :param mode: string
-            one of '2d' or '3d'
-    :param one_hot: boolean
-            set to True, if instances are encoded in a on-hot fashion
-    :return:
+
+    Parameters
+    -------
+
+    data_dir: string
+        Name of directroy containing data
+    project_name: string
+        Name of directory containing images and instances
+    train_val_name: string
+        one of 'train' or 'val'
+    mode: string
+        one of '2d' or '3d'
+    background_id: int, default
+        Id which corresponds to the background.
+
+    Returns
+    -------
+    float:
+        Ratio of the number of foreground pixels to the background pixels, averaged over all available label masks
+
     """
     instance_names = []
     for name in train_val_name:
@@ -312,18 +345,38 @@ def calculate_foreground_weight(data_dir, project_name, train_val_name, mode, ba
 
 def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=0):
     """
-    :param data_dir: string
-            Name of directory storing the data. For example, 'data'
-    :param project_name: string
-            Name of directroy containing data specific to this project. For example, 'dsb-2018'
-    :param train_val_name: string
-            Name of directory containing 'train' and 'val' images and instance masks
-    :param mode: string
-            One of '2d', '3d', '3d_sliced', '3d_ilp'
-    :param one_hot: boolean
-            set to True, if instances are encoded as one-hot
-    :return:
+    Calculate the mean object size from the available label masks
+
+    Parameters
+    -------
+
+    data_dir: string
+        Name of directory storing the data. For example, 'data'
+    project_name: string
+        Name of directroy containing data specific to this project. For example, 'dsb-2018'
+    train_val_name: string
+        Name of directory containing 'train' and 'val' images and instance masks
+    mode: string
+        One of '2d', '3d', '3d_sliced', '3d_ilp'
+    one_hot: boolean
+        set to True, if instances are encoded as one-hot
+    process_k: tuple (int, int)
+        Parameter for speeding up the calculation of the object size by considering only a fewer number of images and objects
+        The first argument in the tuple is the number of images one should consider
+        The second argument in the tuple is the number of objects in the image, one should consider
+    background_id: int
+        Id which corresponds to the background.
+
+    Returns
+    -------
+    (float, float, float, float, float, float, float, float, float)
+    (minimum number of pixels in an object, mean number of pixels in an object, max number of pixels in an object,
+    mean number of pixels along the x dimension, standard deviation of number of pixels along the x dimension,
+    mean number of pixels along the y dimension, standard deviation of number of pixels along the y dimension,
+    mean number of pixels along the z dimension, standard deviation of number of pixels along the z dimension)
+
     """
+
     instance_names = []
     size_list_x = []
     size_list_y = []
@@ -361,16 +414,16 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
             else:
                 n_ids = len(ids)
             for id in tqdm(ids[:n_ids], position=0, leave=True):
-            #for id in ids:
+                # for id in ids:
                 z, y, x = np.where(ma == id)
                 size_list_z.append(np.max(z) - np.min(z))
                 size_list_y.append(np.max(y) - np.min(y))
                 size_list_x.append(np.max(x) - np.min(x))
                 size_list.append(len(x))
-        elif (not one_hot and mode =='3d_ilp'):
+        elif (not one_hot and mode == '3d_ilp'):
             for z in range(ma.shape[0]):
                 ids = np.unique(ma[z])
-                ids = ids[ids!=background_id]
+                ids = ids[ids != background_id]
                 for id in ids:
                     y, x = np.where(ma[z] == id)
                     size_list_y.append(np.max(y) - np.min(y))
@@ -394,20 +447,28 @@ def calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot,
                                                                                             np.mean(size_list_z)))
         print("Std. dev object size of the `{}` dataset along `z` is equal to {:.3f}".format(project_name,
                                                                                              np.std(size_list_z)))
-        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(
+            np.float), \
                np.mean(size_list_z).astype(np.float), np.mean(size_list_y).astype(
             np.float), np.mean(size_list_x).astype(np.float), \
                np.std(size_list_z).astype(np.float), np.std(size_list_y).astype(np.float), np.std(size_list_x).astype(
             np.float)
 
     else:
-        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(np.float), \
-               None, np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float), None, np.std(size_list_y).astype(
+        return np.min(size_list).astype(np.float), np.mean(size_list).astype(np.float), np.max(size_list).astype(
+            np.float), \
+               None, np.mean(size_list_y).astype(np.float), np.mean(size_list_x).astype(np.float), None, np.std(
+            size_list_y).astype(
             np.float), np.std(size_list_x).astype(np.float)
 
 
-# https://stackoverflow.com/questions/59567226/how-to-programmatically-determine-available-gpu-memory-with-tensorflow/59571639#59571639
 def get_gpu_memory():
+    """
+        Identifies the max memory on the operating GPU
+        https://stackoverflow.com/questions/59567226/how-to-programmatically-determine-available-gpu-memory-with-tensorflow/59571639#59571639
+
+    """
+
     command = "nvidia-smi --query-gpu=memory.total --format=csv"
     memory_total_info = sp.check_output(command.split()).decode('ascii').split('\n')[:-1][1:]
     memory_total_values = [int(x.split()[0]) for i, x in enumerate(memory_total_info)]
@@ -415,11 +476,58 @@ def get_gpu_memory():
 
 
 def round_up_8(x):
+    """
+    Rounds up `x` to the next nearest multiple of 8
+    for e.g. round_up_8(7) = 8
+
+    Parameters
+    -------
+
+    x: int
+
+    Returns
+    -------
+    int
+    Next nearest multiple to 8
+
+    """
     return (x.astype(int) + 7) & (-8)
 
 
 def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, anisotropy_factor=1.0,
                                   scale_factor=4.0):
+    """
+        Identifies the tile size to be used during training and evaluation.
+        We look for the largest evaluation image.
+        If the entire image could fit on the available GPU memory (based on an empirical idea), then  the tile size is set equal to those dimensions.
+        If the dimensions are larger, then a smaller tile size as specified by the GPU memory is used.
+
+        Parameters
+        -------
+
+        data_dir: string
+            Name of directory storing the data. For example, 'data'
+        project_name: string
+            Name of directroy containing data specific to this project. For example, 'dsb-2018'
+        train_val_name: string
+            Name of directory containing 'train' and 'val' images and instance masks
+        mode: string
+            One of '2d', '3d', '3d_sliced', '3d_ilp'
+        anisotropy_factor: float
+            Ratio of the pixel size along the z dimension to the pixel size along the x/y dimension
+            Here we assume that the pixel size along the x and y dimension is the same
+        scale_factor: float, default
+            Used to evaluate the maximum GPU memory which shall be used during evaluation
+
+        Returns
+        -------
+
+        (int, int, int)
+        (tile size along z, tile size along y, tile size along x)
+
+        """
+
+
     image_names = []
     size_z_list = []
     size_y_list = []
@@ -451,7 +559,7 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
         else:
             max_x, max_y = max_x_y, max_x_y
         print("Tile size of the `{}` dataset set equal to ({}, {})".format(project_name, max_y, max_x))
-        if mode =='3d_sliced':
+        if mode == '3d_sliced':
             return max_y.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
         else:
             return None, max_y.astype(np.float), max_x.astype(np.float)
@@ -466,9 +574,9 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
 
         max_x_y = np.maximum(max_x, max_y)
 
-        total_mem = get_gpu_memory()[0] * 1e6 # Note: get_gpu_memory returns a list
-        tile_size_temp = np.asarray((total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3)) # 3D
-        if (tile_size_temp**3)/anisotropy_factor < (max_x_y**2)*max_z:
+        total_mem = get_gpu_memory()[0] * 1e6  # Note: get_gpu_memory returns a list
+        tile_size_temp = np.asarray((total_mem * anisotropy_factor / (3 * 4 * scale_factor)) ** (1 / 3))  # 3D
+        if (tile_size_temp ** 3) / anisotropy_factor < (max_x_y ** 2) * max_z:
             max_x = round_up_8(tile_size_temp)
             max_y = round_up_8(tile_size_temp)
             max_z = round_up_8(tile_size_temp / anisotropy_factor)
@@ -482,18 +590,30 @@ def calculate_max_eval_image_size(data_dir, project_name, test_name, mode, aniso
         return max_z.astype(np.float), max_y.astype(np.float), max_x.astype(np.float)
 
 
-def calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot, background_id = 0):
+def calculate_avg_background_intensity(data_dir, project_name, train_val_name, one_hot, background_id=0):
     """
-    :param data_dir: string
-            Path to directory containing all data
-    :param project_name:string
-            Path to directory containing project-specific images and instances
-    :param train_val_name:string
-            One of 'train' or 'val'
-    :param one_hot:string
-            set to True, if instances are encoded in a one-hot fashion
-    :return:
+    Calculates the average intensity in the regions of the raw image which corresponds to the background label
+
+    Parameters
+    -------
+
+    data_dir: str
+        Path to directory containing all data
+    project_name: str
+        Path to directory containing project-specific images and instances
+    train_val_name: str
+        One of 'train' or 'val'
+    one_hot: str
+        Set to True, if instances are encoded in a one-hot fashion
+    background_id: int
+         Label corresponding to the background
+
+    Returns
+    -------
+        float
+        Average background intensity of the dataset
     """
+
     instance_names = []
     image_names = []
     for name in train_val_name:
@@ -527,37 +647,55 @@ def calculate_avg_background_intensity(data_dir, project_name, train_val_name, o
 
 
 def get_data_properties(data_dir, project_name, train_val_name, test_name, mode, one_hot=False, process_k=None,
-                        anisotropy_factor=1.0, background_id = 0):
+                        anisotropy_factor=1.0, background_id=0):
     """
-    :param data_dir: string
+
+    Parameters
+    -------
+
+    data_dir: string
             Path to directory containing all data
-    :param project_name: string
+    project_name: string
             Path to directory containing project-specific images and instances
-    :param train_val_name: string
+    train_val_name: string
             One of 'train' or 'val'
-    :param test_name: string
+    test_name: string
             Name of test directory.
-    :param mode: string
+    mode: string
             One of '2d', '3d', '3d_sliced', '3d_ilp'
-    :param one_hot: boolean
+    one_hot: boolean
             set to True, if instances are encoded in a one-hot fashion
-    :param process_k (int, int)
+    process_k (int, int)
             first `int` argument in tuple specifies number of images which must be processed
             second `int` argument in tuple specifies number of ids which must be processed
-    :return:
+    anisotropy_factor: float
+            Ratio of the real-world size of the z-dimension to the x or y dimension in the raw images
+            If the image is downsampled along the z-dimension, then `anisotropy_factor` is greater than 1.0
+    background_id: int
+            Label id corresponding to the background
+
+    Returns
+    -------
+    data_properties_dir: dictionary
+            keys include `foreground_weight`, `min_object_size`, `project_name`, `avg_background_intensity` etc
+
     """
     data_properties_dir = {}
     data_properties_dir['foreground_weight'] = calculate_foreground_weight(data_dir, project_name, train_val_name, mode,
                                                                            background_id=background_id)
-    data_properties_dir['min_object_size'], data_properties_dir['mean_object_size'], data_properties_dir['max_object_size'], \
+    data_properties_dir['min_object_size'], data_properties_dir['mean_object_size'], data_properties_dir[
+        'max_object_size'], \
     data_properties_dir['avg_object_size_z'], data_properties_dir[
         'avg_object_size_y'], data_properties_dir['avg_object_size_x'], \
     data_properties_dir['stdev_object_size_z'], data_properties_dir['stdev_object_size_y'], data_properties_dir[
-        'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k, background_id=background_id)
+        'stdev_object_size_x'] = calculate_object_size(data_dir, project_name, train_val_name, mode, one_hot, process_k,
+                                                       background_id=background_id)
     data_properties_dir['n_z'], data_properties_dir['n_y'], data_properties_dir['n_x'] = calculate_max_eval_image_size(
-        data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode, anisotropy_factor=anisotropy_factor)
+        data_dir=data_dir, project_name=project_name, test_name=test_name, mode=mode,
+        anisotropy_factor=anisotropy_factor)
     data_properties_dir['one_hot'] = one_hot
     data_properties_dir['avg_background_intensity'] = calculate_avg_background_intensity(data_dir, project_name,
-                                                                                         train_val_name, one_hot, background_id=background_id)
+                                                                                         train_val_name, one_hot,
+                                                                                         background_id=background_id)
     data_properties_dir['project_name'] = project_name
     return data_properties_dir
