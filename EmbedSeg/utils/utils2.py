@@ -261,20 +261,40 @@ def matching(y_true, y_pred, thresh=0.5, criterion='iou', report_matches=False):
     return _single(thresh) if np.isscalar(thresh) else tuple(map(_single, thresh))
 
 
-def obtain_AP_one_hot(gt_image, prediction_image, ap_val):
+def obtain_APdsb_one_hot(gt_image, prediction_image, ap_val):
+    """
+        Obtain Average Precision (AP_dsb) or Accuracy for GT, one-hot label masks
+
+        Parameters
+        -------
+
+        gt_image: numpy array
+            label mask (IYX)
+        prediction_image: numpy array
+            label mask (YX)
+        ap_val: float
+            IoU Threshold between 0 and 1.0
+
+        Returns
+        -------
+        score: float
+            Average Precision (AP_dsb) or Accuracy
+
+        """
+
     gt_ids = np.arange(gt_image.shape[0])
     prediction_ids = np.unique(prediction_image)[1:]  # ignore background
-    iouTable = np.zeros((len(prediction_ids), len(gt_ids)))
+    iou_table = np.zeros((len(prediction_ids), len(gt_ids)))
 
-    for j in range(iouTable.shape[0]):
-        for k in range(iouTable.shape[1]):
+    for j in range(iou_table.shape[0]):
+        for k in range(iou_table.shape[1]):
             intersection = ((gt_image[k] > 0) & (prediction_image == prediction_ids[j]))
             union = ((gt_image[k] > 0) | (prediction_image == prediction_ids[j]))
-            iouTable[j, k] = np.sum(intersection) / np.sum(union)
+            iou_table[j, k] = np.sum(intersection) / np.sum(union)
 
-    iouTableBinary = iouTable >= ap_val
-    FP = np.sum(np.sum(iouTableBinary, axis=1) == 0)
-    FN = np.sum(np.sum(iouTableBinary, axis=0) == 0)
-    TP = iouTableBinary.shape[1] - FN
+    iou_table_binary = iou_table >= ap_val
+    FP = np.sum(np.sum(iou_table_binary, axis=1) == 0)
+    FN = np.sum(np.sum(iou_table_binary, axis=0) == 0)
+    TP = iou_table_binary.shape[1] - FN
     score = TP / (TP + FP + FN)
     return score

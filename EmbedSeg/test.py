@@ -7,7 +7,7 @@ from tqdm import tqdm
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import Cluster, Cluster_3d
-from EmbedSeg.utils.utils2 import matching_dataset, obtain_AP_one_hot
+from EmbedSeg.utils.utils2 import matching_dataset, obtain_APdsb_one_hot
 
 torch.backends.cudnn.benchmark = True
 import numpy as np
@@ -393,8 +393,8 @@ def test(fg_thresh, *args):
 
             if (one_hot):
                 if ('instance' in sample):
-                    all_results = obtain_AP_one_hot(gt_image=sample['instance'].squeeze().cpu().detach().numpy(),
-                                                    prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
+                    all_results = obtain_APdsb_one_hot(gt_image=sample['instance'].squeeze().cpu().detach().numpy(),
+                                                       prediction_image=instance_map.cpu().detach().numpy(), ap_val=ap_val)
                     if (verbose):
                         print("Accuracy: {:.03f}".format(all_results), flush=True)
                     result_list.append(all_results)
