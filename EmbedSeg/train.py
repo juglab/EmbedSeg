@@ -671,7 +671,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     def lambda_(epoch):
         return pow((1 - ((epoch) / 200)), 0.9)
 
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_, )
+    #scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_, )
 
     if (configs['grid_z'] is None):
         # clustering
@@ -702,7 +702,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
         logger.data = state['logger_data']
 
     for epoch in range(start_epoch, configs['n_epochs']):
-
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_, last_epoch=epoch - 1)
         print('Starting epoch {}'.format(epoch))
         # scheduler.step(epoch)
 
