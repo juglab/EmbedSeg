@@ -647,7 +647,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
     # val dataloader
     val_dataset = get_dataset(val_dataset_dict['name'], val_dataset_dict['kwargs'])
     val_dataset_it = torch.utils.data.DataLoader(val_dataset, batch_size=val_dataset_dict['batch_size'], shuffle=True,
-                                                 drop_last=True, num_workers=val_dataset_dict['workers'],
+                                                 drop_last=False, num_workers=val_dataset_dict['workers'],
                                                  pin_memory=True if configs['cuda'] else False)
 
     # set model
