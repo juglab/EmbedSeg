@@ -14,8 +14,52 @@ from EmbedSeg.utils.generate_crops import normalize_min_max_percentile, normaliz
 
 class TwoDimensionalDataset(Dataset):
     """
-        TwoDimensionalDataset class
-    """
+            A class used to create a PyTorch Dataset for handling 2D images and label masks
+
+            Attributes
+            ----------
+            image_list: list of strings containing paths to the images
+
+            instance_list: list of strings containing paths to the GT instances
+
+            center_image_list: list of strings containing paths to the center images
+
+            bg_id: int
+                Id corresponding to the background, default=0
+            size: int
+                This is set equal to a different value than `real_size` in case the epoch is desired to be shorter
+
+            real_size: int
+                Actual number of the number of images
+
+            transform: PyTorch transform
+
+            one_hot: bool
+                Should be set equal to True
+
+            norm: str
+                Should be set equal to one of `min-max-percentile`, `absolute`, `mean-std`
+
+            type: str
+                Should be set equal to one of `train`, `val` or `test`
+            data_type: str
+                Should be set equal to one of `8-bit` or `16-bit`
+
+            normalization: bool
+                Should be equal to True for test images and set equal to False during training (since crops are already normalized)
+
+            Methods
+            -------
+            __init__: Initializes an object of class `TwoDimensionalDataset`
+
+            __len__: Returns self.real_size if self.size = None
+
+            convert_yx_to_cyx: Adds an additional dimension for channel
+
+            decode_instance: In case, instances are available as tiffs, this method decodes them
+
+            rle_decode: In case, instances are available as csv files (and not tiffs), this method decodes them
+            """
 
     def __init__(self, data_dir='./', center='center-medoid', type="train", bg_id=0, size=None, transform=None,
                  one_hot=False, norm='min-max-percentile', data_type='8-bit', normalization=False,

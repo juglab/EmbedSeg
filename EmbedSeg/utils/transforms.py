@@ -1,17 +1,57 @@
 import collections
+
 import numpy as np
 import torch
 from torchvision.transforms import transforms as T
 
 
 class RandomRotationsAndFlips(T.RandomRotation):
+    """
+    A class used to represent Random Rotations and Flips for Augmenting 2D Image Data
+
+    ...
+
+    Attributes
+    ----------
+    keys : dictionary
+        keys include `instance`, `label`, `center-image`
+        See `TwoDimensionalDataset.py`
+    one_hot : bool
+        Should be set to True, if the GT label masks are present in a one-hot encoded fashion
+
+    Methods
+    -------
+    __call__: Returns rotated or flipped image, instance label mask and center image
+
+    """
+
     def __init__(self, keys=[], one_hot=False, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        keys : dictionary
+            keys include `instance`, `label`, `center-image`
+            See `TwoDimensionalDataset.py`
+        one_hot : bool
+            Should be set to True, if the GT label masks are present in a one-hot encoded fashion
+
+        """
+
         super().__init__(*args, **kwargs)
         self.keys = keys
-
         self.one_hot = one_hot
 
     def __call__(self, sample):
+        """
+            Parameters
+            ----------
+            sample
+
+            Returns
+            ----------
+            sample
+
+        """
 
         angle = self.get_params(self.degrees)
         times = np.random.choice(4)
@@ -34,14 +74,54 @@ class RandomRotationsAndFlips(T.RandomRotation):
 
 
 class RandomRotationsAndFlips_3d(T.RandomRotation):
+    """
+        A class used to represent Random Rotations and Flips for Augmenting 3D Image Data
 
-    def __init__(self, keys=[], one_hot = False, *args, **kwargs):
+        ...
+
+        Attributes
+        ----------
+        keys : dictionary
+            keys include `instance`, `label`, `center-image`
+            See `ThreeDimensionalDataset.py`
+        one_hot : bool
+            Should be set to True, if the GT label masks are present in a one-hot encoded fashion
+            Not applicable to 3D. This parameter will be deprecated in a future release
+
+        Methods
+        -------
+        __call__: Returns rotated or flipped image, instance label mask and center image
+
+        """
+
+    def __init__(self, keys=[], one_hot=False, *args, **kwargs):
+        """
+        Parameters
+        ----------
+        keys : dictionary
+            keys include `instance`, `label`, `center-image`
+            See `ThreeDimensionalDataset.py`
+        one_hot : bool
+            Should be set to True, if the GT label masks are present in a one-hot encoded fashion
+            Not applicable to 3D. This parameter will be deprecated in a future release
+
+        """
+
         super().__init__(*args, **kwargs)
         self.keys = keys
         self.one_hot = one_hot
 
-
     def __call__(self, sample):
+        """
+        Parameters
+        ----------
+        sample
+
+        Returns
+        ----------
+        sample
+
+        """
         angle = self.get_params(self.degrees)
         times = np.random.choice(4)
         flip = np.random.choice(2)
@@ -50,31 +130,48 @@ class RandomRotationsAndFlips_3d(T.RandomRotation):
 
         for idx, k in enumerate(self.keys):
 
-            assert(k in sample)
-            if dir_rot == 0: # rotate about ZY
-                temp = np.ascontiguousarray(np.rot90(sample[k], 2*times, (1, 2)))
-            elif dir_rot == 1: # rotate about YX
+            assert (k in sample)
+            if dir_rot == 0:  # rotate about ZY
+                temp = np.ascontiguousarray(np.rot90(sample[k], 2 * times, (1, 2)))
+            elif dir_rot == 1:  # rotate about YX
                 temp = np.ascontiguousarray(np.rot90(sample[k], times, (2, 3)))
-            elif dir_rot == 2: # rotate about ZX
-                temp = np.ascontiguousarray(np.rot90(sample[k], 2*times, (3,1)))
+            elif dir_rot == 2:  # rotate about ZX
+                temp = np.ascontiguousarray(np.rot90(sample[k], 2 * times, (3, 1)))
 
             if flip == 0:
                 sample[k] = temp
             else:
                 if dir_flip == 0:
-                    sample[k] = np.ascontiguousarray(np.flip(temp, axis=1)) # Z
+                    sample[k] = np.ascontiguousarray(np.flip(temp, axis=1))  # Z
                 elif dir_flip == 1:
-                    sample[k] = np.ascontiguousarray(np.flip(temp, axis=2)) # Y
+                    sample[k] = np.ascontiguousarray(np.flip(temp, axis=2))  # Y
                 elif dir_flip == 2:
                     sample[k] = np.ascontiguousarray(np.flip(temp, axis=3))  # X
 
         return sample
 
 
-
-
 class ToTensorFromNumpy(object):
-    def __init__(self, keys=[], type="float", normalization_factor = 1.0):
+    """
+        A class used to convert numpy arrays to PyTorch tensors
+
+        ...
+
+        Attributes
+        ----------
+        keys : dictionary
+            keys include `instance`, `label`, `center-image`, `image`
+        type : str
+
+        normalization_factor: float
+
+        Methods
+        -------
+        __call__: Returns Pytorch Tensors
+
+            """
+
+    def __init__(self, keys=[], type="float", normalization_factor=1.0):
 
         if isinstance(type, collections.Iterable):
             assert (len(keys) == len(type))
@@ -86,7 +183,7 @@ class ToTensorFromNumpy(object):
     def __call__(self, sample):
 
         for idx, k in enumerate(self.keys):
-            #assert (k in sample)
+            # assert (k in sample)
 
             t = self.type
             if isinstance(t, collections.Iterable):
@@ -94,10 +191,10 @@ class ToTensorFromNumpy(object):
             if (k in sample):
                 if k == 'image':  # image
                     sample[k] = torch.from_numpy(sample[k].astype("float32")).float().div(self.normalization_factor)
-                elif k =='instance' or k=='label':
-                    sample[k] = torch.from_numpy(sample[k]) # np.int16 to torch.int16 or short (since np.uint16 can not be directly cast to torch uint16)
-                elif k=='center-image':
-                    sample[k] = torch.from_numpy(sample[k]) # np.bool to torch.Bool
+                elif k == 'instance' or k == 'label':
+                    sample[k] = torch.from_numpy(sample[k])  # np.int16 to torch.int16 or short (since np.uint16 can not be directly cast to torch uint16)
+                elif k == 'center-image':
+                    sample[k] = torch.from_numpy(sample[k])  # np.bool to torch.Bool
         return sample
 
 

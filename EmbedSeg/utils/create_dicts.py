@@ -149,17 +149,18 @@ def create_test_configs_dict(data_dir,
             If True, then evaluation instance instance images are available in one-hot encoded style (DYX)
         ap_val: float
             Threshold for IOU
-        seed_thresh: float
+        seed_thresh: float, default=0.9
+            Only considers a subset of pixels for whom the seediness score is above the `seed_thresh`
         min_object_size: int
             Ignores objects having pixels less than min_object_size
         save_images: boolean
             If True, then prediction images are saved
         save_results: boolean
             If True, then prediction results are saved in text file
-        min_mask_sum: int
-
-        min_unclustered_sum: int
-
+        min_mask_sum: int, default = 0
+            Only start creating instances, if there are at least `min_mask_sum` pixels in foreground!
+        min_unclustered_sum: int, default = 0
+            Stop when the number of seed candidates are less than `min_unclustered_sum`
         n_sigma: int
             2 indicates margin along x and margin along y
         num_classes: list

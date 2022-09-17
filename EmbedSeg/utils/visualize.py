@@ -1,12 +1,13 @@
 import ast
+import os
+from glob import glob
+
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import pandas as pd
 import pycocotools.mask as rletools
 import tifffile
-from glob import glob
 from scipy.ndimage import zoom
 from skimage.segmentation import relabel_sequential
 
@@ -15,6 +16,21 @@ from EmbedSeg.utils.glasbey import Glasbey
 
 
 def create_color_map(n_colors=10):
+    """
+        Create Glasbey-style Color map
+
+        Parameters
+        -------
+
+        n_colors: int
+
+
+        Returns
+        -------
+        Color Map
+
+        """
+
     gb = Glasbey(base_palette=[(255, 0, 0), (0, 255, 0), (0, 0, 255)],
                  lightness_range=(10, 100),
                  hue_range=(10, 100),
@@ -29,6 +45,28 @@ def create_color_map(n_colors=10):
 
 
 def visualize(image, prediction, ground_truth, seed, new_cmp):
+    """
+        Visualizes 2 x 2 grid with Top-Left (Image), Top-Right (Ground Truth), Bottom-Left (Seed),
+        Bottom-Right (Instance Segmentation Prediction)
+
+        Parameters
+        -------
+
+        image: Numpy Array (YX or 1YX)
+            Raw Image
+        prediction: Numpy Array (YX)
+            Model Prediction of Instance Segmentation
+        ground_truth: Numpy Array (YX)
+            GT Label Mask
+        seed: Confidence (Seediness) Map
+
+        new_cmp: Color Map
+
+        Returns
+        -------
+
+        """
+
     font = {'family': 'serif',
             'color': 'white',
             'weight': 'bold',
@@ -88,6 +126,29 @@ def decode(filename, one_hot=False, center=False):
 
 
 def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images, new_cmp, one_hot=False):
+    """
+            Parameters
+            -------
+            data_dir: str
+                Place where crops are (for example: data_dir='crops')
+            project_name: str
+                Name of Project (for example: project_name= 'dsb-2018')
+            train_val_dir: str
+                One of 'train' or 'val'
+            center: str
+                One of 'medoid', 'centroid', 'approximate-medoid'
+            n_images: int
+                Number of columns
+
+            new_cmp: Color Map
+
+            one_hot: bool
+                If GT label masks are available in one-hot encoded fashion, then this parameter should be set equal to True
+            Returns
+            -------
+
+            """
+
     font = {'family': 'serif',
             'color': 'black',
             'weight': 'bold',
@@ -143,7 +204,29 @@ def visualize_many_crops(data_dir, project_name, train_val_dir, center, n_images
     plt.show()
 
 
-def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, anisotropy, index = None):
+def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, anisotropy, index=None):
+    """
+                Parameters
+                -------
+                data_dir: str
+                    Place where crops are (for example: data_dir='crops')
+                project_name: str
+                    Name of Project (for example: project_name= 'dsb-2018')
+                train_val_dir: str
+                    One of 'train' or 'val'
+                center: str
+                    One of 'medoid', 'centroid', 'approximate-medoid'
+                new_cmp: Color Map
+
+                anisotropy: float
+                    Ratio of voxel size along z dimension to size along x or y dimension
+                index: int
+                    Index of one of the images
+                Returns
+                -------
+
+                """
+
     font = {'family': 'serif',
             'color': 'black',
             'weight': 'bold',
@@ -243,6 +326,25 @@ def visualize_crop_3d(data_dir, project_name, train_val_dir, center, new_cmp, an
 
 
 def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp, anisotropy):
+    """
+        Parameters
+        -------
+        im_filename: str
+
+        gt_filename: str
+
+        pred_filename: str
+
+        seed_filename: str
+
+        new_cmp: color map
+
+        anisotropy: float
+            Ratio of voxel size along z dimension to size along x or y dimension
+        Returns
+        -------
+
+        """
     font = {'family': 'serif',
             'color': 'black',
             'weight': 'bold',
@@ -298,8 +400,6 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     ax3.set_yticklabels([])
     ax3.set_yticks([])
     ax3.set_ylabel('SEED', fontdict=font)
-
-
 
     # use interpolation
     ax8 = fig.add_subplot(spec[0, 1])
@@ -357,7 +457,6 @@ def visualize_3d(im_filename, gt_filename, pred_filename, seed_filename, new_cmp
     ax7.axes.get_xaxis().set_visible(False)
     ax7.set_yticklabels([])
     ax7.set_yticks([])
-
 
     plt.tight_layout(pad=0, h_pad=0)
     plt.show()
