@@ -7,7 +7,7 @@ from tqdm import tqdm
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.utils import Cluster, Cluster_3d
-from EmbedSeg.utils.utils2 import matching_dataset, obtain_APdsb_one_hot
+from EmbedSeg.utils.metrics import matching_dataset, obtain_APdsb_one_hot
 
 torch.backends.cudnn.benchmark = True
 import numpy as np
