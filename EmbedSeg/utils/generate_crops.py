@@ -407,7 +407,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-p
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                norm='min-max-percentile',
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', normalization_factor=None,
-               rle_encode=False, fraction_max_ids=1.0, background_id=0):
+               rle_encode=False, fraction_max_ids=1.0, background_id=0, uniform_ds_factor = 1):
     """Entry function which generates 3D crops from 3D images
 
                 Parameters
@@ -447,6 +447,11 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
                     If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
                 background_id: int, optional
                     Id of the background in the label mask
+                uniform_ds_factor: int, optional
+                    In case, the image and corresponding GT instance should be uniformally downsampled
+                    This serves the purpose of increasing the receptive field without increasing the GPU memory requirement (through larger crop sizes)
+                    We noticed that a factor of 2 helps especially to prevent over-segmentation of large, outlier objects
+                    (for example, in a time lapse recording where at the very early time points, cells are much larger than at later time points)
 
                 Returns
                 -------
@@ -469,6 +474,8 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
     instance = tifffile.imread(inst).astype(np.uint16)
     image = tifffile.imread(im).astype(np.float32)
 
+
+
     if (norm == 'min-max-percentile'):
         image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
     elif (norm == 'mean-std'):
@@ -485,6 +492,9 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             else:
                 image /= normalization_factor
     instance = fill_label_holes(instance)
+
+    instance = instance[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+    image = image[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
 
     d, h, w = image.shape
     instance_np = np.array(instance, copy=False)
