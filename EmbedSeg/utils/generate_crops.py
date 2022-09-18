@@ -446,12 +446,10 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
                 fraction_max_ids: float, between 0 and 1.0
                     If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
                 background_id: int, optional
-                    Id of the background in the label mask
+                    Id of the background in the label
                 uniform_ds_factor: int, optional
-                    In case, the image and corresponding GT instance should be uniformally downsampled
-                    This serves the purpose of increasing the receptive field without increasing the GPU memory requirement (through larger crop sizes)
-                    We noticed that a factor of 2 helps especially to prevent over-segmentation of large, outlier objects
-                    (for example, in a time lapse recording where at the very early time points, cells are much larger than at later time points)
+                    In case, the image and corresponding GT instance should be down-sampled
+                    This serves the purpose of increasing the receptive field without increasing the GPU memory requirement
 
                 Returns
                 -------
@@ -493,8 +491,18 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
                 image /= normalization_factor
     instance = fill_label_holes(instance)
 
-    instance = instance[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
-    image = image[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+    # sometimes it helps to downsample the image and instance, in order to increase the receptive field
+    instance_ds = instance[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+    image_ds = image[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+
+    # but we would still ike the downsampled image to be of the same size as the original image, which we ensure through padding
+    dz = image.shape[0] - image_ds.shape[0]
+    dy = image.shape[1] - image_ds.shape[1]
+    dx = image.shape[2] - image_ds.shape[2]
+    pad_width = ((dz//2, dz-dz//2),(dy//2, dy-dy//2), (dx//2, dx-dx//2))
+
+    image= np.pad(image_ds, pad_width)
+    instance = np.pad(instance_ds, pad_width, 'constant', constant_values=background_id)
 
     d, h, w = image.shape
     instance_np = np.array(instance, copy=False)
