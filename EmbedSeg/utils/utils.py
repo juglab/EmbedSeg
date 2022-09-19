@@ -131,11 +131,11 @@ class Cluster_3d:
                     Depth of grid / tile
 
             pixel_x: float
-                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/grid_x = 1e-3
+                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/(grid_x-1) = 1/999
             pixel_y: float
-                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/grid_y = 1e-3
+                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/(grid_y-1) = 1/999
             pixel_z: float
-                    if grid_z = 1000 and pixel_z = 1, then the pixel spacing along the z direction is pixel_z/grid_z = 1e-3
+                    if grid_z = 1000 and pixel_z = 1, then the pixel spacing along the z direction is pixel_z/(grid_z-1) = 1/999
 
 
             Methods
@@ -172,11 +172,11 @@ class Cluster_3d:
                     Depth of grid / tile
 
             pixel_x: float
-                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/grid_x = 1e-3
+                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/(grid_x-1) = 1/999
             pixel_y: float
-                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/grid_y = 1e-3
+                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/(grid_y-1) = 1/999
             pixel_z: float
-                    if grid_z = 1000 and pixel_z = 1, then the pixel spacing along the z direction is pixel_z/grid_z = 1e-3
+                    if grid_z = 1000 and pixel_z = 1, then the pixel spacing along the z direction is pixel_z/(grid_z-1) = 1/999
 
            """
 
@@ -403,9 +403,9 @@ class Cluster:
                     Height of grid / tile
 
             pixel_x: float
-                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/grid_x = 1e-3
+                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/(grid_x-1) = 1/999
             pixel_y: float
-                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/grid_y = 1e-3
+                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/(grid_y-1) = 1/999
 
 
             Methods
@@ -439,9 +439,9 @@ class Cluster:
                     Height of grid / tile
 
             pixel_x: float
-                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/grid_x = 1e-3
+                    if grid_x = 1000 and pixel_x = 1.0, then the pixel spacing along the x direction is pixel_x/(grid_x-1) = 1/999
             pixel_y: float
-                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/grid_y = 1e-3
+                    if grid_y = 1000 and pixel_y = 1.0, then the pixel spacing along the y direction is pixel_y/(grid_y-1) = 1/999
 
                    """
         xm = torch.linspace(0, pixel_x, grid_x).view(1, 1, -1).expand(1, grid_y, grid_x)
