@@ -407,7 +407,7 @@ def process(im, inst, crops_dir, data_subset, crop_size, center, norm='min-max-p
 def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_size_z, center,
                norm='min-max-percentile',
                one_hot=False, anisotropy_factor=1.0, speed_up=1.0, data_type='8-bit', normalization_factor=None,
-               rle_encode=False, fraction_max_ids=1.0, background_id=0):
+               rle_encode=False, fraction_max_ids=1.0, background_id=0, uniform_ds_factor = 1):
     """Entry function which generates 3D crops from 3D images
 
                 Parameters
@@ -446,7 +446,10 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
                 fraction_max_ids: float, between 0 and 1.0
                     If set equal to a value less than 1.0, then only that fraction of ids are processed are used to make crops
                 background_id: int, optional
-                    Id of the background in the label mask
+                    Id of the background in the label
+                uniform_ds_factor: int, optional
+                    In case, the image and corresponding GT instance should be down-sampled
+                    This serves the purpose of increasing the receptive field without increasing the GPU memory requirement
 
                 Returns
                 -------
@@ -469,6 +472,8 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
     instance = tifffile.imread(inst).astype(np.uint16)
     image = tifffile.imread(im).astype(np.float32)
 
+
+
     if (norm == 'min-max-percentile'):
         image = normalize_min_max_percentile(image, 1, 99.8, axis=(0, 1, 2))
     elif (norm == 'mean-std'):
@@ -485,6 +490,19 @@ def process_3d(im, inst, crops_dir, data_subset, crop_size_x, crop_size_y, crop_
             else:
                 image /= normalization_factor
     instance = fill_label_holes(instance)
+
+    # sometimes it helps to downsample the image and instance, in order to increase the receptive field
+    instance_ds = instance[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+    image_ds = image[::uniform_ds_factor, ::uniform_ds_factor, ::uniform_ds_factor]
+
+    # but we would still ike the downsampled image to be of the same size as the original image, which we ensure through padding
+    dz = image.shape[0] - image_ds.shape[0]
+    dy = image.shape[1] - image_ds.shape[1]
+    dx = image.shape[2] - image_ds.shape[2]
+    pad_width = ((dz//2, dz-dz//2),(dy//2, dy-dy//2), (dx//2, dx-dx//2))
+
+    image= np.pad(image_ds, pad_width)
+    instance = np.pad(instance_ds, pad_width, 'constant', constant_values=background_id)
 
     d, h, w = image.shape
     instance_np = np.array(instance, copy=False)

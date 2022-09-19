@@ -63,6 +63,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
     one_hot = test_configs['dataset']['kwargs']['one_hot']
     cluster_fast = test_configs['cluster_fast']
     expand_grid = test_configs['expand_grid']
+    uniform_ds_factor = test_configs['uniform_ds_factor']
 
     # set device
     device = torch.device("cuda:0" if test_configs['cuda'] else "cpu")
@@ -108,7 +109,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
             save_images,
             save_results, save_dir, verbose, grid_x, grid_y, grid_z, pixel_x, pixel_y, pixel_z, one_hot, mask_region,
             n_sigma, cluster_fast,
-            expand_grid)
+            expand_grid, uniform_ds_factor)
 
         if optimize:
             result = minimize_scalar(fun=test_3d, bounds=(0.3, 0.7), method='bounded', args=args,
@@ -529,7 +530,7 @@ def test_3d(fg_thresh, *args):
             """
     seed_thresh, ap_val, min_mask_sum, min_unclustered_sum, min_object_size, tta, model, dataset_it, \
     save_images, save_results, save_dir, verbose, grid_x, grid_y, grid_z, \
-    pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma, cluster_fast, expand_grid = args
+    pixel_x, pixel_y, pixel_z, one_hot, mask_region, n_sigma, cluster_fast, expand_grid, uniform_ds_factor = args
 
     model.eval()
     # cluster module
@@ -594,6 +595,11 @@ def test_3d(fg_thresh, *args):
                 instance_map = instance_map[:, :, :-diff_x]
                 seed_map = seed_map[:, :, :-diff_x]
 
+            # zoom back to original size
+            instance_map = zoom(instance_map.cpu().detach().numpy().astype(np.uint16), uniform_ds_factor, order = 0)
+            seed_map = zoom(seed_map.cpu().detach().numpy(), uniform_ds_factor)
+
+
             if ('instance' in sample):
                 instances = sample['instance'].squeeze()  # Z, Y, X
 
@@ -606,8 +612,10 @@ def test_3d(fg_thresh, *args):
                 pass
 
             if ('instance' in sample):
+                instance_map = instance_map[:instances.shape[0], :instances.shape[1], :instances.shape[2]]
+                seed_map = seed_map[:instances.shape[0], :instances.shape[1], :instances.shape[2]]
                 all_results = matching_dataset(y_true=[instances.cpu().detach().numpy()],
-                                               y_pred=[instance_map.cpu().detach().numpy()], thresh=ap_val,
+                                               y_pred=[instance_map], thresh=ap_val,
                                                show_progress=False)
                 if (verbose):
                     print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
@@ -628,10 +636,10 @@ def test_3d(fg_thresh, *args):
                 image_file_names.append(base)
 
                 instances_file = os.path.join(save_dir, 'predictions/', base + '.tif')
-                imsave(instances_file, instance_map.cpu().detach().numpy().astype(np.uint16))
+                imsave(instances_file, instance_map)
 
                 seeds_file = os.path.join(save_dir, 'seeds/', base + '.tif')
-                imsave(seeds_file, seed_map.cpu().detach().numpy())
+                imsave(seeds_file, seed_map)
 
                 if ('instance' in sample):
                     gt_file = os.path.join(save_dir, 'ground-truth/', base + '.tif')
