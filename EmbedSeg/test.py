@@ -866,7 +866,7 @@ def test_3d(fg_thresh, *args):
                                                                        n_sigma, fg_thresh, seed_thresh, min_mask_sum,
                                                                        min_unclustered_sum, min_object_size,
                                                                        cluster)
-                                last, instance_map = stitch_2d(instance_map_tile.cpu().detach().numpy(), instance_map, y, x,
+                                last, instance_map = stitch_3d(instance_map_tile.cpu().detach().numpy(), instance_map, y, x,
                                                            last, num_overlap_pixels)
                                 seed_map[z:z + grid_z, y:y + grid_y, x:x + grid_x] = seed_map_tile.cpu().detach().numpy()
                     instance_map = torch.from_numpy(instance_map).cuda()
