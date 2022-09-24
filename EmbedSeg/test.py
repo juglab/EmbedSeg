@@ -60,7 +60,6 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
     pixel_x = test_configs['pixel_x']
     pixel_y = test_configs['pixel_y']
     pixel_z = test_configs['pixel_z']
-    num_workers = test_configs['num_workers']
     one_hot = test_configs['dataset']['kwargs']['one_hot']
     cluster_fast = test_configs['cluster_fast']
     expand_grid = test_configs['expand_grid']
@@ -867,7 +866,7 @@ def test_3d(fg_thresh, *args):
                                                                        n_sigma, fg_thresh, seed_thresh, min_mask_sum,
                                                                        min_unclustered_sum, min_object_size,
                                                                        cluster)
-                                last, instance_map = stitch_3d(instance_map_tile.cpu().detach().numpy(), instance_map, y, x,
+                                last, instance_map = stitch_3d(instance_map_tile.cpu().detach().numpy(), instance_map, z, y, x,
                                                            last, num_overlap_pixels)
                                 seed_map[z:z + grid_z, y:y + grid_y, x:x + grid_x] = seed_map_tile.cpu().detach().numpy()
                     instance_map = torch.from_numpy(instance_map).cuda()
