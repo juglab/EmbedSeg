@@ -104,9 +104,25 @@ If you find our work useful in your research, please consider citing:
 }
 ```
 
+and 
+
+```bibtex
+@article{lalit2022mia,
+title = {EmbedSeg: Embedding-based Instance Segmentation for Biomedical Microscopy Data},
+journal = {Medical Image Analysis},
+volume = {81},
+pages = {102523},
+year = {2022},
+issn = {1361-8415},
+doi = {https://doi.org/10.1016/j.media.2022.102523},
+url = {https://www.sciencedirect.com/science/article/pii/S1361841522001700},
+author = {Manan Lalit and Pavel Tomancak and Florian Jug},
+}
+```
+
 
 ### Acknowledgements
 
 The authors would like to thank the Scientific Computing Facility at MPI-CBG, thank Matthias Arzt,  Joran  Deschamps  and  Nuno  Pimpao  Martins  for  feedback  and  testing.    Alf  Honigmann and  Anna  Goncharova  provided  the  `Mouse-Organoid-Cells-CBG`  data  and  annotations.   Jacqueline Tabler and Diana Afonso provided the `Mouse-Skull-Nuclei-CBG` dataset and annotations.  This work was supported by the German Federal Ministry of Research and Education (BMBF) under the codes 031L0102 (de.NBI) and 01IS18026C (ScaDS2), and the German Research Foundation (DFG) under the code JU3110/1-1(FiSS) and TO563/8-1 (FiSS). P.T. was supported by the European Regional Development Fund in the IT4Innovations national supercomputing center,  project number CZ.02.1.01/0.0/0.0/16013/0001791 within the Program Research, Development and Education.
 
-The authors would also like to thank the **[StarDist](https://github.com/stardist/stardist)** repository for several useful, helper functions.
+The authors would also like to thank the authors of **[StarDist](https://github.com/stardist/stardist)** repository for several useful, helper functions. The authors would also like to thank Sahar Kakavand and Marco Dalla Vecchia for feedback on code. 
