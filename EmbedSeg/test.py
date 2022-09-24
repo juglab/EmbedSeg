@@ -60,6 +60,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
     pixel_x = test_configs['pixel_x']
     pixel_y = test_configs['pixel_y']
     pixel_z = test_configs['pixel_z']
+    num_workers = test_configs['num_workers']
     one_hot = test_configs['dataset']['kwargs']['one_hot']
     cluster_fast = test_configs['cluster_fast']
     expand_grid = test_configs['expand_grid']
@@ -70,7 +71,7 @@ def begin_evaluating(test_configs, optimize=False, maxiter=10, verbose=False, ma
 
     # dataloader
     dataset = get_dataset(test_configs['dataset']['name'], test_configs['dataset']['kwargs'])
-    dataset_it = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, drop_last=False, num_workers=4,
+    dataset_it = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, drop_last=False, num_workers=test_configs['num_workers'],
                                              pin_memory=True if test_configs['cuda'] else False)
 
     # load model

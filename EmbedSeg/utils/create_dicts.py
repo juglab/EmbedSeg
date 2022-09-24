@@ -121,6 +121,7 @@ def create_test_configs_dict(data_dir,
                              n_z=None,
                              n_y=1024,
                              n_x=1024,
+                             num_workers = 4,
                              anisotropy_factor=None,
                              l_y=1,
                              l_x=1,
@@ -217,6 +218,7 @@ def create_test_configs_dict(data_dir,
         bg_id : int, default = 0
             Label of background in the ground truth test label masks
             This parameter is only used while quantifying accuracy predicted label masks with ground truth label masks
+        num_workers: int, default = 4
     """
     if (n_z is None):
         l_z = None
@@ -267,6 +269,7 @@ def create_test_configs_dict(data_dir,
         pixel_y=l_y,
         pixel_z=l_z,
         name=name,
+        num_workers = num_workers,
         anisotropy_factor=anisotropy_factor,
         cluster_fast = cluster_fast,
         expand_grid=expand_grid,
