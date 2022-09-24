@@ -1,6 +1,3 @@
-[![License](https://img.shields.io/pypi/l/EmbedSeg.svg?color=green)](https://github.com/juglab/EmbedSeg/raw/master/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/EmbedSeg.svg?color=green)](https://pypi.org/project/EmbedSeg)
-
 <p align="center">
   <img src="https://user-images.githubusercontent.com/34229641/117163211-bb727300-adc3-11eb-8fe4-ebd7d0e5fceb.png" width=300 />
 </p>
