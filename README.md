@@ -41,7 +41,7 @@ pip install -e .
 
 ### Getting Started
 
-Look in the `examples` directory,  and try out one of the provided notebooks. Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
+Look in the `examples` directory,  and try out the `DSB-2018` notebooks for 2D images or `Mouse-Organoid-Cells-CBG` notebooks for volumetric (3D) images. Please make sure to select `Kernel > Change kernel` to `EmbedSegEnv`.   
 
 
 ### Datasets
