@@ -448,7 +448,11 @@ class Cluster:
         ym = torch.linspace(0, pixel_y, grid_y).view(1, -1, 1).expand(1, grid_y, grid_x)
         xym = torch.cat((xm, ym), 0)
 
-        self.xym = xym.cuda()
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if device == "cuda":
+            self.xym = xym.cuda()
+        else:
+            self.xym = xym
         self.one_hot = one_hot
         self.grid_x = grid_x
         self.grid_y = grid_y
