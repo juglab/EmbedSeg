@@ -631,7 +631,7 @@ def begin_training(train_dataset_dict, val_dataset_dict, model_dict, loss_dict, 
         plt.switch_backend("agg")
 
     # set device
-    device = torch.device("cuda:0" if configs['cuda'] else "cpu")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # define global variables
     global train_dataset_it, val_dataset_it, model, criterion, optimizer, visualizer, cluster
