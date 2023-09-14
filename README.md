@@ -29,8 +29,8 @@ We tested this implementation using python==3.7, `pytorch` version 1.10.0 and `c
 One could execute these lines of code to run this branch with GPU support:
 
 ```
-conda create -n EmbedSegEnv python
-conda activate EmbedSegEnv
+conda create -n EmbedSeg python
+conda activate EmbedSeg
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
@@ -41,8 +41,8 @@ For CPU support, one could execute the following lines of code:
 
 
 ```
-conda create -n EmbedSegEnv python
-conda activate EmbedSegEnv
+conda create -n EmbedSeg python
+conda activate EmbedSeg
 pip install torch torchvision
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
