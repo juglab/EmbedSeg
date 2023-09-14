@@ -30,14 +30,11 @@ except ImportError:
     class Bar:
         pass
 
-
     class ETA:
         pass
 
-
     class Percentage:
         pass
-
 
     class ProgressBar:
         def __init__(self, **kwargs):
@@ -54,13 +51,15 @@ except ImportError:
 
 
 class Glasbey:
-    def __init__(self,
-                 base_palette=None,
-                 overwrite_base_palette: bool = False,
-                 no_black: bool = False,
-                 lightness_range=None,
-                 chroma_range=None,
-                 hue_range=None):
+    def __init__(
+        self,
+        base_palette=None,
+        overwrite_base_palette: bool = False,
+        no_black: bool = False,
+        lightness_range=None,
+        chroma_range=None,
+        hue_range=None,
+    ):
         # Constants
         self.MAX = 256
         self.NUM_COLORS = self.MAX * self.MAX * self.MAX
@@ -70,12 +69,20 @@ class Glasbey:
 
         # Check input
         if type(base_palette) == str:
-            assert os.path.isfile(base_palette), "file does not exist: {}".format(base_palette)
+            assert os.path.isfile(base_palette), "file does not exist: {}".format(
+                base_palette
+            )
         elif type(base_palette) == list:
-            assert self.check_validity_rbg_palette(base_palette), "Base palette must be in this format: [(255,255,255), ...]"
-            assert not self.overwrite_base_palette, "base_palette is no file, cannot overwrite it!"
+            assert self.check_validity_rbg_palette(
+                base_palette
+            ), "Base palette must be in this format: [(255,255,255), ...]"
+            assert (
+                not self.overwrite_base_palette
+            ), "base_palette is no file, cannot overwrite it!"
         else:
-            assert not self.overwrite_base_palette, "no base_palette specified, cannot overwrite it!"
+            assert (
+                not self.overwrite_base_palette
+            ), "no base_palette specified, cannot overwrite it!"
 
         # Load colors
         self.colors = self.load_or_generate_color_table()
@@ -86,35 +93,39 @@ class Glasbey:
             self.palette = self.load_palette(base_palette)
             self.palette = [self.colors[i, :] for i in self.palette]
         elif type(base_palette) == list and len(base_palette) > 0:
-            self.palette = [(rgb[0] * 256 + rgb[1]) * 256 + rgb[2] for rgb in base_palette]
+            self.palette = [
+                (rgb[0] * 256 + rgb[1]) * 256 + rgb[2] for rgb in base_palette
+            ]
             self.palette = [self.colors[i, :] for i in self.palette]
         else:
             self.palette = [self.colors[-1, :]]  # white
 
-        assert self.check_validity_internal_palette(), "Internal error during __init__: self.palette is poorly formatted."
+        assert (
+            self.check_validity_internal_palette()
+        ), "Internal error during __init__: self.palette is poorly formatted."
 
         # Update self.colors
         # Exclude greys (values with low Chroma in JCh) and set lightness range,
         if lightness_range is not None:
             jch = cspace_convert(self.colors, "CAM02-UCS", "JCh")
             self.colors = self.colors[
-                          (jch[:, 0] >= lightness_range[0]) & (jch[:, 0] <= lightness_range[1]), :
-                          ]
+                (jch[:, 0] >= lightness_range[0]) & (jch[:, 0] <= lightness_range[1]), :
+            ]
         if chroma_range is not None:
             jch = cspace_convert(self.colors, "CAM02-UCS", "JCh")
             self.colors = self.colors[
-                          (jch[:, 1] >= chroma_range[0]) & (jch[:, 1] <= chroma_range[1]), :
-                          ]
+                (jch[:, 1] >= chroma_range[0]) & (jch[:, 1] <= chroma_range[1]), :
+            ]
         if hue_range is not None:
             jch = cspace_convert(self.colors, "CAM02-UCS", "JCh")
             if hue_range[0] > hue_range[1]:
                 self.colors = self.colors[
-                              (jch[:, 2] >= hue_range[0]) | (jch[:, 2] <= hue_range[1]), :
-                              ]
+                    (jch[:, 2] >= hue_range[0]) | (jch[:, 2] <= hue_range[1]), :
+                ]
             else:
                 self.colors = self.colors[
-                              (jch[:, 2] >= hue_range[0]) & (jch[:, 2] <= hue_range[1]), :
-                              ]
+                    (jch[:, 2] >= hue_range[0]) & (jch[:, 2] <= hue_range[1]), :
+                ]
         # Exclude colors that are close to black
         if no_black:
             MIN_DISTANCE_TO_BLACK = 35
@@ -153,10 +164,17 @@ class Glasbey:
             pbar.update(len(self.palette))
         pbar.finish()
 
-        assert self.check_validity_internal_palette(), "Internal error during extend_palette: self.palette is poorly formatted."
+        assert (
+            self.check_validity_internal_palette()
+        ), "Internal error during extend_palette: self.palette is poorly formatted."
 
         if self.overwrite_base_palette:
-            self.save_palette(palette=self.palette, path=self.base_palette, format="byte", overwrite=True)
+            self.save_palette(
+                palette=self.palette,
+                path=self.base_palette,
+                format="byte",
+                overwrite=True,
+            )
 
         return cspace_convert(self.palette[0:size], "CAM02-UCS", "sRGB1")
 
@@ -190,8 +208,8 @@ class Glasbey:
                 d = i * self.MAX
                 for b in range(self.MAX):
                     colors[d + b, :] = (r, g, b)
-                colors[d:d + self.MAX] = cspace_convert(
-                    colors[d:d + self.MAX], "sRGB255", "CAM02-UCS"
+                colors[d : d + self.MAX] = cspace_convert(
+                    colors[d : d + self.MAX], "sRGB255", "CAM02-UCS"
                 )
                 pbar.update(i)
                 i += 1
@@ -205,7 +223,7 @@ class Glasbey:
         """
         assert os.path.isfile(path)
         palette = list()
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             for line in file:
                 rgb = [int(c) for c in line.strip().split(",")]
                 palette.append((rgb[0] * 256 + rgb[1]) * 256 + rgb[2])
@@ -221,20 +239,24 @@ class Glasbey:
         if not overwrite:
             assert not os.path.isfile(path)
 
-        with open(path, 'w') as file:
+        with open(path, "w") as file:
             if format.lower() == "byte":
                 for color in palette:
                     rgb255 = tuple(int(round(k * 255)) for k in color)
                     file.write("{},{},{}\n".format(*rgb255))
             elif format.lower() == "float":
                 for color in palette:
-                    file.write("{:.6f},{:.6f},{:.6f}\n".format(*(abs(k) for k in color)))
+                    file.write(
+                        "{:.6f},{:.6f},{:.6f}\n".format(*(abs(k) for k in color))
+                    )
             elif format.lower() == "hex":
                 for color in palette:
                     rgb255 = tuple(int(round(k * 255)) for k in color)
                     file.write("#{:02x}{:02x}{:02x}\n".format(*rgb255))
             else:
-                raise ValueError("Format doesn't match. Choose between 'byte', 'hex', and 'float'")
+                raise ValueError(
+                    "Format doesn't match. Choose between 'byte', 'hex', and 'float'"
+                )
 
     def check_validity_internal_palette(self):
         if type(self.palette) != list:
@@ -251,7 +273,11 @@ class Glasbey:
         for color in palette:
             if len(color) != 3 or type(color) != tuple:
                 return False
-            if not 0 <= color[0] <= 255 and 0 <= color[1] <= 255 and 0 <= color[2] <= 255:
+            if (
+                not 0 <= color[0] <= 255
+                and 0 <= color[1] <= 255
+                and 0 <= color[2] <= 255
+            ):
                 return False
 
         return True
@@ -327,27 +353,35 @@ if __name__ == "__main__":
         type=ast.literal_eval,
         help="set min and max for chroma (e.g. 10,100)",
     )
-    parser.add_argument("--hue-range", type=ast.literal_eval,
-                        help="set start and end for hue (e.g. 315,45)")
-    parser.add_argument("--view", action="store_true",
-                        help="view generated palette")
-    parser.add_argument("--format", default="byte", choices=["byte", "hex", "float"],
-                        help="output format")
-    parser.add_argument("size", type=int,
-                        help="number of colors in the palette")
-    parser.add_argument("output", type=argparse.FileType("w"),
-                        help="output palette filename")
+    parser.add_argument(
+        "--hue-range",
+        type=ast.literal_eval,
+        help="set start and end for hue (e.g. 315,45)",
+    )
+    parser.add_argument("--view", action="store_true", help="view generated palette")
+    parser.add_argument(
+        "--format",
+        default="byte",
+        choices=["byte", "hex", "float"],
+        help="output format",
+    )
+    parser.add_argument("size", type=int, help="number of colors in the palette")
+    parser.add_argument(
+        "output", type=argparse.FileType("w"), help="output palette filename"
+    )
     args = parser.parse_args()
 
     if args.format not in ["byte", "hex", "float"]:
         sys.exit('Invalid output format "{}"'.format(args.format))
 
-    gb = Glasbey(base_palette=getattr(args.base_palette, "name", None),
-                 overwrite_base_palette=False,
-                 no_black=args.no_black,
-                 lightness_range=args.lightness_range,
-                 chroma_range=args.chroma_range,
-                 hue_range=args.hue_range)
+    gb = Glasbey(
+        base_palette=getattr(args.base_palette, "name", None),
+        overwrite_base_palette=False,
+        no_black=args.no_black,
+        lightness_range=args.lightness_range,
+        chroma_range=args.chroma_range,
+        hue_range=args.hue_range,
+    )
 
     new_palette = gb.generate_palette(size=args.size)
     assert len(new_palette) == args.size
