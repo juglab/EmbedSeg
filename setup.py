@@ -9,7 +9,7 @@ setup(
     name="EmbedSeg",
     version="0.2.5",
     author="Manan Lalit, Pavel Tomancak, Florian Jug",
-    author_email="lalit@mpi-cbg.de",
+    author_email="lalitm@janelia.hhmi.org",
     description="EmbedSeg provides automatic detection \
             and segmentation of objects in microscopy images",
     long_description=long_description,
