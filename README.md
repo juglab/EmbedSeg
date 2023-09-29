@@ -24,14 +24,13 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 
 
 ### Dependencies 
-We tested this implementation using python==3.7, `pytorch` version 1.10.0 and `cudatoolkit` version 10.2 on a `linux` OS machine. 
 
 One could execute these lines of code to run this branch with GPU support:
 
 ```
-conda create -n EmbedSeg python
-conda activate EmbedSeg
-conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
+mamba create -n EmbedSeg python
+mamba activate EmbedSeg
+mamba install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
 pip install -e .
@@ -41,8 +40,8 @@ For CPU support, one could execute the following lines of code:
 
 
 ```
-conda create -n EmbedSeg python
-conda activate EmbedSeg
+mamba create -n EmbedSeg python
+mamba activate EmbedSeg
 pip install torch torchvision
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
