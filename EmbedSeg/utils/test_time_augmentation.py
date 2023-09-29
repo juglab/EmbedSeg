@@ -56,8 +56,11 @@ def process_flips(im_numpy):
 
     """
     im_numpy_correct = im_numpy
-    im_numpy_correct[0, 1, ...] = -1 * im_numpy[0, 1, ...]  # because flipping is always along y-axis, so only the y-offset gets affected
+    im_numpy_correct[0, 1, ...] = (
+        -1 * im_numpy[0, 1, ...]
+    )  # because flipping is always along y-axis, so only the y-offset gets affected
     return im_numpy_correct
+
 
 def to_cuda_3d(im_numpy):
     """
@@ -93,7 +96,7 @@ def apply_tta_2d(im, model):
     PyTorch Tensor on GPU (15YX)
 
     """
-    im_numpy = im.cpu().detach().numpy() # BCYX
+    im_numpy = im.cpu().detach().numpy()  # BCYX
     im0 = im_numpy[0, ...]  # remove batch dimension, now CYX
     im1 = np.rot90(im0, 1, (1, 2))
     im2 = np.rot90(im0, 2, (1, 2))
@@ -103,7 +106,7 @@ def apply_tta_2d(im, model):
     im6 = np.flip(im2, 1)
     im7 = np.flip(im3, 1)
 
-    im0_cuda = to_cuda(im0) # BCYX
+    im0_cuda = to_cuda(im0)  # BCYX
     im1_cuda = to_cuda(np.ascontiguousarray(im1))
     im2_cuda = to_cuda(np.ascontiguousarray(im2))
     im3_cuda = to_cuda(np.ascontiguousarray(im3))
@@ -195,9 +198,19 @@ def apply_tta_2d(im, model):
     output7_numpy_correct[0, 3, ...] = output7_numpy_flipped[0, 2, ...]
     output7_numpy_correct[0, 4, ...] = output7_numpy_flipped[0, 4, ...]
 
-    output = np.concatenate((output0_numpy_correct, output1_numpy_correct, output2_numpy_correct, output3_numpy_correct,
-                             output4_numpy_correct, output5_numpy_correct, output6_numpy_correct,
-                             output7_numpy_correct), 0)
+    output = np.concatenate(
+        (
+            output0_numpy_correct,
+            output1_numpy_correct,
+            output2_numpy_correct,
+            output3_numpy_correct,
+            output4_numpy_correct,
+            output5_numpy_correct,
+            output6_numpy_correct,
+            output7_numpy_correct,
+        ),
+        0,
+    )
     output = np.mean(output, 0, keepdims=True)  # 1 5 Y X
     return torch.from_numpy(output).float().cuda()
 
@@ -389,7 +402,6 @@ def apply_tta_3d(im, model, index):
         output_numpy_correct[0, 4, ...] = output_numpy_flipped[0, 3, ...]
         output_numpy_correct[0, 5, ...] = output_numpy_flipped[0, 5, ...]
         output_numpy_correct[0, 6, ...] = output_numpy_flipped[0, 6, ...]
-
 
     elif index == 10:
         temp = np.rot90(im_transformed, 2, (2, 3))
