@@ -70,8 +70,6 @@ class SpatialEmbLoss_3d(nn.Module):
 
         xyzm_s = self.xyzm[:, 0:depth, 0:height, 0:width].contiguous()  # 3 x d x h x w
 
-        print(f"xyzm_s shape is {xyzm_s.shape}")
-        print(f"prediction shape is {prediction.shape}")
         loss = 0
 
         for b in range(0, batch_size):
