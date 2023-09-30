@@ -30,7 +30,7 @@ One could execute these lines of code to run this branch with GPU support:
 ```
 mamba create -n EmbedSeg python
 mamba activate EmbedSeg
-mamba install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+mamba install pytorch torchvision pytorch-cuda=11.7 -c pytorch -c nvidia
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
 pip install -e .
