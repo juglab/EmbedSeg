@@ -11,7 +11,7 @@ import torch.nn.functional as F
 import numpy as np
 
 try:
-    from itertools import ifilterfalse
+    from itertools import filterfalse as ifilterfalse
 except ImportError:  # py3k
     pass
 
@@ -48,7 +48,7 @@ def iou_binary(preds, labels, EMPTY=1.0, ignore=None, per_image=True):
         else:
             iou = float(intersection) / union
         ious.append(iou)
-    iou = mean(ious)  # mean accross images if per_image
+    iou = mean(ious)  # mean across images if per_image
     return 100 * iou
 
 
