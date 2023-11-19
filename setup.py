@@ -45,5 +45,6 @@ setup(
         "imagecodecs",
         "pycocotools",
         "pre-commit",
+        "colorspacious",
     ],
 )
