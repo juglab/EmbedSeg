@@ -41,7 +41,6 @@ setup(
         "pandas",
         "seaborn",
         "scikit-image",
-        "colorspacious",
         "pytest",
         "imagecodecs",
         "pycocotools",
