@@ -44,6 +44,6 @@ setup(
         "pytest",
         "imagecodecs",
         "pycocotools",
-        "pre-commit"
+        "pre-commit",
     ],
 )
