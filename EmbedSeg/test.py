@@ -91,8 +91,10 @@ def begin_evaluating(
 
     # load model
     model = get_model(test_configs["model"]["name"], test_configs["model"]["kwargs"])
-    # model = torch.nn.DataParallel(model).to(device)
-    model = model.to(device)
+    if test_configs["device"][:4] == "cuda":
+        model = torch.nn.DataParallel(model).to(device)
+    else:
+        model = model.to(device)
 
     # load snapshot
     if os.path.exists(test_configs["checkpoint_path"]):

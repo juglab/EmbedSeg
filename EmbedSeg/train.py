@@ -919,8 +919,11 @@ def begin_training(
     # set model
     model = get_model(model_dict["name"], model_dict["kwargs"])
     model.init_output(loss_dict["lossOpts"]["n_sigma"])
-    model = model.to(device)
-    # model = torch.nn.DataParallel(model).to(device)
+
+    if configs["device"][:4] == "cuda":
+        model = torch.nn.DataParallel(model).to(device)
+    else:
+        model = model.to(device)
 
     if configs["grid_z"] is None:
         criterion = get_loss(
@@ -1005,7 +1008,6 @@ def begin_training(
             optimizer, lr_lambda=lambda_, last_epoch=epoch - 1
         )
         print("Starting epoch {}".format(epoch))
-        # scheduler.step(epoch)
 
         if configs["grid_z"] is None:
             if train_dataset_dict["virtual_batch_multiplier"] > 1:
