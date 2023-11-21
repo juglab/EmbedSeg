@@ -68,37 +68,28 @@ jobs:
         uses: codecov/codecov-action@v1
 
   deploy:
-    name: Deploy
-    needs: test
-    if: success() && startsWith(github.ref, 'refs/tags/')
+    # this will run when you have tagged a commit, starting with "v*"
+    # and requires that you have put your twine API key in your 
+    # github secrets (see readme for details)
+    needs: [test]
     runs-on: ubuntu-latest
-
-    permissions:
-        # IMPORTANT: this permission is mandatory for trusted publishing on PyPi
-        # see https://docs.pypi.org/trusted-publishers/
-        id-token: write
-        # This permission allows writing releases
-        contents: write
-
+    if: contains(github.ref, 'tags')
     steps:
-        - uses: actions/checkout@v4
-          with:
-              fetch-depth: 0
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -U setuptools setuptools_scm wheel twine
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
+        run: |
+          git tag
+          python setup.py sdist bdist_wheel
+          twine upload dist/*
 
-        - name: 🐍 Set up Python
-          uses: actions/setup-python@v4
-          with:
-              python-version: 3.x
-
-        - name: 👷 Build
-          run: |
-              python -m pip install build
-              python -m build
-
-        - name: 🚢 Publish to PyPI
-          uses: pypa/gh-action-pypi-publish@release/v1
-
-        - uses: softprops/action-gh-release@v1
-          with:
-              generate_release_notes: true
-              files: ./dist/*
