@@ -43,7 +43,6 @@ setup(
         "scikit-image",
         "colorspacious",
         "pytest",
-        "imagecodecs",
         "pycocotools",
     ],
 )
