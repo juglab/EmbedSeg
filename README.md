@@ -28,24 +28,27 @@ With `EmbedSeg`, we obtain state-of-the-art results on multiple real-world micro
 One could execute these lines of code to run this branch with GPU support:
 
 ```
-conda create -n EmbedSeg python==3.9
+conda create -y -n EmbedSeg python==3.9
 conda activate EmbedSeg
-conda install pytorch torchvision pytorch-cuda=11.7 -c pytorch -c nvidia
+conda install pytorch==2.0.1 torchvision==0.15.2 pytorch-cuda=11.7 -c pytorch -c nvidia
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
 pip install -e .
 ```
 
-For CPU support, one could execute the following lines of code:
+For CPU or MPS support, one could execute the following lines of code:
 
 
 ```
-conda create -n EmbedSeg python==3.9
+conda create -y -n EmbedSeg python==3.9
 conda activate EmbedSeg
 pip install torch torchvision
 git clone https://github.com/juglab/EmbedSeg.git
 cd EmbedSeg
+pip install -e .
 ```
+
+Also, make sure to set the device to 'cpu' or 'mps' while training the model.
 
 ### Getting Started
 
