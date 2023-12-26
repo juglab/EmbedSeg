@@ -1,6 +1,84 @@
+# https://peps.python.org/pep-0517/
+# https://hatch.pypa.io/latest/config/build/
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# https://peps.python.org/pep-0621/
+[project]
+name = "EmbedSeg"
+description = "EmbedSeg provides automatic detection and segmentation of objects in microscopy images"
+readme = "README.md"
+license = {file="LICENSE"}
+authors = [
+    { name = "Manan Lalit", email = "lalitm@janelia.hhmi.org" },
+    { name = "Florian Jug", email = "florian.jug@fht.org" },
 ]
-build-backend = "setuptools.build_meta"
+keywords = ["segmentation", "microscopy", "spatial embeddings"]
+dynamic = ["version"]
+dependencies = [
+  "matplotlib",
+  "numpy",
+  "scipy",
+  "tifffile",
+  "numba",
+  "tqdm",
+  "jupyter",
+  "pandas",
+  "seaborn",
+  "scikit-image",
+  "pytest",
+  "pycocotools",
+  "pre-commit",
+  "colorspacious",
+  "csbdeep"
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "ruff", "twine", "build"]
+examples = ["jupyter", "matplotlib"]
+docs = [
+    "sphinx",
+    "sphinx_rtd_theme",
+    "sphinx_togglebutton",
+    "jupyter_sphinx",
+]
+
+[project.urls]
+homepage = "https://juglab.github.io/EmbedSeg"
+
+# https://hatch.pypa.io/latest/version/
+[tool.hatch.version]
+path = "EmbedSeg/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+# https://beta.ruff.rs/docs
+[tool.ruff]
+target-version = "py38"
+src = ["EmbedSeg"]
+select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle
+    "I",   # isort
+    "UP",  # pyupgrade
+    "RUF", # ruff specific rules
+]
+
+# https://coverage.readthedocs.io/en/6.4/config.html
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "pragma: ${PY_MAJOR_VERSION} no cover",
+    "if TYPE_CHECKING:",
+    "\\.\\.\\.",
+]
+
+[tool.mypy]
+files = "EmbedSeg"
+strict = true
+allow_untyped_defs = true
+allow_untyped_calls = true
+disallow_any_generics = false
+ignore_missing_imports = true
