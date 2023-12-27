@@ -5,6 +5,7 @@ Licensed under the CC BY-NC 4.0 license
 """
 import torch
 import torch.nn as nn
+
 import EmbedSeg.models.erfnet as erfnet
 
 
@@ -12,7 +13,7 @@ class BranchedERFNet(nn.Module):
     def __init__(self, num_classes, input_channels=1, encoder=None):
         super().__init__()
 
-        print("Creating Branched Erfnet with {} outputs".format(num_classes))
+        print(f"Creating Branched Erfnet with {num_classes} outputs")
 
         if encoder is None:
             self.encoder = erfnet.Encoder(sum(num_classes), input_channels)

@@ -1,4 +1,5 @@
-import os
+from pathlib import Path
+
 import torch
 
 import EmbedSeg.utils.transforms as my_transforms
@@ -21,9 +22,9 @@ def create_dataset_dict(
     Parameters
     ----------
     data_dir: string
-        Data is read from os.path.join(data_dir, project_name)
+        Data is read from Path(data_dir)/project_name
     project_name: string
-        Data is read from os.path.join(data_dir, project_name)
+        Data is read from Path(data_dir)/project_name
     size: int
         Number of image-mask per epoch
     center: string
@@ -100,7 +101,7 @@ def create_dataset_dict(
         "name": name,
         "kwargs": {
             "center": "center-" + center,
-            "data_dir": os.path.join(data_dir, project_name),
+            "data_dir": Path(data_dir) / project_name,
             "type": type,
             "size": size,
             "transform": set_transforms,
@@ -111,16 +112,10 @@ def create_dataset_dict(
         "workers": workers,
     }
     print(
-        "`{}_dataset_dict` dictionary successfully created \
-                with: \n -- {} images accessed from {}, "
-        "\n -- number of images per epoch equal to {}, "
-        "\n -- batch size set at {}, ".format(
-            type,
-            type,
-            os.path.join(data_dir, project_name, type, "images"),
-            size,
-            batch_size,
-        )
+        f"{type}_dataset_dict dictionary successfully created with:",
+        f"\n -- {type} images accessed from {Path(data_dir)/project_name/type}",
+        f"\n -- number of images per epoch equal to {size}",
+        f"\n -- batch size set at {batch_size}",
     )
     return dataset_dict
 
@@ -165,7 +160,7 @@ def create_test_configs_dict(
     Parameters
     ----------
     data_dir : str
-        Data is read from os.path.join(data_dir, 'test')
+        Data is read from Path(data_dir)/'test'
     checkpoint_path: str
         This indicates the path to the trained model
     data_type: str
@@ -391,11 +386,10 @@ def create_model_dict(input_channels, num_classes=[4, 1], name="2d"):
         },
     }
     print(
-        "`model_dict` dictionary successfully created \
-                with: \n -- num of classes equal to {}, \n -- input channels \
-                equal to {}, \n -- name equal to {}".format(
-            input_channels, num_classes, model_dict["name"]
-        )
+        "`model_dict` dictionary successfully created with:",
+        f"\n -- num of classes equal to {num_classes}",
+        f"\n -- input channels equal to {input_channels}",
+        f"\n -- name equal to {model_dict['name']}",
     )
     return model_dict
 
@@ -425,12 +419,11 @@ def create_loss_dict(foreground_weight=10, n_sigma=2, w_inst=1, w_var=10, w_seed
         },
     }
     print(
-        "`loss_dict` dictionary successfully created \
-                with: \n -- foreground weight equal to {:.3f}, \n -- w_inst \
-                equal to {}, \n -- w_var \
-                equal to {}, \n -- w_seed equal to {}".format(
-            foreground_weight, w_inst, w_var, w_seed
-        )
+        "`loss_dict` dictionary successfully created with:",
+        f"\n -- foreground weight equal to {foreground_weight}",
+        f"\n -- w_inst equal to {w_inst}",
+        f"\n -- w_var equal to {w_var}",
+        f"\n -- w_seed equal to {w_seed}",
     )
     return loss_dict
 

@@ -10,4 +10,4 @@ def get_model(name, model_opts):
         model = BranchedERFNet_3d(**model_opts)
         return model
     else:
-        raise RuntimeError('model "{}" not available'.format(name))
+        raise RuntimeError(f'model "{name}" not available')

@@ -19,10 +19,9 @@ class SpatialEmbLoss(nn.Module):
         super().__init__()
 
         print(
-            "Created spatial emb loss function with: \
-                    n_sigma: {}, foreground_weight: {}".format(
-                n_sigma, foreground_weight
-            )
+            "Created spatial emb loss function with:",
+            f"n_sigma: {n_sigma}",
+            f"foreground_weight: {foreground_weight}",
         )
         print("*************************")
         self.n_sigma = n_sigma

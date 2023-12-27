@@ -83,9 +83,7 @@ class non_bottleneck_1d(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, num_classes, input_channels):
         super().__init__()
-        self.initial_block = DownsamplerBlock(
-            input_channels, 16
-        )  # TODO input_channels = 1 (for gray-scale), 3 (for RGB)
+        self.initial_block = DownsamplerBlock(input_channels, 16)
         self.layers = nn.ModuleList()
 
         self.layers.append(DownsamplerBlock(16, 64))
@@ -180,5 +178,5 @@ class Net(nn.Module):
         if only_encode:
             return self.encoder.forward(input, predict=True)
         else:
-            output = self.encoder(input)  # predict=False by default
+            output = self.encoder(input)
             return self.decoder.forward(output)

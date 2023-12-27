@@ -7,12 +7,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
-from PIL import Image
 from matplotlib.patches import Ellipse
+from PIL import Image
 from skimage.feature import peak_local_max
 
 
-class AverageMeter(object):
+class AverageMeter:
     def __init__(self, num_classes=1):
         self.num_classes = num_classes
         self.reset()
@@ -869,7 +869,7 @@ class Logger:
         self.title = title
         self.win = None
 
-        print("Created logger with keys:  {}".format(keys))
+        print(f"Created logger with keys:  {keys}")
 
     def plot(self, save=False, save_dir=""):
         if self.win is None:
