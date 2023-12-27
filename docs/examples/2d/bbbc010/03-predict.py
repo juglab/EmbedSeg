@@ -4,7 +4,6 @@ import json
 import urllib.request
 import warnings
 import zipfile
-from glob import glob
 from pathlib import Path
 
 import numpy as np
@@ -143,11 +142,11 @@ new_cmp = ListedColormap(np.load("cmap_60.npy"))
 #     * the confidence map predicted by the model
 
 # %matplotlib inline
-prediction_file_names = sorted(glob(list(Path(save_dir) / "predictions" / "*.tif")))
-ground_truth_file_names = sorted(glob(list(Path(save_dir) / "ground-truth" / "*.tif")))
-seed_file_names = sorted(glob(list(Path(save_dir) / "seeds" / "*.tif")))
+prediction_file_names = sorted(list((Path(save_dir) / "predictions").iterdir()))
+ground_truth_file_names = sorted(list((Path(save_dir) / "ground-truth").iterdir()))
+seed_file_names = sorted(list((Path(save_dir) / "seeds").iterdir()))
 image_file_names = sorted(
-    glob(list(Path(data_dir) / project_name / "test" / "images" / "*.tif"))
+    list((Path(data_dir) / project_name / "test" / "images").iterdir())
 )
 
 index = 24

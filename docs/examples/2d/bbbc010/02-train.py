@@ -1,10 +1,8 @@
 # # Train
 
 import json
-import urllib.request
 from pathlib import Path
 
-import numpy as np
 from EmbedSeg.train import begin_training
 from EmbedSeg.utils.create_dicts import (
     create_configs,
@@ -12,7 +10,6 @@ from EmbedSeg.utils.create_dicts import (
     create_loss_dict,
     create_model_dict,
 )
-from matplotlib.colors import ListedColormap
 
 # ## Specify the path to `train`, `val` crops and the type of `center` embedding which we would like to train the network for:
 
@@ -150,16 +147,6 @@ configs = create_configs(
     device="cpu",
 )
 
-# ## Choose a `color map`
-
-# Here, we load a `glasbey`-style color map. But other color maps such as `viridis`, `magma` etc would work equally well.
-
-urllib.request.urlretrieve(
-    "https://github.com/juglab/EmbedSeg/releases/download/v0.1.0/cmap_60.npy",
-    "cmap_60.npy",
-)
-new_cmap = ListedColormap(np.load("cmap_60.npy"))
-
 # ## Begin training!
 
 # Executing the next cell would begin the training.
@@ -170,7 +157,6 @@ begin_training(
     model_dict,
     loss_dict,
     configs,
-    color_map=new_cmap,
 )
 
 # <div class="alert alert-block alert-warning">
