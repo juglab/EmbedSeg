@@ -1,19 +1,19 @@
 import os
 
+import numpy as np
 import torch
 import torch.nn.functional as F
+from scipy.ndimage import zoom
+from scipy.optimize import linear_sum_assignment, minimize_scalar
+from skimage.segmentation import relabel_sequential
+from tifffile import imsave
 from tqdm import tqdm
 
 from EmbedSeg.datasets import get_dataset
 from EmbedSeg.models import get_model
 from EmbedSeg.utils.metrics import matching_dataset, obtain_APdsb_one_hot
-from EmbedSeg.utils.utils import Cluster, Cluster_3d
-import numpy as np
-from tifffile import imsave
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
-from scipy.ndimage import zoom
-from scipy.optimize import minimize_scalar, linear_sum_assignment
-from skimage.segmentation import relabel_sequential
+from EmbedSeg.utils.utils import Cluster, Cluster_3d
 
 torch.backends.cudnn.benchmark = True
 
@@ -1098,7 +1098,7 @@ def test(fg_thresh, *args):
                         ap_val=ap_val,
                     )
                     if verbose:
-                        print("Accuracy: {:.03f}".format(all_results), flush=True)
+                        print(f"Accuracy: {all_results:.03f}", flush=True)
                     result_list.append(all_results)
             else:
                 if "instance" in sample:
@@ -1109,9 +1109,7 @@ def test(fg_thresh, *args):
                         show_progress=False,
                     )
                     if verbose:
-                        print(
-                            "Accuracy: {:.03f}".format(all_results.accuracy), flush=True
-                        )
+                        print(f"Accuracy: {all_results.accuracy:.03f}", flush=True)
                     result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
@@ -1160,11 +1158,7 @@ def test(fg_thresh, *args):
                 )
             txt_file = os.path.join(
                 save_dir,
-                "results/combined_AP-"
-                + "{:.02f}".format(ap_val)
-                + "_tta-"
-                + str(tta)
-                + ".txt",
+                "results/combined_AP-" + f"{ap_val:.02f}" + "_tta-" + str(tta) + ".txt",
             )
             with open(txt_file, "w") as f:
                 f.writelines(
@@ -1443,7 +1437,7 @@ def test_3d(fg_thresh, *args):
                     show_progress=False,
                 )
                 if verbose:
-                    print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    print(f"Accuracy: {all_results.accuracy:.03f}", flush=True)
                 result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
@@ -1492,11 +1486,7 @@ def test_3d(fg_thresh, *args):
                 )
             txt_file = os.path.join(
                 save_dir,
-                "results/combined_AP-"
-                + "{:.02f}".format(ap_val)
-                + "_tta-"
-                + str(tta)
-                + ".txt",
+                "results/combined_AP-" + f"{ap_val:.02f}" + "_tta-" + str(tta) + ".txt",
             )
             with open(txt_file, "w") as f:
                 f.writelines(
@@ -1756,7 +1746,7 @@ def test_3d_sliced(fg_thresh, *args):
                     show_progress=False,
                 )
                 if verbose:
-                    print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    print(f"Accuracy: {all_results.accuracy:.03f}", flush=True)
                 result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
@@ -1809,11 +1799,7 @@ def test_3d_sliced(fg_thresh, *args):
                 )
             txt_file = os.path.join(
                 save_dir,
-                "results/combined_AP-"
-                + "{:.02f}".format(ap_val)
-                + "_tta-"
-                + str(tta)
-                + ".txt",
+                "results/combined_AP-" + f"{ap_val:.02f}" + "_tta-" + str(tta) + ".txt",
             )
             with open(txt_file, "w") as f:
                 f.writelines(
@@ -2183,7 +2169,7 @@ def test_3d_ilp(fg_thresh, *args):
                     show_progress=False,
                 )
                 if verbose:
-                    print("Accuracy: {:.03f}".format(all_results.accuracy), flush=True)
+                    print(f"Accuracy: {all_results.accuracy:.03f}", flush=True)
                 result_list.append(all_results.accuracy)
 
             if save_images and ap_val == 0.5:
@@ -2220,11 +2206,7 @@ def test_3d_ilp(fg_thresh, *args):
                 )
             txt_file = os.path.join(
                 save_dir,
-                "results/combined_AP-"
-                + "{:.02f}".format(ap_val)
-                + "_tta-"
-                + str(tta)
-                + ".txt",
+                "results/combined_AP-" + f"{ap_val:.02f}" + "_tta-" + str(tta) + ".txt",
             )
             with open(txt_file, "w") as f:
                 f.writelines(

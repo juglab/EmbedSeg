@@ -1,6 +1,7 @@
 import os
 import shutil
 
+import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from tqdm import tqdm
@@ -16,8 +17,6 @@ from EmbedSeg.utils.utils import (
     Visualizer,
     prepare_embedding_for_train_image,
 )
-
-import numpy as np
 
 torch.backends.cudnn.benchmark = True
 
@@ -444,7 +443,7 @@ def val(virtual_batch_multiplier, one_hot, n_sigma, args, device):
                 center_images,
                 **args,
                 iou=True,
-                iou_meter=iou_meter
+                iou_meter=iou_meter,
             )
             loss = loss.mean()
             loss = loss / virtual_batch_multiplier
@@ -522,7 +521,7 @@ def val_vanilla(
                 center_images,
                 **args,
                 iou=True,
-                iou_meter=iou_meter
+                iou_meter=iou_meter,
             )
             loss = loss.mean()
             if display and i % display_it == 0:
@@ -657,7 +656,7 @@ def val_3d(virtual_batch_multiplier, one_hot, n_sigma, args, device):
                 center_images,
                 **args,
                 iou=True,
-                iou_meter=iou_meter
+                iou_meter=iou_meter,
             )
             loss = loss.mean()
             loss = loss / virtual_batch_multiplier
@@ -751,7 +750,7 @@ def val_vanilla_3d(
                 center_images,
                 **args,
                 iou=True,
-                iou_meter=iou_meter
+                iou_meter=iou_meter,
             )
             loss = loss.mean()
             if display and i % display_it == 0:
@@ -1007,7 +1006,7 @@ def begin_training(
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer, lr_lambda=lambda_, last_epoch=epoch - 1
         )
-        print("Starting epoch {}".format(epoch))
+        print(f"Starting epoch {epoch}")
 
         if configs["grid_z"] is None:
             if train_dataset_dict["virtual_batch_multiplier"] > 1:
@@ -1117,8 +1116,8 @@ def begin_training(
                 )
 
         scheduler.step()
-        print("===> train loss: {:.2f}".format(train_loss))
-        print("===> val loss: {:.2f}, val iou: {:.2f}".format(val_loss, val_iou))
+        print(f"===> train loss: {train_loss:.2f}")
+        print(f"===> val loss: {val_loss:.2f}, val iou: {val_iou:.2f}")
 
         logger.add("train", train_loss)
         logger.add("val", val_loss)
