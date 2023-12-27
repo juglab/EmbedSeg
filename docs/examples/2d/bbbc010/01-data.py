@@ -150,7 +150,7 @@ try:
     print(f"Normalization chosen as : {norm}")
 except AssertionError as e:
     e.args += (
-        'Please specify norm as one of : '
+        "Please specify norm as one of : "
         '{"min-max-percentile", "mean-std", "absolute"}',
         42,
     )

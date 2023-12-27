@@ -147,7 +147,7 @@ configs = create_configs(
     save_dir=save_dir,
     n_y=n_y,
     n_x=n_x,
-    device="cuda:0",
+    device="cpu",
 )
 
 # ## Choose a `color map`
