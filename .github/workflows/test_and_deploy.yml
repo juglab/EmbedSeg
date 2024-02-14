@@ -46,22 +46,8 @@ jobs:
       # - name: 🧪 Run Tests
       #   run: pytest --color=yes --cov --cov-report=xml --cov-report=term-missing
 
-      # # If something goes wrong with --pre tests, we can open an issue in the repo
-      # - name: 📝 Report --pre Failures
-      #   if: failure() && github.event_name == 'schedule'
-      #   uses: JasonEtco/create-an-issue@v2
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     PLATFORM: ${{ matrix.platform }}
-      #     PYTHON: ${{ matrix.python-version }}
-      #     RUN_ID: ${{ github.run_id }}
-      #     TITLE: "[test-bot] pip install --pre is failing"
-      #   with:
-      #     filename: .github/TEST_FAIL_TEMPLATE.md
-      #     update_existing: true
-
-      - name: Coverage
-        uses: codecov/codecov-action@v3
+      # - name: Coverage
+      #   uses: codecov/codecov-action@v3
 
   deploy:
     name: Deploy
