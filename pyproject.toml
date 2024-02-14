@@ -4,3 +4,12 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+# development dependencies and tooling
+test = ["pytest", "pytest-cov"]
+
+# https://docs.pytest.org/en/6.2.x/customize.html
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = ["EmbedSeg/_tests"]
