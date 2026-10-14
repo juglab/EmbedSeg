@@ -10,7 +10,6 @@ source = "vcs"
 
 [tool.hatch.build.targets.wheel]
 only-include = ["EmbedSeg"]
-sources = ["EmbedSeg"]
 
 # https://peps.python.org/pep-0621/
 [project]

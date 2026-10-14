@@ -235,7 +235,7 @@ class ThreeDimensionalDataset(Dataset):
 
     @classmethod
     def decode_instance(cls, pic, one_hot, bg_id=None):
-        pic = np.array(pic, copy=False, dtype=np.uint16)
+        pic = np.asarray(pic, dtype=np.uint16)
         instance_map = np.zeros(
             (pic.shape[0], pic.shape[1], pic.shape[2]), dtype=np.int16
         )

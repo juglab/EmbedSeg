@@ -3,6 +3,7 @@ import threading
 
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.backends import BackendFilter, backend_registry
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -131,7 +132,7 @@ class Visualizer:
     @staticmethod
     def mypause(interval):
         backend = plt.rcParams["backend"]
-        if backend in matplotlib.rcsetup.interactive_bk:
+        if backend in backend_registry.list_builtin(BackendFilter.INTERACTIVE):
             figManager = matplotlib._pylab_helpers.Gcf.get_active()
             if figManager is not None:
                 canvas = figManager.canvas

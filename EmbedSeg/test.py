@@ -9,7 +9,7 @@ from EmbedSeg.models import get_model
 from EmbedSeg.utils.metrics import matching_dataset, obtain_APdsb_one_hot
 from EmbedSeg.utils.utils import Cluster, Cluster_3d
 import numpy as np
-from tifffile import imsave
+from tifffile import imwrite
 from EmbedSeg.utils.test_time_augmentation import apply_tta_2d, apply_tta_3d
 from scipy.ndimage import zoom
 from scipy.optimize import minimize_scalar, linear_sum_assignment
@@ -1138,15 +1138,15 @@ def test(fg_thresh, *args):
                 # save predictions
                 base, _ = os.path.splitext(os.path.basename(sample["im_name"][0]))
                 instances_file = os.path.join(save_dir, "predictions/", base + ".tif")
-                imsave(
+                imwrite(
                     instances_file,
                     instance_map.cpu().detach().numpy().astype(np.uint16),
                 )
                 seeds_file = os.path.join(save_dir, "seeds/", base + ".tif")
-                imsave(seeds_file, seed_map.cpu().detach().numpy())
+                imwrite(seeds_file, seed_map.cpu().detach().numpy())
                 if "instance" in sample:
                     gt_file = os.path.join(save_dir, "ground-truth/", base + ".tif")
-                    imsave(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
+                    imwrite(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
 
         if save_results and "instance" in sample:
             if not os.path.exists(os.path.join(save_dir, "results/")):
@@ -1471,14 +1471,14 @@ def test_3d(fg_thresh, *args):
                 image_file_names.append(base)
 
                 instances_file = os.path.join(save_dir, "predictions/", base + ".tif")
-                imsave(instances_file, instance_map)
+                imwrite(instances_file, instance_map)
 
                 seeds_file = os.path.join(save_dir, "seeds/", base + ".tif")
-                imsave(seeds_file, seed_map)
+                imwrite(seeds_file, seed_map)
 
                 if "instance" in sample:
                     gt_file = os.path.join(save_dir, "ground-truth/", base + ".tif")
-                    imsave(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
+                    imwrite(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
 
         if save_results and "instance" in sample:
             if not os.path.exists(os.path.join(save_dir, "results/")):
@@ -1783,19 +1783,19 @@ def test_3d_sliced(fg_thresh, *args):
                 image_file_names.append(base)
 
                 prediction_file = os.path.join(save_dir, "predictions/", base + ".tif")
-                imsave(
+                imwrite(
                     prediction_file,
                     instance_map.cpu().detach().numpy().astype(np.uint16),
                 )
 
                 seeds_file = os.path.join(save_dir, "seeds/", base + ".tif")
-                imsave(
+                imwrite(
                     seeds_file, torch.sigmoid(output[0, -1, ...]).cpu().detach().numpy()
                 )
 
                 if "instance" in sample:
                     gt_file = os.path.join(save_dir, "ground-truth/", base + ".tif")
-                    imsave(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
+                    imwrite(gt_file, sample["instance"].squeeze().cpu().detach().numpy())
 
         if save_results and "instance" in sample:
             if not os.path.exists(os.path.join(save_dir, "results/")):
@@ -2203,10 +2203,10 @@ def test_3d_ilp(fg_thresh, *args):
                 # save predictions
                 base, _ = os.path.splitext(os.path.basename(sample["im_name"][0]))
                 instances_file = os.path.join(save_dir, "predictions/", base + ".tif")
-                imsave(instances_file, instance_map)
+                imwrite(instances_file, instance_map)
 
                 seeds_file = os.path.join(save_dir, "seeds/", base + ".tif")
-                imsave(seeds_file, np.asarray(seed_z).astype(float))
+                imwrite(seeds_file, np.asarray(seed_z).astype(float))
 
         if save_results and "instance" in sample:
             if not os.path.exists(os.path.join(save_dir, "results/")):

@@ -430,7 +430,7 @@ def process(
                 center_image_crop = generate_center_image(
                     instance_crop, center, ids, one_hot
                 )
-                tifffile.imsave(
+                tifffile.imwrite(
                     image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                     im_crop,
                 )
@@ -448,13 +448,13 @@ def process(
                         center_image_crop,
                     )
                 else:
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         instance_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}.tif".format(j),
                         instance_crop,
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         center_image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}.tif".format(j),
@@ -471,7 +471,7 @@ def process(
                 center_image_crop = generate_center_image(
                     instance_crop, center, ids, one_hot
                 )
-                tifffile.imsave(
+                tifffile.imwrite(
                     image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                     im_crop,
                 )
@@ -489,13 +489,13 @@ def process(
                         center_image_crop,
                     )
                 else:
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         instance_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}.tif".format(j),
                         instance_crop,
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         center_image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}.tif".format(j),
@@ -665,7 +665,7 @@ def process_3d(
                 anisotropy_factor=anisotropy_factor,
                 speed_up=speed_up,
             )
-            tifffile.imsave(
+            tifffile.imwrite(
                 image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                 im_crop,
             )
@@ -681,11 +681,11 @@ def process_3d(
                     center_image_crop,
                 )
             else:
-                tifffile.imsave(
+                tifffile.imwrite(
                     instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                     instance_crop.astype(np.uint16),
                 )
-                tifffile.imsave(
+                tifffile.imwrite(
                     center_image_path
                     + os.path.basename(im)[:-4]
                     + "_{:03d}.tif".format(j),
@@ -798,7 +798,7 @@ def process_one_hot(
                 instance_crop, center, ids, one_hot
             )
             instance_crop_sparse = sparsify(instance_crop)
-            tifffile.imsave(
+            tifffile.imwrite(
                 image_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                 im_crop,
             )
@@ -816,11 +816,11 @@ def process_one_hot(
                     one_hot=False,
                 )
             else:
-                tifffile.imsave(
+                tifffile.imwrite(
                     instance_path + os.path.basename(im)[:-4] + "_{:03d}.tif".format(j),
                     instance_crop_sparse,
                 )
-                tifffile.imsave(
+                tifffile.imwrite(
                     center_image_path
                     + os.path.basename(im)[:-4]
                     + "_{:03d}.tif".format(j),
@@ -975,7 +975,7 @@ def process_3d_sliced(
                     center_image_crop = generate_center_image(
                         instance_crop, center, ids, one_hot=one_hot
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}".format(id)
@@ -1001,7 +1001,7 @@ def process_3d_sliced(
                             center_image_crop,
                         )
                     else:
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             instance_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1009,7 +1009,7 @@ def process_3d_sliced(
                             + "_ZY.tif",
                             instance_crop.astype(np.uint16),
                         )
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             center_image_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1032,7 +1032,7 @@ def process_3d_sliced(
                     center_image_crop = generate_center_image(
                         instance_crop, center, ids, one_hot=one_hot
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}".format(id)
@@ -1058,7 +1058,7 @@ def process_3d_sliced(
                             center_image_crop,
                         )
                     else:
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             instance_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1066,7 +1066,7 @@ def process_3d_sliced(
                             + "_YX.tif",
                             instance_crop.astype(np.uint16),
                         )
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             center_image_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1091,7 +1091,7 @@ def process_3d_sliced(
                     center_image_crop = generate_center_image(
                         instance_crop, center, ids, one_hot=one_hot
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}".format(id)
@@ -1117,7 +1117,7 @@ def process_3d_sliced(
                             center_image_crop,
                         )
                     else:
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             instance_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1125,7 +1125,7 @@ def process_3d_sliced(
                             + "_XZ.tif",
                             instance_crop.astype(np.uint16),
                         )
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             center_image_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1264,7 +1264,7 @@ def process_3d_ilp(
                     center_image_crop = generate_center_image(
                         instance_crop, center, ids, one_hot=one_hot
                     )
-                    tifffile.imsave(
+                    tifffile.imwrite(
                         image_path
                         + os.path.basename(im)[:-4]
                         + "_{:03d}".format(id)
@@ -1290,7 +1290,7 @@ def process_3d_ilp(
                             center_image_crop,
                         )
                     else:
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             instance_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
@@ -1298,7 +1298,7 @@ def process_3d_ilp(
                             + "_YX.tif",
                             instance_crop.astype(np.uint16),
                         )
-                        tifffile.imsave(
+                        tifffile.imwrite(
                             center_image_path
                             + os.path.basename(im)[:-4]
                             + "_{:03d}".format(id)
